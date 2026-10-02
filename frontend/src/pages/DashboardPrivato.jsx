@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart } from "lucide-react";
+import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
 import { Stars, StarInput } from "@/components/StarRating";
 import ChatDialog from "@/components/ChatDialog";
+import { PreferiteList } from "@/components/PreferiteList";
 
 const STATO_STYLES = {
     aperta: "bg-blue-500/15 text-blue-400",
@@ -71,21 +72,33 @@ export default function DashboardPrivato() {
     const [richieste, setRichieste] = useState(null);
     const [notifiche, setNotifiche] = useState([]);
     const [unreadChat, setUnreadChat] = useState({});
+    const [preferite, setPreferite] = useState(null);
 
     const load = useCallback(async () => {
         try {
-            const [r, n, u] = await Promise.all([
-                api.get("/richieste/mine"), api.get("/notifiche"), api.get("/chat/unread-count"),
+            const [r, n, u, p] = await Promise.all([
+                api.get("/richieste/mine"), api.get("/notifiche"), api.get("/chat/unread-count"), api.get("/preferiti"),
             ]);
             setRichieste(r.data);
             setNotifiche(n.data);
             setUnreadChat(u.data.per_risposta || {});
+            setPreferite(p.data);
         } catch (e) {
             toast.error(formatApiError(e));
         }
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    const rimuoviPreferita = async (id, nome) => {
+        try {
+            await api.delete(`/preferiti/${id}`);
+            setPreferite((prev) => (prev || []).filter((a) => a.id !== id));
+            toast.success(`${nome} rimossa dalle preferite`);
+        } catch (e) {
+            toast.error(formatApiError(e));
+        }
+    };
 
     const accetta = async (rispostaId) => {
         try {
@@ -120,6 +133,10 @@ export default function DashboardPrivato() {
                     <TabsList className="bg-navy-700 border border-white/10">
                         <TabsTrigger value="richieste" data-testid="dashboard-privato-tab-requests" className="data-[state=active]:text-white">
                             <FileText className="h-4 w-4 mr-1.5" /> Le mie richieste
+                        </TabsTrigger>
+                        <TabsTrigger value="preferite" data-testid="dashboard-privato-tab-preferite" className="data-[state=active]:text-white">
+                            <Heart className="h-4 w-4 mr-1.5" /> Preferite
+                            {preferite?.length > 0 && <span className="ml-1.5 rounded-full bg-brand/20 text-brand text-[11px] font-bold px-1.5">{preferite.length}</span>}
                         </TabsTrigger>
                         <TabsTrigger value="notifiche" data-testid="dashboard-privato-tab-notifications" className="data-[state=active]:text-white">
                             <Bell className="h-4 w-4 mr-1.5" /> Notifiche
@@ -224,6 +241,10 @@ export default function DashboardPrivato() {
                                 </div>
                             );
                         })}
+                    </TabsContent>
+
+                    <TabsContent value="preferite" className="mt-6" data-testid="dashboard-preferite">
+                        <PreferiteList items={preferite} onRemove={rimuoviPreferita} />
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">

@@ -9,6 +9,8 @@ import { CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
 import MapView from "@/components/MapView";
 import { LayoutGrid, Map as MapIcon } from "lucide-react";
+import { usePreferiti } from "@/hooks/usePreferiti";
+import { PreferitaButton } from "@/components/PreferitaButton";
 
 const AVATAR_GRADIENTS = [
     "from-orange-500 to-amber-400",
@@ -51,6 +53,7 @@ export default function Aziende() {
     const [vista, setVista] = useState("griglia");
     const [items, setItems] = useState(null);
     const [error, setError] = useState("");
+    const { isPreferita, toggle: togglePreferita, canSave } = usePreferiti();
 
     useEffect(() => {
         setQ(params.get("q") || "");
@@ -244,6 +247,10 @@ export default function Aziende() {
                                         <span className="ml-auto shrink-0 rounded-full bg-white/5 border border-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200" data-testid={`company-distance-${a.id}`}>
                                             {a.distance_km} km
                                         </span>
+                                    )}
+                                    {canSave && (
+                                        <PreferitaButton aziendaId={a.id} nome={a.nome} saved={isPreferita(a.id)} onToggle={togglePreferita}
+                                            className={a.distance_km != null ? "shrink-0" : "ml-auto shrink-0"} />
                                     )}
                                 </div>
                                 <p className="mt-4 text-sm text-slate-400 leading-relaxed line-clamp-3">{a.descrizione}</p>

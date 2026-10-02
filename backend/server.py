@@ -18,6 +18,7 @@ from routes_admin import router as admin_router  # noqa: E402
 from routes_billing import router as billing_router  # noqa: E402
 from routes_notifiche import router as notifiche_router  # noqa: E402
 from routes_chat import router as chat_router  # noqa: E402
+from routes_preferiti import router as preferiti_router  # noqa: E402
 from seed import seed_demo_data, backfill_emergenze, backfill_geo  # noqa: E402
 
 app = FastAPI(title="CasaLavoriPRO API")
@@ -32,6 +33,7 @@ api_router.include_router(admin_router)
 api_router.include_router(billing_router)
 api_router.include_router(notifiche_router)
 api_router.include_router(chat_router)
+api_router.include_router(preferiti_router)
 
 
 @api_router.get("/")
@@ -65,6 +67,7 @@ else:
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
+    await db.preferiti.create_index([("user_id", 1), ("azienda_id", 1)], unique=True)
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     try:
         await db.aziende.create_index("location", sparse=True)

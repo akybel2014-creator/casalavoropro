@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
 import { Stars } from "@/components/StarRating";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
+import { usePreferiti } from "@/hooks/usePreferiti";
+import { PreferitaButton } from "@/components/PreferitaButton";
 
 const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
 
@@ -24,6 +26,7 @@ export default function AziendaDettaglio() {
     const [a, setA] = useState(null);
     const [recensioni, setRecensioni] = useState([]);
     const [error, setError] = useState("");
+    const { isPreferita, toggle: togglePreferita, canSave } = usePreferiti();
 
     useEffect(() => {
         api.get(`/aziende/${id}`)
@@ -200,6 +203,11 @@ export default function AziendaDettaglio() {
                                 >
                                     Richiedi preventivo gratuito
                                 </Button>
+                                {canSave && (
+                                    <div className="mt-3">
+                                        <PreferitaButton size="wide" aziendaId={a.id} nome={a.nome} saved={isPreferita(a.id)} onToggle={togglePreferita} />
+                                    </div>
+                                )}
                                 <div className="mt-5 space-y-2 text-sm">
                                     {a.telefono && (
                                         <p className="flex items-center gap-2 text-slate-400"><Phone className="h-4 w-4 text-brand" /> {a.telefono}</p>

@@ -29,6 +29,12 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Emergenze 24/7: le aziende dichiarano disponibilità emergenza/weekend/notturno + telefono dedicato (tab dedicato in dashboard), badge "Emergenze" nelle card directory, filtro "Emergenze 24/7", card dedicata sul profilo pubblico e sezione landing con CTA (2026-10-02).
 - Seed demo: 8 aziende, privato Mario Rossi, richieste/preventivi di esempio.
 
+## Aggiunte del 2026-10-02 (pomeriggio)
+- WhatsApp (Twilio): avviso alle aziende con Emergenze 24/7 quando arriva una richiesta marcata "urgente" dal privato. Funzione pronta ma NON attiva: parte solo quando vengono impostate TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_WHATSAPP_FROM in backend/.env (ora vuote, invio saltato con log). Le notifiche in-app partono comunque.
+- Ricerca "più vicine a me": aziende geolocalizzate (lat/lng GeoJSON, indice 2dsphere), distanza haversine calcolata dal backend, filtro per raggio (10/25/50/100 km) e ordinamento per distanza. Aziende impostano la posizione dal pannello (geolocalizzazione browser; ricerca indirizzi Mapbox attiva automaticamente quando viene impostato REACT_APP_MAPBOX_TOKEN, ora vuoto). Demo: coordinate città precompilate.
+- Galleria lavori: upload fino a 6 foto (JPG/PNG/WEBP, max 5 MB) su object storage Emergent, servite via /api/files/{path}; tab "Galleria" nel pannello azienda e sezione "Lavori realizzati" sul profilo pubblico.
+- Recensioni reali: dopo aver accettato un preventivo (richiesta chiusa) il privato lascia voto 1-5 + commento; rating medio e conteggio ricalcolati e mostrati in directory e profilo; sezione "Recensioni dei clienti" pubblica.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.

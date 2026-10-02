@@ -12,10 +12,12 @@ from core import client, db, now, hash_password, verify_password  # noqa: E402
 from routes_auth import router as auth_router  # noqa: E402
 from routes_aziende import router as aziende_router  # noqa: E402
 from routes_richieste import router as richieste_router  # noqa: E402
+from routes_recensioni import router as recensioni_router  # noqa: E402
+from routes_gallery import router as gallery_router, _init_storage  # noqa: E402
 from routes_admin import router as admin_router  # noqa: E402
 from routes_billing import router as billing_router  # noqa: E402
 from routes_notifiche import router as notifiche_router  # noqa: E402
-from seed import seed_demo_data, backfill_emergenze  # noqa: E402
+from seed import seed_demo_data, backfill_emergenze, backfill_geo  # noqa: E402
 
 app = FastAPI(title="CasaLavoriPRO API")
 
@@ -23,6 +25,8 @@ api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
 api_router.include_router(aziende_router)
 api_router.include_router(richieste_router)
+api_router.include_router(recensioni_router)
+api_router.include_router(gallery_router)
 api_router.include_router(admin_router)
 api_router.include_router(billing_router)
 api_router.include_router(notifiche_router)
@@ -60,6 +64,10 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    try:
+        await db.aziende.create_index("location", sparse=True)
+    except Exception:
+        pass
 
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@casalavoripro.it")
     admin_password = os.environ.get("ADMIN_PASSWORD", "Admin2026!")
@@ -75,6 +83,13 @@ async def startup():
 
     await seed_demo_data()
     await backfill_emergenze()
+    await backfill_geo()
+
+    try:
+        _init_storage()
+        logging.getLogger(__name__).info("Object storage initialized")
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Storage init failed: {e}")
 
 
 @app.on_event("shutdown")

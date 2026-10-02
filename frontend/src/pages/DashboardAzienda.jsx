@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, PhoneCall } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
+import LocationPicker from "@/components/LocationPicker";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
+const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
 
 function RispondiDialog({ richiesta, onDone }) {
     const [open, setOpen] = useState(false);
@@ -83,6 +85,9 @@ export default function DashboardAzienda() {
     const [feed, setFeed] = useState(null);
     const [busy, setBusy] = useState(false);
     const [checkingOut, setCheckingOut] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [geoBusy, setGeoBusy] = useState(false);
+    const fileRef = useRef(null);
 
     const load = useCallback(async () => {
         try {
@@ -142,6 +147,49 @@ export default function DashboardAzienda() {
         }
     };
 
+    const salvaPosizione = async (pos) => {
+        setGeoBusy(true);
+        try {
+            const { data } = await api.put("/aziende/mine", { lat: pos.lat, lng: pos.lng });
+            setMine(data);
+            toast.success("Posizione aggiornata: ora i privati ti trovano con 'più vicine a me'.");
+            refreshMe();
+        } catch (err) {
+            toast.error(formatApiError(err));
+        } finally {
+            setGeoBusy(false);
+        }
+    };
+
+    const uploadFoto = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            files.forEach((f) => fd.append("files", f));
+            const { data } = await api.post("/aziende/mine/foto", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            setMine((m) => ({ ...m, foto: data.foto }));
+            toast.success("Foto caricate nel portfolio!");
+            refreshMe();
+        } catch (err) {
+            toast.error(formatApiError(err));
+        } finally {
+            setUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
+    };
+
+    const eliminaFoto = async (fotoId) => {
+        try {
+            const { data } = await api.delete(`/aziende/mine/foto/${fotoId}`);
+            setMine((m) => ({ ...m, foto: data.foto }));
+            refreshMe();
+        } catch (err) {
+            toast.error(formatApiError(err));
+        }
+    };
+
     const checkout = async (lookupKey) => {
         setCheckingOut(true);
         try {
@@ -163,6 +211,8 @@ export default function DashboardAzienda() {
         verificata: ["bg-emerald-500/15 text-emerald-400", "Verificata PRO"],
         rifiutata: ["bg-red-500/15 text-red-400", "Non superata"],
     };
+
+    const foto = mine?.foto || [];
 
     return (
         <div className="min-h-screen bg-navy grid-pattern px-4 py-24" data-testid="dashboard-azienda">
@@ -188,6 +238,9 @@ export default function DashboardAzienda() {
                         <TabsTrigger value="profilo" className="data-[state=active]:text-white">
                             <Building2 className="h-4 w-4 mr-1.5" /> Profilo
                         </TabsTrigger>
+                        <TabsTrigger value="galleria" data-testid="dashboard-azienda-tab-galleria" className="data-[state=active]:text-white">
+                            <Camera className="h-4 w-4 mr-1.5" /> Galleria
+                        </TabsTrigger>
                         <TabsTrigger value="verifica" className="data-[state=active]:text-white">
                             <ShieldCheck className="h-4 w-4 mr-1.5" /> Verifica
                         </TabsTrigger>
@@ -211,7 +264,10 @@ export default function DashboardAzienda() {
                             <div key={r.id} className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-7" data-testid={`lead-card-${r.id}`}>
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <h3 className="font-display font-bold text-white text-lg">{r.titolo}</h3>
+                                        <h3 className="font-display font-bold text-white text-lg">
+                                            {r.titolo}
+                                            {r.urgente && <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white align-middle"><Siren className="h-3 w-3 inline" /> URGENTE</span>}
+                                        </h3>
                                         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                                             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {r.zona}</span>
                                             <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5">{r.categoria}</span>
@@ -232,52 +288,128 @@ export default function DashboardAzienda() {
                         ))}
                     </TabsContent>
 
-                    <TabsContent value="profilo" className="mt-6">
+                    <TabsContent value="profilo" className="mt-6 space-y-6">
                         {mine && (
-                            <form onSubmit={saveProfile} data-testid="azienda-profile-form" className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8 space-y-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-300">Nome azienda</Label>
-                                        <Input required value={mine.nome || ""} onChange={(e) => setMine((m) => ({ ...m, nome: e.target.value }))} data-testid="profile-name-input" className={inputCls} />
+                            <>
+                                <form onSubmit={saveProfile} data-testid="azienda-profile-form" className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8 space-y-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-slate-300">Nome azienda</Label>
+                                            <Input required value={mine.nome || ""} onChange={(e) => setMine((m) => ({ ...m, nome: e.target.value }))} data-testid="profile-name-input" className={inputCls} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-slate-300">Telefono</Label>
+                                            <Input value={mine.telefono || ""} onChange={(e) => setMine((m) => ({ ...m, telefono: e.target.value }))} data-testid="profile-phone-input" placeholder="+39 …" className={inputCls} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-slate-300">Sito web</Label>
+                                            <Input value={mine.sito || ""} onChange={(e) => setMine((m) => ({ ...m, sito: e.target.value }))} data-testid="profile-website-input" placeholder="https://…" className={inputCls} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-slate-300">Zone di servizio (separate da virgola)</Label>
+                                            <Input value={(mine.zone || []).join(", ")} onChange={(e) => setMine((m) => ({ ...m, zone: e.target.value.split(",").map((z) => z.trim()).filter(Boolean) }))} data-testid="profile-zone-input" className={inputCls} />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-slate-300">Telefono</Label>
-                                        <Input value={mine.telefono || ""} onChange={(e) => setMine((m) => ({ ...m, telefono: e.target.value }))} data-testid="profile-phone-input" placeholder="+39 …" className={inputCls} />
+                                        <Label className="text-slate-300">Categorie</Label>
+                                        <div className="flex flex-wrap gap-1.5" data-testid="profile-categories">
+                                            {CATEGORIES.map((c) => (
+                                                <button key={c.name} type="button" onClick={() => toggleCat(c.name)}
+                                                    className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                                                        mine.categorie?.includes(c.name)
+                                                            ? "border-brand bg-brand/15 text-brand"
+                                                            : "border-white/15 text-slate-400 hover:text-white"
+                                                    }`}>
+                                                    {c.name}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-slate-300">Sito web</Label>
-                                        <Input value={mine.sito || ""} onChange={(e) => setMine((m) => ({ ...m, sito: e.target.value }))} data-testid="profile-website-input" placeholder="https://…" className={inputCls} />
+                                        <Label className="text-slate-300">Descrizione</Label>
+                                        <Textarea rows={4} value={mine.descrizione || ""} onChange={(e) => setMine((m) => ({ ...m, descrizione: e.target.value }))} data-testid="profile-description-input" className={inputCls} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-300">Zone di servizio (separate da virgola)</Label>
-                                        <Input value={(mine.zone || []).join(", ")} onChange={(e) => setMine((m) => ({ ...m, zone: e.target.value.split(",").map((z) => z.trim()).filter(Boolean) }))} data-testid="profile-zone-input" className={inputCls} />
+                                    <Button type="submit" disabled={busy} data-testid="profile-save-button"
+                                        className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold">
+                                        {busy ? "Salvataggio…" : "Salva profilo"}
+                                    </Button>
+                                </form>
+
+                                <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8" data-testid="position-panel">
+                                    <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <MapPin className="h-5 w-5 text-brand" /> Posizione di riferimento
+                                    </h3>
+                                    <p className="mt-2 text-sm text-slate-400 max-w-2xl">
+                                        Imposta il punto di partenza dei tuoi interventi: quando un privato cerca "le più vicine a me",
+                                        la tua azienda viene ordinata per distanza reale.
+                                    </p>
+                                    <div className="mt-4 max-w-xl">
+                                        <LocationPicker
+                                            value={mine.location ? { lat: mine.location.coordinates[1], lng: mine.location.coordinates[0], label: `Posizione salvata (${mine.location.coordinates[1].toFixed(3)}, ${mine.location.coordinates[0].toFixed(3)})` } : null}
+                                            onChange={(pos) => { if (pos) salvaPosizione(pos); }}
+                                            testPrefix="profile-position"
+                                        />
                                     </div>
+                                    {geoBusy && <p className="mt-3 text-xs text-brand flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Aggiornamento posizione…</p>}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-300">Categorie</Label>
-                                    <div className="flex flex-wrap gap-1.5" data-testid="profile-categories">
-                                        {CATEGORIES.map((c) => (
-                                            <button key={c.name} type="button" onClick={() => toggleCat(c.name)}
-                                                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-                                                    mine.categorie?.includes(c.name)
-                                                        ? "border-brand bg-brand/15 text-brand"
-                                                        : "border-white/15 text-slate-400 hover:text-white"
-                                                }`}>
-                                                {c.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-300">Descrizione</Label>
-                                    <Textarea rows={4} value={mine.descrizione || ""} onChange={(e) => setMine((m) => ({ ...m, descrizione: e.target.value }))} data-testid="profile-description-input" className={inputCls} />
-                                </div>
-                                <Button type="submit" disabled={busy} data-testid="profile-save-button"
-                                    className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold">
-                                    {busy ? "Salvataggio…" : "Salva profilo"}
-                                </Button>
-                            </form>
+                            </>
                         )}
+                    </TabsContent>
+
+                    <TabsContent value="galleria" className="mt-6" data-testid="gallery-panel">
+                        <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <Camera className="h-5 w-5 text-brand" /> Portfolio lavori
+                                    </h3>
+                                    <p className="mt-1 text-sm text-slate-400">Mostra i tuoi lavori migliori: le foto compaiono sul tuo profilo pubblico.</p>
+                                </div>
+                                <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs font-semibold text-slate-300" data-testid="gallery-count">
+                                    {foto.length}/6 foto
+                                </span>
+                            </div>
+
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                data-testid="gallery-upload-input"
+                                className="hidden"
+                                onChange={uploadFoto}
+                            />
+                            <Button type="button" disabled={uploading || foto.length >= 6} data-testid="gallery-add-button"
+                                onClick={() => fileRef.current?.click()}
+                                className="mt-5 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ImagePlus className="h-4 w-4 mr-2" />}
+                                {uploading ? "Caricamento…" : foto.length === 0 ? "Carica le prime foto" : "Aggiungi foto"}
+                            </Button>
+
+                            {foto.length === 0 ? (
+                                <div className="mt-6 rounded-2xl border border-dashed border-white/15 p-10 text-center">
+                                    <ImagePlus className="h-10 w-10 text-slate-500 mx-auto" />
+                                    <p className="mt-3 text-sm text-slate-400">Nessuna foto ancora: carica da 1 a 6 immagini (JPG, PNG o WEBP, max 5 MB) dei tuoi lavori.</p>
+                                </div>
+                            ) : (
+                                <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="gallery-grid">
+                                    {foto.map((f) => (
+                                        <div key={f.id} className="relative group rounded-2xl overflow-hidden border border-white/10" data-testid={`gallery-item-${f.id}`}>
+                                            <img src={`${FILES_BASE}${f.path}`} alt={f.filename || "Lavoro"} className="w-full h-40 object-cover" />
+                                            <button
+                                                type="button"
+                                                data-testid={`gallery-delete-${f.id}`}
+                                                onClick={() => eliminaFoto(f.id)}
+                                                aria-label="Elimina foto"
+                                                className="absolute top-2 right-2 p-2 rounded-full bg-navy/80 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-300 transition-all"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="verifica" className="mt-6">
@@ -320,7 +452,8 @@ export default function DashboardAzienda() {
                                 </h3>
                                 <p className="mt-2 text-sm text-slate-400 max-w-2xl">
                                     Dichiara se intervieni in emergenza, nel weekend e in orario notturno: comparirai nella ricerca
-                                    "Emergenze 24/7" e sul tuo profilo pubblico con il numero dedicato.
+                                    "Emergenze 24/7" e sul tuo profilo pubblico con il numero dedicato. Se un cliente segna una richiesta
+                                    urgente della tua categoria riceverai un avviso WhatsApp (se configurato dalla piattaforma).
                                 </p>
 
                                 <div className="mt-6 space-y-4" data-testid="emergency-toggles">

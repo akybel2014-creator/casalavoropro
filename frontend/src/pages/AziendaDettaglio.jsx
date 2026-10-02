@@ -1,22 +1,37 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon } from "lucide-react";
+import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon, Camera, MessageSquareHeart } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
+import { Stars } from "@/components/StarRating";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
+
+const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
+
+function dataIt(iso) {
+    try {
+        return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+    } catch {
+        return "";
+    }
+}
 
 export default function AziendaDettaglio() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [a, setA] = useState(null);
+    const [recensioni, setRecensioni] = useState([]);
     const [error, setError] = useState("");
 
     useEffect(() => {
         api.get(`/aziende/${id}`)
             .then(({ data }) => setA(data))
             .catch((e) => setError(formatApiError(e)));
+        api.get(`/aziende/${id}/recensioni`)
+            .then(({ data }) => setRecensioni(data))
+            .catch(() => {});
     }, [id]);
 
     const askQuote = () => {
@@ -49,6 +64,11 @@ export default function AziendaDettaglio() {
                                             <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">{a.nome}</h1>
                                             <VerifiedBadge verified={a.verified} />
                                             {a.plan === "pro" && <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-xs font-bold text-brand uppercase tracking-wide">PRO</span>}
+                                            {a.emergenze && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-0.5 text-xs font-bold text-white" data-testid="company-detail-emergenze-badge">
+                                                    <Siren className="h-3.5 w-3.5" /> Emergenze 24/7
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
                                             <span className="flex items-center gap-1 text-brand-amber">
@@ -103,6 +123,45 @@ export default function AziendaDettaglio() {
                                     )}
                                 </div>
                             )}
+
+                            {a.foto?.length > 0 && (
+                                <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="company-gallery">
+                                    <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <Camera className="h-5 w-5 text-brand" /> Lavori realizzati
+                                    </h2>
+                                    <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {a.foto.map((f) => (
+                                            <div key={f.id} className="rounded-2xl overflow-hidden border border-white/10" data-testid={`company-gallery-item-${f.id}`}>
+                                                <img src={`${FILES_BASE}${f.path}`} alt={f.filename || "Lavoro realizzato"} className="w-full h-40 object-cover hover:scale-105 transition-transform duration-500" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="company-reviews">
+                                <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                    <MessageSquareHeart className="h-5 w-5 text-brand" /> Recensioni dei clienti
+                                </h2>
+                                {recensioni.length === 0 ? (
+                                    <p className="mt-4 text-sm text-slate-500">Ancora nessuna recensione scritta dai clienti.</p>
+                                ) : (
+                                    <div className="mt-5 space-y-4">
+                                        {recensioni.map((r) => (
+                                            <div key={r.id} className="rounded-2xl border border-white/5 bg-navy/60 p-5" data-testid={`company-review-${r.id}`}>
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <Stars value={r.voto} />
+                                                        <span className="text-sm font-semibold text-white">{r.client_name}</span>
+                                                    </div>
+                                                    <span className="text-xs text-slate-500">{dataIt(r.created_at)}</span>
+                                                </div>
+                                                <p className="mt-2 text-sm text-slate-300">{r.commento}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
                                 <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">

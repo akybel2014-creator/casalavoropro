@@ -120,6 +120,31 @@ async def seed_demo_data():
     logger.info("Demo data seeded: %s aziende", len(DEMO_AZIENDE))
 
 
+CITY_COORDS = {
+    "torino": (45.0703, 7.6869), "provincia di torino": (45.0703, 7.6869),
+    "milano": (45.4642, 9.19), "provincia di milano": (45.4642, 9.19),
+    "monza": (45.5844, 9.2746), "roma": (41.9028, 12.4964),
+    "provincia di roma": (41.9028, 12.4964), "firenze": (43.7696, 11.2558),
+    "prato": (43.8807, 11.0964), "bologna": (44.4949, 11.3426),
+    "provincia di bologna": (44.4949, 11.3426), "napoli": (40.8518, 14.2681),
+    "provincia di napoli": (40.8518, 14.2681), "siena": (43.3188, 11.3308),
+}
+
+
+async def backfill_geo():
+    """Idempotent: geolocates companies that don't have coordinates yet (demo cities)."""
+    async for a in db.aziende.find({"location": {"$exists": False}}):
+        for z in a.get("zone", []):
+            key = str(z).strip().lower()
+            if key in CITY_COORDS:
+                lat, lng = CITY_COORDS[key]
+                await db.aziende.update_one(
+                    {"_id": a["_id"], "location": {"$exists": False}},
+                    {"$set": {"location": {"type": "Point", "coordinates": [lng, lat]}}},
+                )
+                break
+
+
 EMERGENZE_BACKFILL = {
     "Lampioni Idraulica": (True, True, True, "+39 335 111 2233"),
     "Calore & Clima Srl": (True, True, False, "+39 335 222 3344"),

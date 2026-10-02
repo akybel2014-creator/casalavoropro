@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake } from "lucide-react";
+import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
+import { Stars, StarInput } from "@/components/StarRating";
 
 const STATO_STYLES = {
     aperta: "bg-blue-500/15 text-blue-400",
@@ -16,8 +18,55 @@ const STATO_STYLES = {
 
 const STATO_LABELS = { aperta: "Aperta", in_lavorazione: "In lavorazione", chiusa: "Chiusa" };
 
+function RecensioneBox({ richiesta, accettata, onDone }) {
+    const [voto, setVoto] = useState(5);
+    const [commento, setCommento] = useState("");
+    const [busy, setBusy] = useState(false);
+
+    const submit = async () => {
+        if (commento.trim().length < 5) {
+            toast.error("Scrivi un commento di almeno 5 caratteri");
+            return;
+        }
+        setBusy(true);
+        try {
+            await api.post(`/risposte/${accettata.id}/recensione`, { voto, commento: commento.trim() });
+            toast.success("Grazie! La tua recensione è stata pubblicata.");
+            onDone();
+        } catch (e) {
+            toast.error(formatApiError(e));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="rounded-2xl border border-brand/40 bg-brand/5 p-5" data-testid={`review-box-${richiesta.id}`}>
+            <p className="font-display font-bold text-white text-sm flex items-center gap-2">
+                <MessageSquareHeart className="h-4 w-4 text-brand" /> Lavoro completato? Lascia una recensione
+            </p>
+            <p className="text-xs text-slate-400 mt-1">La tua opinione aiuta altri privati a scegliere con fiducia.</p>
+            <div className="mt-3">
+                <StarInput value={voto} onChange={setVoto} testPrefix={`review-${richiesta.id}`} />
+            </div>
+            <Textarea
+                rows={2}
+                value={commento}
+                onChange={(e) => setCommento(e.target.value)}
+                data-testid={`review-comment-input-${richiesta.id}`}
+                placeholder="Com'è andata l'intervento? Tempi, qualità, prezzo…"
+                className="mt-3 bg-navy/70 border-white/10 text-white placeholder:text-slate-500"
+            />
+            <Button size="sm" disabled={busy} onClick={submit} data-testid={`review-submit-${richiesta.id}`}
+                className="mt-3 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold">
+                {busy ? "Pubblicazione…" : "Pubblica recensione"}
+            </Button>
+        </div>
+    );
+}
+
 export default function DashboardPrivato() {
-    const { user, refreshMe } = useAuth();
+    const { user } = useAuth();
     const [richieste, setRichieste] = useState(null);
     const [notifiche, setNotifiche] = useState([]);
 
@@ -84,63 +133,84 @@ export default function DashboardPrivato() {
                                 </Button>
                             </div>
                         )}
-                        {richieste && richieste.map((r) => (
-                            <div key={r.id} className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-7" data-testid={`richiesta-card-${r.id}`}>
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                        <h3 className="font-display font-bold text-white text-lg">{r.titolo}</h3>
-                                        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-                                            <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {r.zona}</span>
-                                            <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5">{r.categoria}</span>
-                                            {r.budget && <span className="flex items-center gap-1">Budget: {r.budget}</span>}
+                        {richieste && richieste.map((r) => {
+                            const accettata = r.risposte?.find((x) => x.stato === "accettata");
+                            return (
+                                <div key={r.id} className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-7" data-testid={`richiesta-card-${r.id}`}>
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <h3 className="font-display font-bold text-white text-lg">
+                                                {r.titolo}
+                                                {r.urgente && <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white align-middle"><SirenDot /> URGENTE</span>}
+                                            </h3>
+                                            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                                                <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {r.zona}</span>
+                                                <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5">{r.categoria}</span>
+                                                {r.budget && <span className="flex items-center gap-1">Budget: {r.budget}</span>}
+                                            </div>
                                         </div>
+                                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATO_STYLES[r.stato]}`}>
+                                            {STATO_LABELS[r.stato]}
+                                        </span>
                                     </div>
-                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATO_STYLES[r.stato]}`}>
-                                        {STATO_LABELS[r.stato]}
-                                    </span>
-                                </div>
-                                <p className="mt-3 text-sm text-slate-300 leading-relaxed">{r.descrizione}</p>
+                                    <p className="mt-3 text-sm text-slate-300 leading-relaxed">{r.descrizione}</p>
 
-                                <div className="mt-5 space-y-3" data-testid={`risposte-list-${r.id}`}>
-                                    {r.risposte?.map((ris) => (
-                                        <div key={ris.id} className="rounded-2xl border border-white/10 bg-navy/60 p-5" data-testid={`risposta-card-${ris.id}`}>
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3">
-                                                    <AziendaAvatar nome={ris.azienda_nome} size="h-10 w-10 text-sm" />
-                                                    <div>
-                                                        <p className="font-semibold text-white text-sm flex items-center gap-2">
-                                                            {ris.azienda_nome} <VerifiedBadge verified={ris.azienda_verified} />
-                                                        </p>
-                                                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                                            <Clock className="h-3 w-3" /> Esecuzione in {ris.durata_giorni} giorni
+                                    <div className="mt-5 space-y-3" data-testid={`risposte-list-${r.id}`}>
+                                        {r.risposte?.map((ris) => (
+                                            <div key={ris.id} className="rounded-2xl border border-white/10 bg-navy/60 p-5" data-testid={`risposta-card-${ris.id}`}>
+                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <AziendaAvatar nome={ris.azienda_nome} size="h-10 w-10 text-sm" />
+                                                        <div>
+                                                            <p className="font-semibold text-white text-sm flex items-center gap-2">
+                                                                {ris.azienda_nome} <VerifiedBadge verified={ris.azienda_verified} />
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                                                <Clock className="h-3 w-3" /> Esecuzione in {ris.durata_giorni} giorni
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-display font-black text-xl text-brand" data-testid={`risposta-price-${ris.id}`}>
+                                                            € {ris.prezzo.toLocaleString("it-IT", { minimumFractionDigits: 0 })}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-display font-black text-xl text-brand" data-testid={`risposta-price-${ris.id}`}>
-                                                        € {ris.prezzo.toLocaleString("it-IT", { minimumFractionDigits: 0 })}
-                                                    </p>
-                                                </div>
+                                                <p className="mt-3 text-sm text-slate-300">{ris.messaggio}</p>
+                                                {ris.stato === "inviata" && r.stato !== "chiusa" && (
+                                                    <Button size="sm" data-testid={`accetta-button-${ris.id}`} onClick={() => accetta(ris.id)}
+                                                        className="mt-4 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold">
+                                                        <Check className="h-4 w-4 mr-1" /> Accetta preventivo
+                                                    </Button>
+                                                )}
+                                                {ris.stato === "accettata" && <span className="mt-3 inline-block rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-3 py-1">Accettato</span>}
+                                                {ris.stato === "rifiutata" && <span className="mt-3 inline-block rounded-full bg-white/5 text-slate-500 text-xs font-semibold px-3 py-1">Non accettato</span>}
                                             </div>
-                                            <p className="mt-3 text-sm text-slate-300">{ris.messaggio}</p>
-                                            {ris.stato === "inviata" && r.stato !== "chiusa" && (
-                                                <Button size="sm" data-testid={`accetta-button-${ris.id}`} onClick={() => accetta(ris.id)}
-                                                    className="mt-4 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold">
-                                                    <Check className="h-4 w-4 mr-1" /> Accetta preventivo
-                                                </Button>
-                                            )}
-                                            {ris.stato === "accettata" && <span className="mt-3 inline-block rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-3 py-1">Accettato</span>}
-                                            {ris.stato === "rifiutata" && <span className="mt-3 inline-block rounded-full bg-white/5 text-slate-500 text-xs font-semibold px-3 py-1">Non accettato</span>}
+                                        ))}
+                                        {r.risposte?.length === 0 && (
+                                            <p className="text-sm text-slate-500 border border-dashed border-white/10 rounded-2xl p-5 text-center">
+                                                Le aziende della zona stanno valutando la tua richiesta… i preventivi appariranno qui.
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {r.stato === "chiusa" && accettata && !r.recensione && (
+                                        <div className="mt-5">
+                                            <RecensioneBox richiesta={r} accettata={accettata} onDone={load} />
                                         </div>
-                                    ))}
-                                    {r.risposte?.length === 0 && (
-                                        <p className="text-sm text-slate-500 border border-dashed border-white/10 rounded-2xl p-5 text-center">
-                                            Le aziende della zona stanno valutando la tua richiesta… i preventivi appariranno qui.
-                                        </p>
+                                    )}
+                                    {r.recensione && (
+                                        <div className="mt-5 rounded-2xl border border-white/10 bg-navy/60 p-5" data-testid={`review-given-${r.id}`}>
+                                            <p className="text-sm font-semibold text-white flex items-center gap-2">
+                                                <MessageSquareHeart className="h-4 w-4 text-brand" /> La tua recensione
+                                            </p>
+                                            <div className="mt-2"><Stars value={r.recensione.voto} /></div>
+                                            <p className="mt-2 text-sm text-slate-300">{r.recensione.commento}</p>
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">
@@ -163,4 +233,8 @@ export default function DashboardPrivato() {
             </div>
         </div>
     );
+}
+
+function SirenDot() {
+    return <svg viewBox="0 0 24 24" className="h-3 w-3 fill-current"><path d="M12 2a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm7 9a1 1 0 011 1 8 8 0 01-16 0 1 1 0 112 0 6 6 0 0012 0 1 1 0 011-1z" /></svg>;
 }

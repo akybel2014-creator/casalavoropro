@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX, Siren } from "lucide-react";
+import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX, Siren, Navigation } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
+import LocationPicker from "@/components/LocationPicker";
 
 const AVATAR_GRADIENTS = [
     "from-orange-500 to-amber-400",
@@ -34,6 +35,8 @@ export function VerifiedBadge({ verified }) {
     );
 }
 
+const RAGGI = [10, 25, 50, 100];
+
 export default function Aziende() {
     const [params, setParams] = useSearchParams();
     const [q, setQ] = useState(params.get("q") || "");
@@ -41,6 +44,8 @@ export default function Aziende() {
     const [categoria, setCategoria] = useState(params.get("categoria") || "");
     const [verificate, setVerificate] = useState(false);
     const [emergenze, setEmergenze] = useState(params.get("emergenze") === "true");
+    const [geo, setGeo] = useState(null);
+    const [radius, setRadius] = useState(25);
     const [items, setItems] = useState(null);
     const [error, setError] = useState("");
 
@@ -60,13 +65,18 @@ export default function Aziende() {
                 if (categoria) query.set("categoria", categoria);
                 if (verificate) query.set("verificate", "true");
                 if (emergenze) query.set("emergenze", "true");
+                if (geo) {
+                    query.set("lat", String(geo.lat));
+                    query.set("lng", String(geo.lng));
+                    query.set("radius_km", String(radius));
+                }
                 const { data } = await api.get(`/aziende?${query.toString()}`);
                 setItems(data);
             } catch (e) {
                 setError(formatApiError(e));
             }
         };
-    }, [q, zona, categoria, verificate, emergenze]);
+    }, [q, zona, categoria, verificate, emergenze, geo, radius]);
 
     useEffect(() => {
         fetchItems();
@@ -101,7 +111,7 @@ export default function Aziende() {
                             <Input value={zona} onChange={(e) => setZona(e.target.value)} placeholder="Zona: città o provincia" className="border-0 bg-transparent h-auto p-0 focus-visible:ring-0 text-white placeholder:text-slate-500" />
                         </label>
                         <Select value={categoria || "all"} onValueChange={(v) => setCategoria(v === "all" ? "" : v)}>
-                            <SelectTrigger data-testid="directory-category-select" className="md:w-56 rounded-xl bg-navy/80 border-white/10 text-white">
+                            <SelectTrigger data-testid="directory-category-select" className="md:w-52 rounded-xl bg-navy/80 border-white/10 text-white">
                                 <SelectValue placeholder="Categoria" />
                             </SelectTrigger>
                             <SelectContent className="bg-navy-700 border-white/10">
@@ -135,6 +145,28 @@ export default function Aziende() {
                             <Siren className="h-4 w-4" /> Emergenze 24/7
                         </label>
                     </form>
+
+                    <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3" data-testid="directory-nearby-controls">
+                        <div className="sm:w-96">
+                            <LocationPicker value={geo} onChange={setGeo} testPrefix="directory" placeholder="Cerca un indirizzo per trovare le aziende vicine" />
+                        </div>
+                        {geo && (
+                            <Select value={String(radius)} onValueChange={(v) => setRadius(Number(v))}>
+                                <SelectTrigger data-testid="directory-radius-select" className="sm:w-40 rounded-xl bg-navy/80 border-white/10 text-white">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-navy-700 border-white/10">
+                                    {RAGGI.map((r) => (
+                                        <SelectItem key={r} value={String(r)}>Raggio {r} km</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                            <Navigation className="h-3.5 w-3.5 text-brand" />
+                            {geo ? "Aziende ordinate per distanza" : "Attiva la posizione per vedere la distanza e ordinare per vicinanza"}
+                        </p>
+                    </div>
                 </div>
             </section>
 
@@ -146,12 +178,15 @@ export default function Aziende() {
                         <div className="rounded-2xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="directory-empty">
                             <SearchX className="h-10 w-10 text-slate-500 mx-auto" />
                             <h3 className="mt-4 font-display font-bold text-white text-lg">Nessuna azienda trovata</h3>
-                            <p className="mt-1 text-sm text-slate-400">Prova a rimuovere qualche filtro o amplia la zona di ricerca.</p>
+                            <p className="mt-1 text-sm text-slate-400">
+                                {geo ? "Nessuna azienda entro il raggio scelto: prova ad allargarlo o rimuovi i filtri." : "Prova a rimuovere qualche filtro o amplia la zona di ricerca."}
+                            </p>
                         </div>
                     )}
                     {items && items.length > 0 && (
                         <p className="mb-6 text-sm text-slate-400" data-testid="directory-count">
                             {items.length} {items.length === 1 ? "azienda trovata" : "aziende trovate"}
+                            {geo ? " · ordinate per distanza" : ""}
                         </p>
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
@@ -179,6 +214,11 @@ export default function Aziende() {
                                             {a.recensioni > 0 && <span className="text-slate-500">({a.recensioni})</span>}
                                         </div>
                                     </div>
+                                    {a.distance_km != null && (
+                                        <span className="ml-auto shrink-0 rounded-full bg-white/5 border border-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200" data-testid={`company-distance-${a.id}`}>
+                                            {a.distance_km} km
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="mt-4 text-sm text-slate-400 leading-relaxed line-clamp-3">{a.descrizione}</p>
                                 <div className="mt-4 flex flex-wrap gap-1.5">

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from core import db, now, clean_doc, require_roles, azienda_for_user, notify
 from emailer import send_new_quote, send_quote_accepted
+from whatsapp import send_whatsapp_alert
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -24,6 +25,7 @@ class RichiestaIn(BaseModel):
     zona: str = Field(min_length=2, max_length=80)
     budget: Optional[str] = None
     descrizione: str = Field(min_length=10, max_length=2000)
+    urgente: bool = False
 
 
 class RispostaIn(BaseModel):
@@ -38,7 +40,7 @@ async def create_richiesta(inp: RichiestaIn, user: dict = Depends(require_roles(
         "client_id": user["id"], "client_name": user["name"],
         "titolo": inp.titolo.strip(), "categoria": inp.categoria.strip(),
         "zona": inp.zona.strip(), "budget": inp.budget or "",
-        "descrizione": inp.descrizione.strip(),
+        "descrizione": inp.descrizione.strip(), "urgente": inp.urgente,
         "stato": "aperta", "risposte_count": 0, "created_at": now(),
     }
     res = await db.richieste.insert_one(doc)
@@ -47,7 +49,14 @@ async def create_richiesta(inp: RichiestaIn, user: dict = Depends(require_roles(
 
     matching = db.aziende.find({"categorie": inp.categoria.strip()})
     async for a in matching:
-        await notify(a["owner_id"], "Nuova richiesta di preventivo",
+        if inp.urgente and a.get("emergenze"):
+            phone = a.get("emergenze_telefono") or a.get("telefono") or ""
+            try:
+                await send_whatsapp_alert(phone, a.get("nome", ""), inp.titolo.strip(), inp.zona.strip())
+            except Exception:
+                logger.exception("whatsapp alert failed")
+        await notify(a["owner_id"],
+                     "Richiesta URGENTE di preventivo" if inp.urgente else "Nuova richiesta di preventivo",
                      f"{user['name']} cerca: {inp.titolo.strip()} ({inp.zona.strip()})",
                      link="/dashboard/azienda")
     return out
@@ -64,6 +73,8 @@ async def my_richieste(user: dict = Depends(require_roles("privato"))):
         item = clean_doc(r)
         item["id"] = rid
         item["risposte"] = [clean_doc(x) for x in risposte]
+        rec = await db.recensioni.find_one({"richiesta_id": rid})
+        item["recensione"] = clean_doc(rec) if rec else None
         out.append(item)
     return out
 
@@ -111,6 +122,8 @@ async def send_risposta(richiesta_id: str, inp: RispostaIn,
         "durata_giorni": inp.durata_giorni, "stato": "inviata", "created_at": now(),
     }
     await db.risposte.insert_one(doc)
+    out = clean_doc(doc)
+    out["id"] = str(doc["_id"])
     await db.richieste.update_one({"_id": req["_id"]},
                                   {"$inc": {"risposte_count": 1},
                                    "$set": {"stato": "in_lavorazione"}})

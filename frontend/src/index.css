@@ -117,6 +117,57 @@
     overflow: hidden;
 }
 
+.cl-map-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cl-map-pin > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: #FF5A1F;
+    border: 2px solid #0B132B;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.cl-map-pin > span > b {
+    transform: rotate(45deg);
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    color: #0B132B;
+    font-size: 14px;
+}
+
+.cl-map-user > span {
+    display: block;
+    width: 14px;
+    height: 14px;
+    margin: 2px;
+    border-radius: 50%;
+    background: #10B981;
+    border: 3px solid rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.leaflet-container {
+    background: #0B132B;
+    font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 12px;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px;
+}
+
 @layer base {
     [data-debug-wrapper="true"] {
         display: contents !important;

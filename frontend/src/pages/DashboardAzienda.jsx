@@ -12,6 +12,7 @@ import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
+import ChatDialog from "@/components/ChatDialog";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
@@ -275,13 +276,18 @@ export default function DashboardAzienda() {
                                             <span>Cliente: {r.client_name}</span>
                                         </div>
                                     </div>
-                                    {r.risposto ? (
-                                        <span className="rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-3 py-1.5" data-testid={`lead-responded-${r.id}`}>
-                                            <Check className="h-3.5 w-3.5 inline mr-1" /> Preventivo inviato
-                                        </span>
-                                    ) : (
-                                        <RispondiDialog richiesta={r} onDone={load} />
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {r.risposto && r.risposta_id && (
+                                            <ChatDialog rispostaId={r.risposta_id} titolo={r.titolo} counterpart={r.client_name} senderRole="azienda" />
+                                        )}
+                                        {r.risposto ? (
+                                            <span className="rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-3 py-1.5" data-testid={`lead-responded-${r.id}`}>
+                                                <Check className="h-3.5 w-3.5 inline mr-1" /> Preventivo inviato
+                                            </span>
+                                        ) : (
+                                            <RispondiDialog richiesta={r} onDone={load} />
+                                        )}
+                                    </div>
                                 </div>
                                 <p className="mt-3 text-sm text-slate-300 leading-relaxed">{r.descrizione}</p>
                             </div>

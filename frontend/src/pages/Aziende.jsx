@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
+import MapView from "@/components/MapView";
+import { LayoutGrid, Map as MapIcon } from "lucide-react";
 
 const AVATAR_GRADIENTS = [
     "from-orange-500 to-amber-400",
@@ -46,6 +48,7 @@ export default function Aziende() {
     const [emergenze, setEmergenze] = useState(params.get("emergenze") === "true");
     const [geo, setGeo] = useState(null);
     const [radius, setRadius] = useState(25);
+    const [vista, setVista] = useState("griglia");
     const [items, setItems] = useState(null);
     const [error, setError] = useState("");
 
@@ -184,12 +187,35 @@ export default function Aziende() {
                         </div>
                     )}
                     {items && items.length > 0 && (
-                        <p className="mb-6 text-sm text-slate-400" data-testid="directory-count">
-                            {items.length} {items.length === 1 ? "azienda trovata" : "aziende trovate"}
-                            {geo ? " · ordinate per distanza" : ""}
-                        </p>
+                        <>
+                        <div className="flex items-center justify-between gap-3 mb-6">
+                            <p className="text-sm text-slate-400" data-testid="directory-count">
+                                {items.length} {items.length === 1 ? "azienda trovata" : "aziende trovate"}
+                                {geo ? " · ordinate per distanza" : ""}
+                            </p>
+                            <div className="flex rounded-full border border-white/10 bg-navy-700/80 p-1" data-testid="directory-view-toggle">
+                                {[
+                                    { v: "griglia", label: "Griglia", icon: LayoutGrid, t: "directory-view-grid" },
+                                    { v: "mappa", label: "Mappa", icon: MapIcon, t: "directory-view-map" },
+                                ].map((o) => (
+                                    <button key={o.v} type="button" data-testid={o.t} onClick={() => setVista(o.v)}
+                                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                                            vista === o.v ? "bg-brand text-white" : "text-slate-400 hover:text-white"
+                                        }`}>
+                                        <o.icon className="h-3.5 w-3.5" /> {o.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {vista === "mappa" && <MapView items={items} geo={geo} radius={radius} />}
+                        {vista === "mappa" && (
+                            <p className="mt-3 text-xs text-slate-500">
+                                Clicca su un pin per aprire il profilo azienda. Mostrata con OpenStreetMap.
+                            </p>
+                        )}
+                        </>
                     )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                    <div className={vista === "mappa" ? "hidden" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"}>
                         {items && items.map((a) => (
                             <div key={a.id} data-testid={`company-card-${a.nome.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                                 className="group flex flex-col h-full rounded-2xl border border-white/10 bg-navy-700/60 p-6 hover:-translate-y-1.5 hover:border-brand/40 hover:shadow-xl transition-all duration-300">

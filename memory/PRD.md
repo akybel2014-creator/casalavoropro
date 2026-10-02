@@ -35,6 +35,11 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Galleria lavori: upload fino a 6 foto (JPG/PNG/WEBP, max 5 MB) su object storage Emergent, servite via /api/files/{path}; tab "Galleria" nel pannello azienda e sezione "Lavori realizzati" sul profilo pubblico.
 - Recensioni reali: dopo aver accettato un preventivo (richiesta chiusa) il privato lascia voto 1-5 + commento; rating medio e conteggio ricalcolati e mostrati in directory e profilo; sezione "Recensioni dei clienti" pubblica.
 
+## Aggiunte del 2026-10-02 (sera)
+- Mappa visuale nella directory: toggle Griglia/Mappa (Leaflet + OpenStreetMap, nessuna chiave), pin arancioni con iniziale, popup con link al profilo, cerchio del raggio e marker utente quando la posizione è attiva.
+- Chat privato-azienda legata a ogni preventivo: collezione messaggi con autorizzazione (solo cliente proprietario o azienda rispondente), polling 4s, marcatura letti, notifiche in-app, "Apri chat" nelle card di entrambe le dashboard.
+- WhatsApp e Mapbox restano IN PAUSA come da utente: attivabili incollando le chiavi in backend/.env (TWILIO_*) e REACT_APP_MAPBOX_TOKEN, senza modifiche al codice.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.

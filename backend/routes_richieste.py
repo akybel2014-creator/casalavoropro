@@ -89,12 +89,13 @@ async def feed_aziende(user: dict = Depends(require_roles("azienda"))):
         query["categoria"] = {"$in": azienda["categorie"]}
     reqs = await db.richieste.find(query).sort("created_at", -1).to_list(100)
     mie_risposte = await db.risposte.find({"azienda_id": str(azienda["_id"])}).to_list(300)
-    responded = {r["richiesta_id"] for r in mie_risposte}
+    responded = {r["richiesta_id"]: str(r["_id"]) for r in mie_risposte}
     out = []
     for r in reqs:
         item = clean_doc(r)
         item["id"] = str(r["_id"])
         item["risposto"] = str(r["_id"]) in responded
+        item["risposta_id"] = responded.get(str(r["_id"]))
         out.append(item)
     return out
 

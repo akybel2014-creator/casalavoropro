@@ -9,6 +9,7 @@ import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
 import { Stars, StarInput } from "@/components/StarRating";
+import ChatDialog from "@/components/ChatDialog";
 
 const STATO_STYLES = {
     aperta: "bg-blue-500/15 text-blue-400",
@@ -177,6 +178,9 @@ export default function DashboardPrivato() {
                                                     </div>
                                                 </div>
                                                 <p className="mt-3 text-sm text-slate-300">{ris.messaggio}</p>
+                                                <div className="mt-4">
+                                                    <ChatDialog rispostaId={ris.id} titolo={r.titolo} counterpart={ris.azienda_nome} senderRole="privato" />
+                                                </div>
                                                 {ris.stato === "inviata" && r.stato !== "chiusa" && (
                                                     <Button size="sm" data-testid={`accetta-button-${ris.id}`} onClick={() => accetta(ris.id)}
                                                         className="mt-4 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold">

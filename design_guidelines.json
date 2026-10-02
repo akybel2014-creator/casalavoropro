@@ -1,0 +1,242 @@
+{
+  "project_name": "CasaLavoriPRO",
+  "app_type": "hybrid_fullstack",
+  "language": "Italian (it)",
+  "brand_identity": {
+    "name": "CasaLavoriPRO",
+    "positioning": "Il Marketplace Premium per i Lavori in Casa e le Aziende Qualificate in Italia",
+    "archetype": "The Performance Pro & High-Trust Swiss Hybrid",
+    "tone_of_voice": "Professional, authoritative, dynamic, transparent, human",
+    "palette_name": "Blu Scuro / Arancione Energetico (Midnight Navy & Electric Terracotta Orange)"
+  },
+  "typography": {
+    "heading_font": "Cabinet Grotesk / Plus Jakarta Sans / Outfit (Sans-Serif Expressive Display)",
+    "body_font": "Plus Jakarta Sans / Inter / DM Sans",
+    "mono_font": "JetBrains Mono / Fira Code",
+    "google_fonts_embed": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap",
+    "scale": {
+      "h1_hero": "text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]",
+      "h2_section": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-snug",
+      "h3_card": "text-xl sm:text-2xl font-semibold tracking-tight",
+      "h4_title": "text-lg sm:text-xl font-medium",
+      "body_large": "text-base sm:text-lg text-slate-300 font-normal leading-relaxed",
+      "body_main": "text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-normal",
+      "caption_overline": "text-xs uppercase tracking-[0.2em] font-semibold text-orange-500"
+    }
+  },
+  "colors": {
+    "primary_dark": "#0B132B",
+    "primary_navy": "#1C2541",
+    "primary_slate": "#1E293B",
+    "accent_orange": "#FF5A1F",
+    "accent_orange_hover": "#E0480E",
+    "accent_orange_soft": "rgba(255, 90, 31, 0.12)",
+    "accent_amber": "#F59E0B",
+    "surface_light": "#F8FAFC",
+    "surface_card_light": "#FFFFFF",
+    "surface_dark": "#0B132B",
+    "surface_card_dark": "#131D38",
+    "border_light": "#E2E8F0",
+    "border_dark": "rgba(255, 255, 255, 0.12)",
+    "text_primary_light": "#0F172A",
+    "text_secondary_light": "#475569",
+    "text_primary_dark": "#F8FAFC",
+    "text_secondary_dark": "#94A3B8",
+    "status": {
+      "verified_green": "#10B981",
+      "pending_yellow": "#F59E0B",
+      "rejected_red": "#EF4444",
+      "info_blue": "#3B82F6"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphic_header": "backdrop-blur-xl bg-slate-900/80 border-b border-white/10 shadow-2xl",
+    "hero_search_box": "backdrop-blur-2xl bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl p-4 sm:p-6",
+    "card_hover_effect": "transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:border-orange-500/40",
+    "orange_glow": "drop-shadow-[0_0_20px_rgba(255,90,31,0.35)]",
+    "gradient_accent_button": "bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/25",
+    "grid_pattern_bg": "bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40"
+  },
+  "layout_and_grids": {
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "section_padding": "py-16 sm:py-24 lg:py-32",
+    "hero_grid": "grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center",
+    "category_grid": "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6",
+    "bento_features_grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+    "directory_grid": "grid grid-cols-1 md:grid-cols-3 gap-6"
+  },
+  "required_sections_and_components": {
+    "header": {
+      "logo": "CasaLavoriPRO SVG mark + custom typography logo in header",
+      "nav_links": ["Home", "Come funziona", "Categorie", "Aziende", "Per le aziende", "FAQ", "Contatti"],
+      "action_buttons": ["Accedi", "Registrati", "Area Aziende"],
+      "behavior": "Sticky header with backdrop glassmorphism z-50"
+    },
+    "hero": {
+      "title": "Trova le Migliori Aziende per i tuoi Lavori in Casa",
+      "subtitle": "Colleghiamo i migliori professionisti edili, idraulici, elettricisti e artigiani con privati in tutta Italia. Preventivi gratuiti e aziende verificate.",
+      "kinetic_reveal": "Masked line-by-line reveal animation using Framer Motion",
+      "search_bar": {
+        "inputs": ["Dove (Città o CAP)", "Cosa ti serve (Categoria o lavoro)"],
+        "cta_button": "Cerca Aziende",
+        "live_filters": ["Idraulica", "Elettricità", "Edilizia", "Imbiancatura"]
+      },
+      "image_element": "High-res modern house/renovation photography with subtle float / R3F parallax movement"
+    },
+    "value_badges": [
+      {
+        "title": "Aziende Verificate",
+        "desc": "Documenti societari, DURC e P.IVA controllati staff CasaLavoriPRO",
+        "icon": "ShieldCheck"
+      },
+      {
+        "title": "Preventivi Gratuiti",
+        "desc": "Confronta fino a 5 offerte trasparenti senza alcun impegno",
+        "icon": "FileText"
+      },
+      {
+        "title": "Assistenza Dedicata",
+        "desc": "Un consulente ti segue dalla richiesta al completamento dei lavori",
+        "icon": "Headphones"
+      },
+      {
+        "title": "Più Scelta in Italia",
+        "desc": "Oltre 12.000 aziende edili e professionisti registrati sul territorio",
+        "icon": "Award"
+      }
+    ],
+    "category_grid_8": [
+      {"name": "Idraulica", "count": "1.420 aziende", "icon": "Wrench"},
+      {"name": "Termoidraulica", "count": "980 aziende", "icon": "Flame"},
+      {"name": "Elettricità", "count": "1.850 aziende", "icon": "Zap"},
+      {"name": "Edilizia", "count": "3.100 aziende", "icon": "Hammer"},
+      {"name": "Imbiancatura", "count": "1.240 aziende", "icon": "Paintbrush"},
+      {"name": "Giardinaggio", "count": "890 aziende", "icon": "Trees"},
+      {"name": "Pavimenti", "count": "1.050 aziende", "icon": "Layers"},
+      {"name": "Altri Servizi", "count": "2.400 aziende", "icon": "Grid"}
+    ],
+    "editorial_marquee": "MARQUEE KINETIC TEXT: PREVENTIVI GRATUITI • AZIENDE VERIFICATE • RISTRUTTURAZIONI CHIAVI IN MANO • IMPRESE EDILI • IDRAULICI QUALIFICATI • ELETTRICISTI H24 • PAVIMENTI & RIVESTIMENTI",
+    "come_funziona_4_steps": [
+      {
+        "step": "01",
+        "title": "Per i Privati",
+        "desc": "Inserisci la tua richiesta specificando la città e la tipologia di lavoro. Ricevi fino a 5 preventivi trasparenti dalle migliori aziende vicine a te.",
+        "badge": "Gratuito al 100%"
+      },
+      {
+        "step": "02",
+        "title": "Per le Aziende",
+        "desc": "Crea il profilo professionale della tua impresa, carica certificazioni e portfolio foto. Ricevi richieste qualificate direttamente dai clienti della tua zona.",
+        "badge": "Nuovi Clienti"
+      },
+      {
+        "step": "03",
+        "title": "Un solo intermediario",
+        "desc": "CasaLavoriPRO gestisce la messaggistica, le verifiche ed i preventivi su una singola piattaforma intuitiva senza costi nascosti o commissioni sulle opere.",
+        "badge": "Semplice & Diretto"
+      },
+      {
+        "step": "04",
+        "title": "Sicurezza e Garanzia",
+        "desc": "Tutte le aziende del network superano un processo di audit con verifica di Partita IVA, DURC e recensioni reali inviate solo da utenti con lavori completati.",
+        "badge": "Certificato PRO"
+      }
+    ],
+    "dual_cta_boxes": {
+      "privato_box": {
+        "title": "Sei un Privato?",
+        "subtitle": "Devi ristrutturare casa o fare un intervento urgente?",
+        "bullet_points": [
+          "Richiedi preventivi in 2 minuti",
+          "Nessun costo e nessun vincolo",
+          "Confronta recensioni ed esperienze reali",
+          "Assistenza telefonica e chat integrata"
+        ],
+        "button_text": "Richiedi Preventivo Gratuito"
+      },
+      "azienda_box": {
+        "title": "Sei un'Azienda?",
+        "subtitle": "Vuoi aumentare il tuo fatturato ed acquisire nuovi cantieri?",
+        "bullet_points": [
+          "Ricevi richieste lavorative nella tua provincia",
+          "Pagina profilo indicizzata su Google con portfolio",
+          "Sistema di gestione preventivi e chat cliente",
+          "Piani di abbonamento flessibili e rimborso crediti"
+        ],
+        "button_text": "Registra la tua Azienda"
+      }
+    },
+    "marketplace_functional_apps": {
+      "company_directory": "Directory aziende filtrabile per categoria e provincia italiana con mappa ed indicatori di verifica PRO",
+      "company_profile": "Pagina profilo dettagliata con recensioni, portfolio foto lavori, form di contatto diretto, badge di verifica e servizi offerti",
+      "auth_modal_or_page": "Autenticazione unificata per Privato ed Azienda con selezione ruolo, recupero password e login demo rapido",
+      "privato_dashboard": "Gestione richieste preventivo inviate, stato risposte aziende, chat interna, valutazione lavori completati",
+      "azienda_dashboard": "Feed richieste di lavoro territoriali, invio offerta/preventivo, gestione abbonamento/crediti Stripe, caricamento documenti di verifica DURC/P.IVA",
+      "admin_panel": "Pannello amministrazione per approvazione e verifica documenti aziende, gestione utenti e statistiche marketplace"
+    }
+  },
+  "image_urls": {
+    "hero_house": "https://images.unsplash.com/photo-1722421492323-eaf9c401befe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjB2aWxsYSUyMGhvdXNlJTIwZXh0ZXJpb3IlMjBhcmNoaXRlY3R1cmUlMjBkZXNpZ24lMjBpbnRlcmlvcnxlbnwwfHx8fDE3OTA5MzU0MDV8MA&ixlib=rb-4.1.0&q=85",
+    "hero_secondary_architecture": "https://images.unsplash.com/photo-1721815693498-cc28507c0ba2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHxfh21lJTIwZXh0ZXJpb3J8ZW58MHx8fDE3OTA5MzU0MDV8MA&ixlib=rb-4.1.0&q=85",
+    "worker_plumber": "https://images.unsplash.com/photo-1635221798248-8a3452ad07cd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwyfHxwbHVtYmVyJTIwZml4aW5nJTIwcGlwZSUyMGNvbnN0cnVjdGlvbiUyMHdvcmtlcnxlbnwwfHx8fDE3OTA5MzU0MDg&ixlib=rb-4.1.0&q=85",
+    "worker_construction": "https://images.unsplash.com/photo-1505798577917-a65157d3320a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwxfHxob21lJTIwcmVub3ZhdGlvbiUyMGNvbnN0cnVjdGlvbnxlbnwwfHx8fDE3OTA5MzU0MDV8MA&ixlib=rb-4.1.0&q=85",
+    "worker_tiling": "https://images.unsplash.com/photo-1523413363574-c30aa1c2a516?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwzfHxob21lJTIwcmVub3ZhdGlvbiUyMGNvbnN0cnVjdGlvbnxlbnwwfHx8fDE3OTA5MzU0MDV8MA&ixlib=rb-4.1.0&q=85",
+    "worker_painting": "https://images.unsplash.com/photo-1595814432314-90095f342694?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHw0fHxob21lJTIwcmVub3ZhdGlvbnxlbnwwfHx8fDE3OTA5MzU0MDV8MA&ixlib=rb-4.1.0&q=85",
+    "construction_aerial": "https://images.unsplash.com/photo-1649495629541-6fa3cb06f6ce?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHw0fHxjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDB8fHx8MTc5MDkzNTQwOA&ixlib=rb-4.1.0&q=85"
+  },
+  "testing_mandate": {
+    "rule": "Every interactive and critical information component MUST include a role-based data-testid attribute in kebab-case.",
+    "required_test_ids": [
+      "header-logo",
+      "header-nav-home",
+      "header-nav-come-funziona",
+      "header-nav-categorie",
+      "header-nav-aziende",
+      "header-nav-per-aziende",
+      "header-nav-faq",
+      "header-nav-contatti",
+      "header-login-button",
+      "header-register-button",
+      "hero-search-location-input",
+      "hero-search-category-input",
+      "hero-search-submit-button",
+      "badge-aziende-verificate",
+      "badge-preventivi-gratuiti",
+      "badge-assistenza-dedicata",
+      "badge-piu-scelta",
+      "category-card-idraulica",
+      "category-card-termoidraulica",
+      "category-card-elettricita",
+      "category-card-edilizia",
+      "category-card-imbiancatura",
+      "category-card-giardinaggio",
+      "category-card-pavimenti",
+      "category-card-altri-servizi",
+      "come-funziona-step-1",
+      "come-funziona-step-2",
+      "come-funziona-step-3",
+      "come-funziona-step-4",
+      "cta-privato-button",
+      "cta-azienda-button",
+      "faq-accordion-item-1",
+      "faq-accordion-item-2",
+      "footer-logo",
+      "footer-social-facebook",
+      "footer-social-instagram",
+      "footer-social-linkedin",
+      "dashboard-privato-tab-requests",
+      "dashboard-azienda-tab-leads",
+      "admin-verification-table"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build the complete CasaLavoriPRO application with React, Framer Motion, Lenis, Lucide icons, and Tailwind CSS.",
+    "Ensure Italian language throughout the entire user interface and sample seed data.",
+    "Maintain high contrast dark blue (#0B132B) and energetic terracotta orange (#FF5A1F) color scheme.",
+    "Ensure the hero section search directly filters the company directory or opens search results seamlessly.",
+    "Provide interactive quote request flow for privati and interactive quote submission flow for aziende.",
+    "Include mock or real endpoints connected to FastAPI and MongoDB backend for authentication, company search, and quote requests.",
+    "Add testid attributes strictly as specified in data-testid rules to satisfy automated validation.",
+    "Make sure smooth scrolling with Lenis and Framer motion section transitions are active."
+  ]
+}

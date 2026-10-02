@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 222 47% 11%;
+        --foreground: 210 40% 98%;
+        --card: 223 44% 15%;
+        --card-foreground: 210 40% 98%;
+        --popover: 223 44% 13%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 20 100% 56%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 222 40% 20%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 222 36% 18%;
+        --muted-foreground: 215 20% 65%;
+        --accent: 222 40% 22%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 217 30% 20%;
+        --input: 217 30% 20%;
+        --ring: 20 100% 56%;
+        --radius: 0.75rem;
+        --chart-1: 20 100% 56%;
+        --chart-2: 217 60% 55%;
+        --chart-3: 43 90% 55%;
+        --chart-4: 160 60% 45%;
+        --chart-5: 280 65% 60%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    }
+    h1, h2, h3, h4 {
+        font-family: "Outfit", "Plus Jakarta Sans", sans-serif;
+    }
+    ::selection {
+        background: #FF5A1F;
+        color: #0B132B;
+    }
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #0B132B;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #1E293B;
+        border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #FF5A1F;
+    }
+}
+
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 48s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+@keyframes floaty {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-12px);
+    }
+}
+
+.floaty {
+    animation: floaty 6s ease-in-out infinite;
+}
+
+.grid-pattern {
+    background-image: radial-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+.glow-orange {
+    box-shadow: 0 0 140px 10px rgba(255, 90, 31, 0.22);
+}
+
+.text-stroke {
+    -webkit-text-stroke: 1.5px rgba(248, 250, 252, 0.28);
+    color: transparent;
+}
+
+.mask-line {
+    display: block;
+    overflow: hidden;
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+
+    [data-debug-wrapper="true"] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+        border-left-width: inherit;
+        border-right-width: inherit;
+        border-top-width: inherit;
+        border-bottom-width: inherit;
+        border-left-style: inherit;
+        border-right-style: inherit;
+        border-left-color: inherit;
+        border-right-color: inherit;
+        border-top-color: inherit;
+        border-bottom-color: inherit;
+    }
+}

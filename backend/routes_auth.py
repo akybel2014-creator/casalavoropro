@@ -69,6 +69,8 @@ async def register(inp: RegisterIn, response: Response):
             "telefono": "", "sito": "", "durc_number": "", "docs": [],
             "verified": False, "verification_status": "none",
             "plan": "free", "subscription_status": "none",
+            "emergenze": False, "emergenze_weekend": False,
+            "emergenze_notturno": False, "emergenze_telefono": "",
             "rating": 0.0, "recensioni": 0, "created_at": now(),
         }
         ares = await db.aziende.insert_one(azienda_doc)

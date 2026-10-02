@@ -32,6 +32,10 @@ class AziendaUpdateIn(BaseModel):
     telefono: Optional[str] = None
     sito: Optional[str] = None
     durc_number: Optional[str] = None
+    emergenze: Optional[bool] = None
+    emergenze_weekend: Optional[bool] = None
+    emergenze_notturno: Optional[bool] = None
+    emergenze_telefono: Optional[str] = None
 
 
 @router.put("/aziende/mine")
@@ -69,7 +73,8 @@ async def request_verification(user: dict = Depends(require_roles("azienda"))):
 
 
 @router.get("/aziende")
-async def list_aziende(categoria: str = "", zona: str = "", q: str = "", verificate: bool = False):
+async def list_aziende(categoria: str = "", zona: str = "", q: str = "", verificate: bool = False,
+                       emergenze: bool = False, weekend: bool = False, notturno: bool = False):
     query = {}
     if categoria.strip():
         query["categorie"] = categoria.strip()
@@ -82,6 +87,12 @@ async def list_aziende(categoria: str = "", zona: str = "", q: str = "", verific
         ]
     if verificate:
         query["verified"] = True
+    if emergenze:
+        query["emergenze"] = True
+    if weekend:
+        query["emergenze_weekend"] = True
+    if notturno:
+        query["emergenze_notturno"] = True
     docs = await db.aziende.find(query, {"owner_id": 0}) \
         .sort([("verified", -1), ("plan", -1), ("nome", 1)]).to_list(200)
     return [clean_doc(d) for d in docs]

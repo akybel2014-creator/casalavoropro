@@ -118,3 +118,25 @@ async def seed_demo_data():
         })
 
     logger.info("Demo data seeded: %s aziende", len(DEMO_AZIENDE))
+
+
+EMERGENZE_BACKFILL = {
+    "Lampioni Idraulica": (True, True, True, "+39 335 111 2233"),
+    "Calore & Clima Srl": (True, True, False, "+39 335 222 3344"),
+    "Volt Infrastructure": (True, False, True, "+39 335 333 4455"),
+    "EdilNuova Costruzioni": (True, True, True, "+39 335 444 5566"),
+    "ColorArt Imbiancatura": (False, False, False, ""),
+    "VerdeMano Giardini": (False, True, False, ""),
+    "Pavimenti Toscana": (False, False, False, ""),
+    "MultiService Italia": (True, True, False, "+39 335 777 8899"),
+}
+
+
+async def backfill_emergenze():
+    """Idempotent: adds emergency availability flags to companies that don't have them yet."""
+    for nome, (em, wk, nt, tel) in EMERGENZE_BACKFILL.items():
+        await db.aziende.update_one(
+            {"nome": nome, "emergenze": {"$exists": False}},
+            {"$set": {"emergenze": em, "emergenze_weekend": wk,
+                      "emergenze_notturno": nt, "emergenze_telefono": tel}},
+        )

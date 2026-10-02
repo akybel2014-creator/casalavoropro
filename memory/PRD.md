@@ -26,6 +26,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Dashboard privato: richieste, preventivi ricevuti, accettazione, notifiche in-app.
 - Dashboard azienda: feed richieste per categoria/zone, invio preventivi (prezzo/messaggio/durata), modifica profilo, richiesta verifica P.IVA+DURC, abbonamento Stripe (mensile/annuale) + pagamento in test.
 - Pannello admin: statistiche + verifica/rifiuto aziende con notifica ed email.
+- Emergenze 24/7: le aziende dichiarano disponibilità emergenza/weekend/notturno + telefono dedicato (tab dedicato in dashboard), badge "Emergenze" nelle card directory, filtro "Emergenze 24/7", card dedicata sul profilo pubblico e sezione landing con CTA (2026-10-02).
 - Seed demo: 8 aziende, privato Mario Rossi, richieste/preventivi di esempio.
 
 ## Persone

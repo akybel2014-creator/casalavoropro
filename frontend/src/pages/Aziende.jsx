@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX } from "lucide-react";
+import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX, Siren } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ export default function Aziende() {
     const [zona, setZona] = useState(params.get("zona") || "");
     const [categoria, setCategoria] = useState(params.get("categoria") || "");
     const [verificate, setVerificate] = useState(false);
+    const [emergenze, setEmergenze] = useState(params.get("emergenze") === "true");
     const [items, setItems] = useState(null);
     const [error, setError] = useState("");
 
@@ -47,6 +48,7 @@ export default function Aziende() {
         setQ(params.get("q") || "");
         setZona(params.get("zona") || "");
         setCategoria(params.get("categoria") || "");
+        setEmergenze(params.get("emergenze") === "true");
     }, [params]);
 
     const fetchItems = useMemo(() => {
@@ -57,13 +59,14 @@ export default function Aziende() {
                 if (zona) query.set("zona", zona);
                 if (categoria) query.set("categoria", categoria);
                 if (verificate) query.set("verificate", "true");
+                if (emergenze) query.set("emergenze", "true");
                 const { data } = await api.get(`/aziende?${query.toString()}`);
                 setItems(data);
             } catch (e) {
                 setError(formatApiError(e));
             }
         };
-    }, [q, zona, categoria, verificate]);
+    }, [q, zona, categoria, verificate, emergenze]);
 
     useEffect(() => {
         fetchItems();
@@ -75,6 +78,7 @@ export default function Aziende() {
         if (q) query.set("q", q);
         if (zona) query.set("zona", zona);
         if (categoria) query.set("categoria", categoria);
+        if (emergenze) query.set("emergenze", "true");
         setParams(query);
     };
 
@@ -120,6 +124,16 @@ export default function Aziende() {
                             />
                             Solo verificate
                         </label>
+                        <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-navy/80 border border-brand/40 text-sm text-brand cursor-pointer">
+                            <input
+                                type="checkbox"
+                                data-testid="directory-emergenze-checkbox"
+                                checked={emergenze}
+                                onChange={(e) => setEmergenze(e.target.checked)}
+                                className="h-4 w-4 accent-[#FF5A1F]"
+                            />
+                            <Siren className="h-4 w-4" /> Emergenze 24/7
+                        </label>
                     </form>
                 </div>
             </section>
@@ -152,6 +166,11 @@ export default function Aziende() {
                                             <VerifiedBadge verified={a.verified} />
                                             {a.plan === "pro" && (
                                                 <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-bold text-brand uppercase tracking-wide">PRO</span>
+                                            )}
+                                            {a.emergenze && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white" data-testid="company-card-emergenze-badge">
+                                                    <Siren className="h-3 w-3" /> Emergenze
+                                                </span>
                                             )}
                                         </div>
                                         <div className="mt-1 flex items-center gap-1 text-sm text-brand-amber">

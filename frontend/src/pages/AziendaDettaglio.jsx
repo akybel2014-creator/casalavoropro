@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2 } from "lucide-react";
+import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
@@ -67,6 +67,42 @@ export default function AziendaDettaglio() {
                                 </div>
                                 <p className="mt-6 text-slate-300 leading-relaxed">{a.descrizione}</p>
                             </div>
+
+                            {a.emergenze && (
+                                <div className="rounded-3xl border-2 border-brand/50 bg-gradient-to-b from-brand/15 to-navy-700/60 p-6 sm:p-8" data-testid="company-emergency-card">
+                                    <div className="flex items-center gap-2.5">
+                                        <Siren className="h-5 w-5 text-brand" />
+                                        <h2 className="font-display font-bold text-white text-xl">Emergenze 24/7</h2>
+                                    </div>
+                                    <p className="mt-2 text-sm text-slate-300">
+                                        Questa azienda dichiara la disponibilità ad intervenire in emergenza, fuori dagli orari standard.
+                                    </p>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {a.emergenze_weekend && (
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand" data-testid="company-emergency-weekend-chip">
+                                                <CalendarCheck className="h-3.5 w-3.5" /> Disponibile nel weekend
+                                            </span>
+                                        )}
+                                        {a.emergenze_notturno && (
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand" data-testid="company-emergency-night-chip">
+                                                <Moon className="h-3.5 w-3.5" /> Disponibile di notte
+                                            </span>
+                                        )}
+                                        {!a.emergenze_weekend && !a.emergenze_notturno && (
+                                            <span className="text-xs text-slate-500">Solo orario diurno — chiamare per conferma</span>
+                                        )}
+                                    </div>
+                                    {(a.emergenze_telefono || a.telefono) && (
+                                        <a
+                                            href={`tel:${(a.emergenze_telefono || a.telefono).replace(/\s/g, "")}`}
+                                            data-testid="company-emergency-phone-link"
+                                            className="mt-5 inline-flex items-center gap-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold px-5 py-3 transition-colors"
+                                        >
+                                            <PhoneCall className="h-4 w-4" /> {a.emergenze_telefono || a.telefono}
+                                        </a>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
                                 <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">

@@ -5,6 +5,7 @@ import Marquee from "@/components/landing/Marquee";
 import CategoryGrid from "@/components/landing/CategoryGrid";
 import HowItWorks from "@/components/landing/HowItWorks";
 import CtaBoxes from "@/components/landing/CtaBoxes";
+import Emergenze from "@/components/landing/Emergenze";
 import FaqSection from "@/components/landing/FaqSection";
 import { scrollToSection } from "@/components/site/Header";
 
@@ -22,6 +23,7 @@ export default function Home() {
             <Marquee />
             <CategoryGrid />
             <HowItWorks />
+            <Emergenze />
             <CtaBoxes />
             <FaqSection />
         </>

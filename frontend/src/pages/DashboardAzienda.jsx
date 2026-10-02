@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2 } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, PhoneCall } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +126,22 @@ export default function DashboardAzienda() {
         }
     };
 
+    const saveEmergenze = async () => {
+        try {
+            const { data } = await api.put("/aziende/mine", {
+                emergenze: !!mine.emergenze,
+                emergenze_weekend: !!mine.emergenze_weekend,
+                emergenze_notturno: !!mine.emergenze_notturno,
+                emergenze_telefono: mine.emergenze_telefono || "",
+            });
+            setMine(data);
+            toast.success("Disponibilità emergenze aggiornata!");
+            refreshMe();
+        } catch (err) {
+            toast.error(formatApiError(err));
+        }
+    };
+
     const checkout = async (lookupKey) => {
         setCheckingOut(true);
         try {
@@ -173,6 +190,9 @@ export default function DashboardAzienda() {
                         </TabsTrigger>
                         <TabsTrigger value="verifica" className="data-[state=active]:text-white">
                             <ShieldCheck className="h-4 w-4 mr-1.5" /> Verifica
+                        </TabsTrigger>
+                        <TabsTrigger value="emergenze" data-testid="dashboard-azienda-tab-emergenze" className="data-[state=active]:text-white">
+                            <Siren className="h-4 w-4 mr-1.5" /> Emergenze
                         </TabsTrigger>
                         <TabsTrigger value="abbonamento" className="data-[state=active]:text-white">
                             <CreditCard className="h-4 w-4 mr-1.5" /> Abbonamento
@@ -286,6 +306,63 @@ export default function DashboardAzienda() {
                                     </Button>
                                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${VER_STYLES[mine.verification_status]?.[0]}`}>
                                         {VER_STYLES[mine.verification_status]?.[1]}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="emergenze" className="mt-6" data-testid="emergency-panel">
+                        {mine && (
+                            <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8">
+                                <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                    <Siren className="h-5 w-5 text-brand" /> Disponibilità emergenze 24/7
+                                </h3>
+                                <p className="mt-2 text-sm text-slate-400 max-w-2xl">
+                                    Dichiara se intervieni in emergenza, nel weekend e in orario notturno: comparirai nella ricerca
+                                    "Emergenze 24/7" e sul tuo profilo pubblico con il numero dedicato.
+                                </p>
+
+                                <div className="mt-6 space-y-4" data-testid="emergency-toggles">
+                                    {[
+                                        { key: "emergenze", label: "Interventi d'emergenza", desc: "Accetti guasti urgenti fuori orario", t: "emergency-toggle-main" },
+                                        { key: "emergenze_weekend", label: "Disponibilità nel weekend", desc: "Sabato e domenica", t: "emergency-toggle-weekend" },
+                                        { key: "emergenze_notturno", label: "Disponibilità notturna", desc: "Interventi nelle ore 22:00 – 6:00", t: "emergency-toggle-night" },
+                                    ].map((row) => (
+                                        <div key={row.key} className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-navy/60 p-4">
+                                            <div>
+                                                <p className="text-sm font-semibold text-white">{row.label}</p>
+                                                <p className="text-xs text-slate-400 mt-0.5">{row.desc}</p>
+                                            </div>
+                                            <Switch
+                                                data-testid={row.t}
+                                                checked={!!mine[row.key]}
+                                                onCheckedChange={(v) => setMine((m) => ({ ...m, [row.key]: v }))}
+                                                className="data-[state=checked]:bg-brand"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-5 max-w-sm space-y-2">
+                                    <Label className="text-slate-300">Telefono dedicato emergenze</Label>
+                                    <Input
+                                        value={mine.emergenze_telefono || ""}
+                                        onChange={(e) => setMine((m) => ({ ...m, emergenze_telefono: e.target.value }))}
+                                        data-testid="emergency-phone-input"
+                                        placeholder="+39 335 000 0000"
+                                        className={inputCls}
+                                    />
+                                    <p className="text-xs text-slate-500">Visibile sul profilo pubblico solo se attivi gli interventi d'emergenza.</p>
+                                </div>
+
+                                <div className="mt-6 flex flex-wrap items-center gap-3">
+                                    <Button type="button" onClick={saveEmergenze} data-testid="emergency-save-button"
+                                        className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                        Salva disponibilità
+                                    </Button>
+                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${mine.emergenze ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-slate-400"}`} data-testid="emergency-status-badge">
+                                        {mine.emergenze ? "Emergenze 24/7 attive sul profilo" : "Emergenze non dichiarate"}
                                     </span>
                                 </div>
                             </div>

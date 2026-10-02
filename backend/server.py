@@ -15,7 +15,7 @@ from routes_richieste import router as richieste_router  # noqa: E402
 from routes_admin import router as admin_router  # noqa: E402
 from routes_billing import router as billing_router  # noqa: E402
 from routes_notifiche import router as notifiche_router  # noqa: E402
-from seed import seed_demo_data  # noqa: E402
+from seed import seed_demo_data, backfill_emergenze  # noqa: E402
 
 app = FastAPI(title="CasaLavoriPRO API")
 
@@ -74,6 +74,7 @@ async def startup():
                                   {"$set": {"password_hash": hash_password(admin_password)}})
 
     await seed_demo_data()
+    await backfill_emergenze()
 
 
 @app.on_event("shutdown")

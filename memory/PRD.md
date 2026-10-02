@@ -39,6 +39,8 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Mappa visuale nella directory: toggle Griglia/Mappa (Leaflet + OpenStreetMap, nessuna chiave), pin arancioni con iniziale, popup con link al profilo, cerchio del raggio e marker utente quando la posizione è attiva.
 - Chat privato-azienda legata a ogni preventivo: collezione messaggi con autorizzazione (solo cliente proprietario o azienda rispondente), polling 4s, marcatura letti, notifiche in-app, "Apri chat" nelle card di entrambe le dashboard.
 - WhatsApp e Mapbox restano IN PAUSA come da utente: attivabili incollando le chiavi in backend/.env (TWILIO_*) e REACT_APP_MAPBOX_TOKEN, senza modifiche al codice.
+- Badge messaggi non letti (2026-10-02 sera): contatore nel menu (Header) e sulle card di entrambe le dashboard, polling 20s + aggiornamento alla chiusura chat; le richieste chiuse con risposta dell'azienda restano ora nel feed azienda (chat raggiungibile); header presente anche nelle dashboard.
+- Deploy: richiesto dall'utente ma bloccato su saldo ECU insufficiente (50 ECU/mese richiesti, 45 disponibili). Da rilanciare dopo il ricaricamento. Il dominio personalizzato si collega dopo il primo deploy dalle impostazioni di pubblicazione.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

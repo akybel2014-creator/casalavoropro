@@ -41,6 +41,11 @@ export default function ChatDialog({ rispostaId, titolo, counterpart, senderRole
         if (open) bottomRef.current?.scrollIntoView({ block: "end" });
     }, [messages, open]);
 
+    const handleOpenChange = (o) => {
+        setOpen(o);
+        if (!o) window.dispatchEvent(new CustomEvent("chat-read"));
+    };
+
     const send = async (e) => {
         e.preventDefault();
         if (!text.trim()) return;
@@ -57,7 +62,7 @@ export default function ChatDialog({ rispostaId, titolo, counterpart, senderRole
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button size="sm" variant="outline" data-testid={`chat-open-${rispostaId}`}
                     className="rounded-full border-white/15 text-slate-200 hover:bg-white/10 hover:text-white">

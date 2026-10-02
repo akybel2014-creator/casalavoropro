@@ -129,6 +129,15 @@ function NotFound() {
     );
 }
 
+function DashLayout({ children }) {
+    return (
+        <div className="min-h-screen bg-navy">
+            <Header />
+            {children}
+        </div>
+    );
+}
+
 function App() {
     return (
         <ErrorBoundary>
@@ -147,10 +156,10 @@ function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/registrati" element={<Registrati />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
-                        <Route path="/nuova-richiesta" element={<ProtectedRoute roles={["privato"]}><NuovaRichiesta /></ProtectedRoute>} />
-                        <Route path="/dashboard" element={<ProtectedRoute roles={["privato"]}><DashboardPrivato /></ProtectedRoute>} />
-                        <Route path="/dashboard/azienda" element={<ProtectedRoute roles={["azienda"]}><DashboardAzienda /></ProtectedRoute>} />
-                        <Route path="/dashboard/admin" element={<ProtectedRoute roles={["admin"]}><DashboardAdmin /></ProtectedRoute>} />
+                        <Route path="/nuova-richiesta" element={<ProtectedRoute roles={["privato"]}><DashLayout><NuovaRichiesta /></DashLayout></ProtectedRoute>} />
+                        <Route path="/dashboard" element={<ProtectedRoute roles={["privato"]}><DashLayout><DashboardPrivato /></DashLayout></ProtectedRoute>} />
+                        <Route path="/dashboard/azienda" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
+                        <Route path="/dashboard/admin" element={<ProtectedRoute roles={["admin"]}><DashLayout><DashboardAdmin /></DashLayout></ProtectedRoute>} />
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancel" element={<PaymentCancel />} />
                     </Routes>

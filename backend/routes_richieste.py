@@ -87,9 +87,12 @@ async def feed_aziende(user: dict = Depends(require_roles("azienda"))):
     query = {"stato": {"$ne": "chiusa"}}
     if azienda.get("categorie"):
         query["categoria"] = {"$in": azienda["categorie"]}
-    reqs = await db.richieste.find(query).sort("created_at", -1).to_list(100)
     mie_risposte = await db.risposte.find({"azienda_id": str(azienda["_id"])}).to_list(300)
     responded = {r["richiesta_id"]: str(r["_id"]) for r in mie_risposte}
+    from bson import ObjectId as _OID
+    responded_ids = [_OID(k) for k in responded if len(k) == 24]
+    full_query = {"$or": [query, {"_id": {"$in": responded_ids}}]}
+    reqs = await db.richieste.find(full_query).sort("created_at", -1).to_list(100)
     out = []
     for r in reqs:
         item = clean_doc(r)

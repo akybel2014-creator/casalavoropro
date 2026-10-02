@@ -45,6 +45,28 @@ async def lista_messaggi(risposta_id: str, user: dict = Depends(get_current_user
     return [clean_doc(d) for d in docs]
 
 
+@router.get("/chat/unread-count")
+async def unread_count(user: dict = Depends(get_current_user)):
+    if user["role"] == "privato":
+        req_ids = [str(r["_id"]) async for r in db.richieste.find({"client_id": user["id"]}, {"_id": 1})]
+        risposte = await db.risposte.find({"richiesta_id": {"$in": req_ids}}, {"_id": 1}).to_list(500)
+    elif user["role"] == "azienda":
+        az_ids = [str(a["_id"]) async for a in db.aziende.find({"owner_id": user["id"]}, {"_id": 1})]
+        risposte = await db.risposte.find({"azienda_id": {"$in": az_ids}}, {"_id": 1}).to_list(500)
+    else:
+        return {"total": 0, "per_risposta": {}}
+    ids = [str(r["_id"]) for r in risposte]
+    if not ids:
+        return {"total": 0, "per_risposta": {}}
+    per, total = {}, 0
+    async for m in db.messaggi.find({"risposta_id": {"$in": ids},
+                                     "sender_id": {"$ne": user["id"]},
+                                     "letto": False}):
+        per[m["risposta_id"]] = per.get(m["risposta_id"], 0) + 1
+        total += 1
+    return {"total": total, "per_risposta": per}
+
+
 @router.post("/risposte/{risposta_id}/messaggi")
 async def invia_messaggio(risposta_id: str, inp: MessaggioIn, user: dict = Depends(get_current_user)):
     risposta, req, ruolo = await _context_for(risposta_id, user)

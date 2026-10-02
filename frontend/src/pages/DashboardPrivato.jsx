@@ -70,12 +70,16 @@ export default function DashboardPrivato() {
     const { user } = useAuth();
     const [richieste, setRichieste] = useState(null);
     const [notifiche, setNotifiche] = useState([]);
+    const [unreadChat, setUnreadChat] = useState({});
 
     const load = useCallback(async () => {
         try {
-            const [r, n] = await Promise.all([api.get("/richieste/mine"), api.get("/notifiche")]);
+            const [r, n, u] = await Promise.all([
+                api.get("/richieste/mine"), api.get("/notifiche"), api.get("/chat/unread-count"),
+            ]);
             setRichieste(r.data);
             setNotifiche(n.data);
+            setUnreadChat(u.data.per_risposta || {});
         } catch (e) {
             toast.error(formatApiError(e));
         }
@@ -178,8 +182,13 @@ export default function DashboardPrivato() {
                                                     </div>
                                                 </div>
                                                 <p className="mt-3 text-sm text-slate-300">{ris.messaggio}</p>
-                                                <div className="mt-4">
+                                                <div className="mt-4 flex items-center gap-2">
                                                     <ChatDialog rispostaId={ris.id} titolo={r.titolo} counterpart={ris.azienda_nome} senderRole="privato" />
+                                                    {unreadChat[ris.id] > 0 && (
+                                                        <span data-testid={`unread-badge-card-${ris.id}`} className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-brand text-white text-[11px] font-bold">
+                                                            {unreadChat[ris.id]}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {ris.stato === "inviata" && r.stato !== "chiusa" && (
                                                     <Button size="sm" data-testid={`accetta-button-${ris.id}`} onClick={() => accetta(ris.id)}

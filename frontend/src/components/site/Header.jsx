@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
@@ -25,9 +26,34 @@ export function scrollToSection(hash) {
 export default function Header() {
     const [scrolled, setScrolled] = useState(false);
     const [open, setOpen] = useState(false);
+    const [unread, setUnread] = useState(0);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+
+    useEffect(() => {
+        if (!user || user.role === "admin") {
+            setUnread(0);
+            return undefined;
+        }
+        let alive = true;
+        const fetchCount = async () => {
+            try {
+                const { data } = await api.get("/chat/unread-count");
+                if (alive) setUnread(data.total);
+            } catch {
+                /* silenzioso: il poll riprova */
+            }
+        };
+        fetchCount();
+        const t = setInterval(fetchCount, 20000);
+        window.addEventListener("chat-read", fetchCount);
+        return () => {
+            alive = false;
+            clearInterval(t);
+            window.removeEventListener("chat-read", fetchCount);
+        };
+    }, [user]);
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 24);
@@ -93,6 +119,11 @@ export default function Header() {
                                 >
                                     <LayoutDashboard className="h-4 w-4 mr-2" />
                                     {user.role === "azienda" ? "Area Aziende" : user.role === "admin" ? "Admin" : "Area Privati"}
+                                    {unread > 0 && (
+                                        <span data-testid="unread-badge-header" className="ml-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-brand text-white text-[11px] font-bold">
+                                            {unread}
+                                        </span>
+                                    )}
                                 </Button>
                                 <Button
                                     data-testid="header-logout-button"

@@ -84,6 +84,7 @@ export default function DashboardAzienda() {
     const { user, azienda, refreshMe } = useAuth();
     const [mine, setMine] = useState(azienda);
     const [feed, setFeed] = useState(null);
+    const [unreadChat, setUnreadChat] = useState({});
     const [busy, setBusy] = useState(false);
     const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -92,9 +93,12 @@ export default function DashboardAzienda() {
 
     const load = useCallback(async () => {
         try {
-            const [m, f] = await Promise.all([api.get("/aziende/mine"), api.get("/richieste/feed")]);
+            const [m, f, u] = await Promise.all([
+                api.get("/aziende/mine"), api.get("/richieste/feed"), api.get("/chat/unread-count"),
+            ]);
             setMine(m.data);
             setFeed(f.data);
+            setUnreadChat(u.data.per_risposta || {});
         } catch (e) {
             toast.error(formatApiError(e));
         }
@@ -278,7 +282,14 @@ export default function DashboardAzienda() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {r.risposto && r.risposta_id && (
-                                            <ChatDialog rispostaId={r.risposta_id} titolo={r.titolo} counterpart={r.client_name} senderRole="azienda" />
+                                            <>
+                                                <ChatDialog rispostaId={r.risposta_id} titolo={r.titolo} counterpart={r.client_name} senderRole="azienda" />
+                                                {unreadChat[r.risposta_id] > 0 && (
+                                                    <span data-testid={`unread-badge-card-${r.risposta_id}`} className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-brand text-white text-[11px] font-bold">
+                                                        {unreadChat[r.risposta_id]}
+                                                    </span>
+                                                )}
+                                            </>
                                         )}
                                         {r.risposto ? (
                                             <span className="rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-3 py-1.5" data-testid={`lead-responded-${r.id}`}>

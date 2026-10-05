@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Truck, Recycle, MapPin, Phone, ArrowRight } from "lucide-react";
+import { Truck, Recycle, MapPin, Phone, ArrowRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "@/pages/Aziende";
 
@@ -33,6 +33,13 @@ export function AnnuncioCard({ a, index = 0 }) {
             </Link>
             <div className="flex flex-col flex-1 p-5">
                 <h3 className="font-display font-bold text-white leading-snug">{a.titolo}</h3>
+                {a.recensioni > 0 && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-brand-amber" data-testid={`annuncio-rating-${a.id}`}>
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        <span className="font-semibold text-white">{Number(a.rating).toFixed(1)}</span>
+                        <span className="text-slate-500">({a.recensioni} {a.recensioni === 1 ? "recensione" : "recensioni"})</span>
+                    </p>
+                )}
                 <p className="mt-1 text-xs sm:text-sm text-slate-400 line-clamp-2">{a.descrizione}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                     <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {a.zona}</span>

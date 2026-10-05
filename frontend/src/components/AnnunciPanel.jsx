@@ -263,6 +263,21 @@ export function AnnunciPanel({ azienda, onGoToAbbonamento }) {
             toast.error(formatApiError(err));
         }
     };
+    const annullaAzienda = async (id) => {
+        const p = prenotazioni.find((x) => x.id === id);
+        const msg = p?.caparra_stato === "pagata"
+            ? `Annullare il noleggio di ${p.client_name}? La caparra di ${Number(p.caparra_importo).toLocaleString("it-IT", { style: "currency", currency: "EUR" })} verrà rimborsata automaticamente sulla sua carta.`
+            : `Annullare il noleggio confermato di ${p?.client_name}? Il cliente riceverà un avviso.`;
+        if (!window.confirm(msg)) return;
+        const motivo = window.prompt("Motivo dell'annullamento (facoltativo, visibile al cliente):", "") || "";
+        try {
+            const { data } = await api.post(`/prenotazioni/${id}/annulla-azienda`, { motivo });
+            setPrenotazioni((list) => list.map((x) => (x.id === id ? data : x)));
+            toast.success(data.caparra_stato === "rimborsata" ? "Noleggio annullato e caparra rimborsata al cliente" : "Noleggio annullato");
+        } catch (err) {
+            toast.error(formatApiError(err));
+        }
+    };
     const inAttesa = prenotazioni?.filter((p) => p.stato === "richiesta").length || 0;
     const remove = async (a) => {
         try {
@@ -312,7 +327,7 @@ export function AnnunciPanel({ azienda, onGoToAbbonamento }) {
                     {inAttesa > 0 && <span className="rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold px-2 py-0.5" data-testid="prenotazioni-in-attesa">{inAttesa} da gestire</span>}
                 </h3>
                 <p className="mt-1 mb-4 text-sm text-slate-400">Conferma o rifiuta le date richieste dai privati: i giorni confermati o in attesa risultano occupati nel calendario.</p>
-                <PrenotazioniList items={prenotazioni} ruolo="azienda" onStato={cambiaStato} />
+                <PrenotazioniList items={prenotazioni} ruolo="azienda" onStato={cambiaStato} onAnnullaAzienda={annullaAzienda} />
             </div>
         </div>
     );

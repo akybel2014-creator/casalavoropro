@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Check, X, Ban, Truck, CreditCard, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Stars, StarInput } from "@/components/StarRating";
+import { api, formatApiError } from "@/lib/api";
+import { CalendarDays, Check, X, Ban, Truck, CreditCard, ShieldCheck, RotateCcw, MessageSquareHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STATO = {
@@ -12,8 +17,53 @@ const STATO = {
 const eur = (n) => Number(n).toLocaleString("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 const dIt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
 
+const oggi = () => new Date().toISOString().slice(0, 10);
+export const puoRecensire = (p) => p.stato === "confermata" && p.al < oggi() && !p.recensione;
+
+function RecensioneNoleggioBox({ p, onDone }) {
+    const [mezzo, setMezzo] = useState(5);
+    const [azienda, setAzienda] = useState(5);
+    const [commento, setCommento] = useState("");
+    const [busy, setBusy] = useState(false);
+    const submit = async () => {
+        if (commento.trim().length < 5) return toast.error("Scrivi un commento di almeno 5 caratteri");
+        setBusy(true);
+        try {
+            await api.post(`/prenotazioni/${p.id}/recensione`, { voto_mezzo: mezzo, voto_azienda: azienda, commento: commento.trim() });
+            toast.success("Grazie! La tua recensione è online.");
+            onDone?.(p.id, { voto_mezzo: mezzo, voto_azienda: azienda, commento: commento.trim() });
+        } catch (e) {
+            toast.error(formatApiError(e));
+        } finally {
+            setBusy(false);
+        }
+    };
+    return (
+        <div className="mt-4 rounded-2xl border border-brand/40 bg-brand/5 p-4" data-testid={`noleggio-review-box-${p.id}`}>
+            <p className="text-sm font-semibold text-white flex items-center gap-2"><MessageSquareHeart className="h-4 w-4 text-brand" /> Noleggio terminato: com'è andata?</p>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><p className="text-xs text-slate-400 mb-1">Il mezzo</p><StarInput value={mezzo} onChange={setMezzo} testPrefix={`noleggio-review-mezzo-${p.id}`} /></div>
+                <div><p className="text-xs text-slate-400 mb-1">L'azienda</p><StarInput value={azienda} onChange={setAzienda} testPrefix={`noleggio-review-azienda-${p.id}`} /></div>
+            </div>
+            <Textarea rows={2} value={commento} onChange={(e) => setCommento(e.target.value)} data-testid={`noleggio-review-comment-${p.id}`}
+                placeholder="Stato del mezzo, puntualità della consegna, disponibilità dell'azienda…" className="mt-3 bg-navy/70 border-white/10 text-white placeholder:text-slate-500" />
+            <Button size="sm" disabled={busy} onClick={submit} data-testid={`noleggio-review-submit-${p.id}`} className="mt-3 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold">
+                {busy ? "Pubblicazione…" : "Pubblica recensione"}
+            </Button>
+        </div>
+    );
+}
+
 function CaparraBadge({ p }) {
-    if (p.stato !== "confermata" || !p.caparra_importo) return null;
+    if (!p.caparra_importo) return null;
+    if (p.caparra_stato === "rimborsata") {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-sky-500/15 text-sky-300" data-testid={`prenotazione-caparra-${p.id}`}>
+                <RotateCcw className="h-3 w-3" /> Caparra rimborsata {eur(p.caparra_importo)}
+            </span>
+        );
+    }
+    if (p.stato !== "confermata") return null;
     const pagata = p.caparra_stato === "pagata";
     return (
         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${pagata ? "bg-emerald-500/15 text-emerald-400" : "bg-brand/15 text-brand"}`} data-testid={`prenotazione-caparra-${p.id}`}>
@@ -23,7 +73,7 @@ function CaparraBadge({ p }) {
     );
 }
 
-export function PrenotazioniList({ items, ruolo, onStato, onAnnulla, onPagaCaparra, payingId }) {
+export function PrenotazioniList({ items, ruolo, onStato, onAnnulla, onAnnullaAzienda, onPagaCaparra, payingId, onRecensita }) {
     if (items === null) return <p className="text-sm text-slate-500">Caricamento prenotazioni…</p>;
     if (items.length === 0) {
         return (
@@ -59,9 +109,22 @@ export function PrenotazioniList({ items, ruolo, onStato, onAnnulla, onPagaCapar
                         <p className="mt-1 text-xs text-slate-500">
                             {ruolo === "privato" ? `Azienda: ${p.azienda_nome}` : `Cliente: ${p.client_name}`}
                             {p.nota && <> · Nota: “{p.nota}”</>}
+                            {p.stato === "annullata" && p.annullata_da === "azienda" && <> · Annullato dall'azienda{p.motivo_annullamento && <>: “{p.motivo_annullamento}”</>}</>}
                         </p>
+                        {p.recensione && (
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400" data-testid={`prenotazione-recensione-${p.id}`}>
+                                <span className="flex items-center gap-1.5">Mezzo <Stars value={p.recensione.voto_mezzo} className="h-3.5 w-3.5" /></span>
+                                <span className="flex items-center gap-1.5">Azienda <Stars value={p.recensione.voto_azienda} className="h-3.5 w-3.5" /></span>
+                            </div>
+                        )}
+                        {ruolo === "privato" && puoRecensire(p) && <RecensioneNoleggioBox p={p} onDone={onRecensita} />}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                        {ruolo === "azienda" && p.stato === "confermata" && p.al >= oggi() && (
+                            <Button size="sm" variant="ghost" onClick={() => onAnnullaAzienda(p.id)} data-testid={`prenotazione-annulla-azienda-${p.id}`} className="rounded-full text-slate-400 hover:text-red-400 hover:bg-white/5">
+                                <Ban className="h-4 w-4 mr-1" /> {p.caparra_stato === "pagata" ? "Annulla e rimborsa" : "Annulla"}
+                            </Button>
+                        )}
                         {ruolo === "azienda" && p.stato === "richiesta" && (
                             <>
                                 <Button size="sm" onClick={() => onStato(p.id, "confermata")} data-testid={`prenotazione-conferma-${p.id}`} className="rounded-full bg-emerald-500 hover:bg-emerald-400 text-navy font-semibold">

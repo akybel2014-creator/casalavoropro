@@ -277,7 +277,8 @@ export default function DashboardPrivato() {
                     </TabsContent>
 
                     <TabsContent value="noleggi" className="mt-6" data-testid="dashboard-noleggi">
-                        <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} onPagaCaparra={pagaCaparra} payingId={payingId} />
+                        <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} onPagaCaparra={pagaCaparra} payingId={payingId}
+                            onRecensita={(id, rec) => setPrenotazioni((prev) => (prev || []).map((x) => (x.id === id ? { ...x, recensione: rec } : x)))} />
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">

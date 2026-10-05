@@ -199,7 +199,8 @@ def _noleggio_box(p: dict) -> str:
         ("Totale stimato", _eur(p.get("totale", 0))),
     ]
     if p.get("caparra_importo"):
-        righe.append(("Caparra", _eur(p["caparra_importo"])))
+        stato = {"pagata": " (pagata)", "rimborsata": " (rimborsata)"}.get(p.get("caparra_stato"), "")
+        righe.append(("Caparra", _eur(p["caparra_importo"]) + stato))
     if p.get("nota"):
         righe.append(("Nota", p["nota"]))
     cells = "".join(
@@ -239,6 +240,14 @@ NOLEGGIO_EVENTI = {
                     "Le mie prenotazioni", "/dashboard"),
         "azienda": ("Prenotazione annullata dal cliente", "Prenotazione annullata",
                     "<strong>{cliente}</strong> ha annullato la richiesta di noleggio. Le date sono di nuovo libere.",
+                    "Vai al pannello", "/dashboard/azienda"),
+    },
+    "annullata_azienda": {
+        "privato": ("Noleggio annullato dall'azienda", "Noleggio annullato",
+                    "<strong>{azienda}</strong> ha dovuto annullare il noleggio confermato. Se avevi pagato la caparra, il rimborso è già stato avviato sulla stessa carta (5-10 giorni lavorativi).",
+                    "Cerca un altro mezzo", "/noleggio"),
+        "azienda": ("Hai annullato un noleggio confermato", "Noleggio annullato",
+                    "Hai annullato il noleggio di <strong>{cliente}</strong>. L'eventuale caparra è stata rimborsata automaticamente al cliente.",
                     "Vai al pannello", "/dashboard/azienda"),
     },
     "caparra_pagata": {

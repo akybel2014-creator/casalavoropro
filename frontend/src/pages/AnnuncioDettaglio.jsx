@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare } from "lucide-react";
+import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart } from "lucide-react";
+import { Stars } from "@/components/StarRating";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -14,9 +15,11 @@ export default function AnnuncioDettaglio() {
     const [a, setA] = useState(null);
     const [error, setError] = useState("");
     const [active, setActive] = useState(0);
+    const [recensioni, setRecensioni] = useState([]);
 
     useEffect(() => {
         api.get(`/annunci/${id}`).then(({ data }) => setA(data)).catch((e) => setError(formatApiError(e)));
+        api.get(`/annunci/${id}/recensioni`).then(({ data }) => setRecensioni(data)).catch(() => {});
     }, [id]);
 
     const images = a ? (a.foto?.length ? a.foto.map((f) => `${FILES_BASE}${f.path}`) : [annuncioImg(a)]) : [];
@@ -71,6 +74,32 @@ export default function AnnuncioDettaglio() {
                                 <h2 className="font-display font-bold text-white text-xl">Descrizione</h2>
                                 <p className="mt-3 text-slate-300 leading-relaxed whitespace-pre-line" data-testid="annuncio-descrizione">{a.descrizione}</p>
                             </div>
+                            {noleggio && (
+                                <div className="mt-6 rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="annuncio-recensioni">
+                                    <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <MessageSquareHeart className="h-5 w-5 text-brand" /> Recensioni dei noleggi
+                                    </h2>
+                                    {recensioni.length === 0 ? (
+                                        <p className="mt-4 text-sm text-slate-500">Nessuna recensione ancora: sarà il primo cliente a raccontare com'è andata.</p>
+                                    ) : (
+                                        <div className="mt-5 space-y-4">
+                                            {recensioni.map((r) => (
+                                                <div key={r.id} className="rounded-2xl border border-white/5 bg-navy/60 p-5" data-testid={`annuncio-recensione-${r.id}`}>
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <span className="text-sm font-semibold text-white">{r.client_name}</span>
+                                                        <span className="text-xs text-slate-500">{new Date(r.created_at).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}</span>
+                                                    </div>
+                                                    <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-400">
+                                                        <span className="flex items-center gap-1.5">Mezzo <Stars value={r.voto_mezzo} className="h-3.5 w-3.5" /></span>
+                                                        <span className="flex items-center gap-1.5">Azienda <Stars value={r.voto_azienda} className="h-3.5 w-3.5" /></span>
+                                                    </div>
+                                                    <p className="mt-2 text-sm text-slate-300">{r.commento}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <aside className="lg:col-span-5">
@@ -81,6 +110,13 @@ export default function AnnuncioDettaglio() {
                                 </span>
                                 <h1 className="mt-3 font-display font-black text-2xl sm:text-3xl text-white tracking-tight" data-testid="annuncio-titolo">{a.titolo}</h1>
                                 <p className="mt-3 font-display font-black text-3xl text-brand" data-testid="annuncio-prezzo">{prezzoLabel(a)}</p>
+                                {a.recensioni > 0 && (
+                                    <p className="mt-2 flex items-center gap-1.5 text-sm text-brand-amber" data-testid="annuncio-detail-rating">
+                                        <Star className="h-4 w-4 fill-current" />
+                                        <span className="font-semibold text-white">{Number(a.rating).toFixed(1)}</span>
+                                        <span className="text-slate-400">· {a.recensioni} {a.recensioni === 1 ? "recensione" : "recensioni"}</span>
+                                    </p>
+                                )}
                                 <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-300">
                                     <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> {a.zona}</span>
                                     <span className="flex items-center gap-1.5"><Tag className="h-4 w-4 text-brand" /> {a.categoria}</span>

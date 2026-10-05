@@ -64,6 +64,26 @@ def _create_session(**kwargs):
     return stripe.checkout.Session.create(**kwargs)
 
 
+async def rimborsa_caparra(prenotazione: dict) -> dict:
+    """Refunds the paid deposit of a booking through Stripe. Returns the refund dict."""
+    pi = prenotazione.get("caparra_payment_intent")
+    if not pi:
+        rec = await payment_transactions.find_one({"kind": "caparra", "prenotazione_id": str(prenotazione["_id"]),
+                                                   "payment_status": "paid"})
+        pi = rec.get("stripe_payment_intent_id") if rec else None
+    if not pi:
+        raise HTTPException(status_code=400, detail="Pagamento della caparra non trovato: impossibile rimborsare automaticamente")
+    try:
+        refund = stripe.Refund.create(payment_intent=pi, metadata={"prenotazione_id": str(prenotazione["_id"])})
+    except Exception as e:
+        logger.exception("refund failed")
+        raise HTTPException(status_code=502, detail=f"Rimborso Stripe non riuscito: {getattr(e, 'user_message', '') or str(e)}")
+    await payment_transactions.update_one({"stripe_payment_intent_id": pi},
+                                          {"$set": {"status": "refunded", "payment_status": "refunded",
+                                                    "stripe_refund_id": refund.id, "updated_at": now()}})
+    return {"id": refund.id, "status": refund.status}
+
+
 async def create_caparra_session(prenotazione: dict, importo: float, user_id: str, origin_url: str):
     pid = str(prenotazione["_id"])
     session = _create_session(

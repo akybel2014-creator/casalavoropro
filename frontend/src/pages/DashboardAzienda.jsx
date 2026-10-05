@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "react-router-dom";
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
@@ -91,7 +92,11 @@ export default function DashboardAzienda() {
     const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
     const fileRef = useRef(null);
-    const [tab, setTab] = useState("leads");
+    const [searchParams] = useSearchParams();
+    const [tab, setTab] = useState(() => {
+        const t = searchParams.get("tab");
+        return ["leads", "profilo", "galleria", "annunci", "verifica", "emergenze", "abbonamento"].includes(t) ? t : "leads";
+    });
 
     const load = useCallback(async () => {
         try {

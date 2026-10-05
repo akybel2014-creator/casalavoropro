@@ -8,7 +8,7 @@ from bson import ObjectId
 
 from core import db, now
 from routes_auth import LAUNCH_TRIAL_END
-from emailer import send_offer_reminder
+from emailer import send_offer_reminder, send_reactivation_email
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -83,6 +83,28 @@ async def _run_offer_expire():
     logger.info("offer-expire: convertite %s aziende con prova scaduta", res.modified_count)
 
 
+async def _run_offer_reactivation():
+    """Email una tantum alle aziende con prova scaduta: invito a riattivare il PRO con link al checkout."""
+    sent_count = 0
+    cursor = db.aziende.find({"subscription_status": "trial_expired", "reactivation_email_sent": {"$ne": True}})
+    async for az in cursor:
+        try:
+            owner = await db.users.find_one({"_id": ObjectId(az["owner_id"])})
+        except Exception:
+            owner = None
+        if not owner or not owner.get("email"):
+            continue
+        try:
+            cats = az.get("categorie") or []
+            leads = await db.richieste.count_documents({"categoria": {"$in": cats}}) if cats else 0
+            await send_reactivation_email(owner["email"], owner.get("name", "") or az.get("nome", ""), leads)
+            await db.aziende.update_one({"_id": az["_id"]}, {"$set": {"reactivation_email_sent": True}})
+            sent_count += 1
+        except Exception:
+            logger.exception("reactivation email failed for azienda %s", az.get("_id"))
+    logger.info("offer-reactivation: inviate %s email di riattivazione", sent_count)
+
+
 @router.post("/cron/offer-reminder")
 async def cron_offer_reminder(background: BackgroundTasks, authorization: str | None = Header(default=None)):
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
@@ -97,3 +119,11 @@ async def cron_offer_expire(background: BackgroundTasks, authorization: str | No
     _check_auth(authorization)
     background.add_task(_run_offer_expire)
     return {"ok": True, "queued": "offer-expire"}
+
+
+@router.post("/cron/offer-reactivation")
+async def cron_offer_reactivation(background: BackgroundTasks, authorization: str | None = Header(default=None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    _check_auth(authorization)
+    background.add_task(_run_offer_reactivation)
+    return {"ok": True, "queued": "offer-reactivation"}

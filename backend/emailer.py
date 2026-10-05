@@ -191,6 +191,23 @@ async def send_offer_reminder(to: str, name: str, days_left: int, leads: int = 0
                      html=_wrap("L'offerta sta per scadere", body, "Vai al profilo", f"{FRONTEND_URL}/dashboard/azienda"))
 
 
+async def send_reactivation_email(to: str, name: str, leads: int = 0):
+    gancio = ""
+    if leads > 0:
+        gancio = (f'<p style="margin-top:14px;">Nel frattempo sono arrivate <strong style="color:#FF5A1F;">{leads}</strong> '
+                  f'richieste di lavoro nelle tue categorie: con il piano PRO puoi rispondere a tutte.</p>')
+    body = (f'<p>Ciao {escape(name)},</p>'
+            f'<p>L\'Offerta Lancio Fondatori 2026 &egrave; terminata e il tuo profilo PRO &egrave; stato messo in pausa.</p>'
+            f'<p>Riattiva ora il piano <strong>PRO</strong> per tornare a ricevere richieste di lavoro illimitate, '
+            f'pubblicare annunci di noleggio e usato, e avere il badge PRO con la massima visibilit&agrave; nelle '
+            f'ricerche locali &mdash; a partire da soli <strong>3,99 &euro;/mese</strong> (o 39,99 &euro;/anno).</p>'
+            f'{gancio}'
+            f'<p>Bastano pochi secondi: clicca qui sotto e completa l\'attivazione.</p>')
+    await send_email(to=to, subject="Riattiva il tuo profilo PRO su CasaLavoroPRO",
+                     html=_wrap("Riattiva il PRO", body, "Riattiva il PRO ora",
+                                f"{FRONTEND_URL}/dashboard/azienda?tab=abbonamento"))
+
+
 
 
 async def send_new_quote(to: str, client_name: str, azienda_nome: str, prezzo: float):

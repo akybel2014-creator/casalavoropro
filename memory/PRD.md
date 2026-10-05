@@ -84,6 +84,13 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Countdown Offerta (2026-10-05): nuovo componente /components/CountdownOfferta.jsx (deadline 2026-12-31 23:59:59 +01:00) mostrato sul box azienda in home (tone onOrange) e sulla pagina /registrati?ruolo=azienda (tone onDark). Verificato il rendering live.
 - Deploy richiesto dall'utente (2026-10-05) per pubblicare nome nuovo + offerta lancio + countdown + email fondatori.
 - Banner Scadenza Globale (2026-10-05): nuovo componente /components/site/LaunchBanner.jsx (barra fissa arancione in alto con countdown compatto + link "Registrati gratis" → /registrati?ruolo=azienda). Reso dentro Header (quindi su tutte le pagine con Header + dashboard) e aggiunto manualmente su pagine standalone /login, /registrati, /reset-password. Aumentato padding superiore (py-24→pt-32 pb-24, detail pt-24→pt-32) su Login/Registrati/ResetPassword/NuovaRichiesta/DashboardAzienda/DashboardPrivato/DashboardAdmin/AziendaDettaglio/AnnuncioDettaglio per evitare sovrapposizioni con banner+header. Aggiunta prop `compact` a CountdownOfferta. Test frontend iteration_6.json: 100%, nessun bug. Redeploy richiesto per portare il banner in produzione.
+- Email Promemoria Offerta + Conversione Fine Offerta (2026-10-05): task pianificati via piattaforma (.emergent/crons.yml).
+  - Cron `offer-reminder` (giornaliero 09:00 UTC) → /api/cron/offer-reminder: invia promemoria email alle aziende in active_trial quando mancano <=7 e <=1 giorni al 31/12 (milestone tracciate in azienda.offerta_reminders_sent per evitare duplicati). Email: emailer.send_offer_reminder.
+  - Cron `offer-expire` (giornaliero 00:30 UTC) → /api/cron/offer-expire: dopo trial_ends_at converte le aziende active_trial in plan=free, subscription_status=trial_expired.
+  - Nuovo /app/backend/routes_cron.py (auth Bearer WEBHOOK_CRON_SECRET, ack 2xx + lavoro in BackgroundTasks). Secret in backend/.env (WEBHOOK_CRON_SECRET).
+  - DashboardAzienda tab Abbonamento reso condizionale: active_trial → card offerta lancio; active (pagato) → "Abbonamento attivo"; trial_expired/free → piani a pagamento Base/Pro + pulsanti Stripe checkout ripristinati + nota "offerta terminata". Ripristinata la funzione checkout().
+  - Test: /app/backend/tests/test_cron_offerta.py (expire/skip/reminder/idempotenza PASS) + iteration_7.json (UI 3 stati PASS, checkout→Stripe OK).
+  - NOTA: le modifiche (crons + dashboard + email promemoria) richiedono un REDEPLOY per attivarsi in produzione (le schedule cron si sincronizzano al deploy).
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

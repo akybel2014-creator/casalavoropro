@@ -1,0 +1,31 @@
+{
+  "summary": "Frontend-only verification of DashboardAzienda > tab 'Abbonamento' conditional rendering in 3 subscription states + checkout button integration. The 3 conditional branches render correctly. Checkout button fires POST /api/payments/checkout and successfully redirects to Stripe. Launch banner stays fixed at top (y=0 h=36) and does NOT cover subscription panel (panel y=278). NOTE: the review assumed info@caloreeclima.it is in 'active_trial', but backend seed.py sets it as subscription_status='active' + plan='pro' (see /app/backend/seed.py line 79). As a result the 'active_trial' branch (offerta-lancio-title/bullets) could not be re-verified in this iteration against that account. However iteration_6 already validated 'offerta-lancio-title' / 'offerta-lancio-bullets' rendering for an active_trial azienda, and the code branch mine.subscription_status === 'active_trial' is intact and correct in DashboardAzienda.jsx (lines 532-562).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "state_matrix_results": {
+    "active_trial (info@caloreeclima.it)": "NOT TESTED AS active_trial — seed sets this account to subscription_status='active'. UI correctly showed 'Abbonamento attivo' badge for the actual state. The active_trial branch exists in code and was validated in iteration_6.",
+    "trial_expired (expired@test.it)": "PASS — subscription-paid-plans present, trial-expired-note present, pro-price-monthly '€3,99/mese', pro-price-yearly '€39,99/anno', checkout-monthly-button + checkout-yearly-button present. NO offerta-lancio card. NO subscription-active-badge.",
+    "active paid (paid@test.it)": "PASS — subscription-active-badge 'Abbonamento attivo' present. NO checkout buttons. NO offerta-lancio card.",
+    "checkout POST /api/payments/checkout": "PASS — monthly button triggers POST, backend returns 200, redirects to https://checkout.stripe.com/c/pay/cs_test_... (€3.99/month)",
+    "launch-banner global": "PASS — fixed at top, does not overlap subscription-panel in any state"
+  },
+  "test_report_links": [],
+  "action_items": [
+    "If the 'active_trial' state must be reverifiable via UI with the demo account info@caloreeclima.it, update /app/backend/seed.py to set subscription_status='active_trial' + trial_ends_at='2026-12-31' for that azienda (currently it is 'active'). Alternatively provide a dedicated test account e.g. trial@test.it in active_trial state."
+  ],
+  "critical_code_review_comments": [
+    "DashboardAzienda.jsx is 624 lines — consider splitting SubscriptionTab into its own component for maintainability.",
+    "Seed data inconsistency: review request assumed info@caloreeclima.it is in active_trial for Offerta Lancio, but seed.py sets it to 'active'. This mismatch should be reconciled."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "100% for trial_expired and active paid states; active_trial not retested due to seed mismatch (previously verified in iteration_6)"},
+  "test_credentials": "expired@test.it / Demo2026! (trial_expired OK), paid@test.it / Demo2026! (active OK), info@caloreeclima.it / Demo2026! (seeded as 'active', not 'active_trial')",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 UI branches of DashboardAzienda subscription tab render correctly per data-testid contract. Checkout flow against Stripe sandbox works. Only open point: demo azienda info@caloreeclima.it is seeded as 'active' and therefore cannot be used to visually test the 'Offerta Lancio Fondatori 2026' active_trial branch anymore — use seed.py adjustment or a separate trial account if re-testing active_trial via UI is required."
+}

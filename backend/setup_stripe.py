@@ -60,8 +60,8 @@ CATALOG = [
         "name": "CasaLavoriPRO Piano Pro",
         "tax_code": "txcd_10103001",
         "prices": [
-            {"lookup_key": "pro_monthly", "amount": 2900, "currency": "eur", "interval": "month"},
-            {"lookup_key": "pro_yearly", "amount": 29000, "currency": "eur", "interval": "year"},
+            {"lookup_key": "pro_monthly", "amount": 399, "currency": "eur", "interval": "month"},
+            {"lookup_key": "pro_yearly", "amount": 3999, "currency": "eur", "interval": "year"},
         ],
     }
 ]

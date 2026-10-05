@@ -544,8 +544,8 @@ export default function DashboardAzienda() {
                             <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 shadow-2xl shadow-brand/10">
                                 <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">CONSIGLIATO</span>
                                 <h3 className="font-display font-bold text-white text-xl">Pro</h3>
-                                <p className="mt-1 font-display font-black text-3xl text-white">€29<span className="text-base font-semibold text-slate-400">/mese</span></p>
-                                <p className="text-xs text-slate-400">oppure €290/anno</p>
+                                <p className="mt-1 font-display font-black text-3xl text-white" data-testid="pro-price-monthly">€3,99<span className="text-base font-semibold text-slate-400">/mese</span></p>
+                                <p className="text-xs text-slate-400" data-testid="pro-price-yearly">oppure €39,99/anno (2 mesi gratis)</p>
                                 <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
                                     {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Richieste di tutte le categorie della tua zona", "Priorita nelle ricerche dei privati"].map((f) => (
                                         <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>

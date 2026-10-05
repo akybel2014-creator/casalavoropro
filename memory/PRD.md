@@ -72,6 +72,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Recensioni noleggio: POST /api/prenotazioni/{id}/recensione {voto_mezzo, voto_azienda, commento} (solo confermata e al < oggi, una per prenotazione) -> collezione `recensioni_noleggio`; rating/recensioni su annuncio (media voto_mezzo) e su azienda (media combinata recensioni lavori + voto_azienda). GET /api/annunci/{id}/recensioni pubblico. UI: stelle su AnnuncioCard e dettaglio (+ lista recensioni), box recensione nella tab Noleggi del privato, badge "Caparra rimborsata", bottone "Annulla / Annulla e rimborsa" per l'azienda (confirm + prompt motivo).
 - Dominio: l'utente ha indicato https://casalovoropro.com/ (possibile refuso di casalavoripro.com). Istruzioni fornite: Manage Publishes -> Domain; Auto-Link oppure DNS manuale (A root 162.159.142.117 e 172.66.2.113; CNAME www); SSL automatico Cloudflare; propagazione 5-15 min (max 24-48h); nessun costo extra.
 - Testing agent iteration_5: 15/15 backend (incluso refund Stripe reale) + frontend OK. Redeploy rilanciato.
+- Prezzi abbonamento PRO cambiati (richiesta utente 2026-10-05): 3,99 €/mese (pro_monthly, 399 cent) e 39,99 €/anno (pro_yearly, 3999 cent). Vecchi price Stripe disattivati, nuovi creati con transfer_lookup_key; aggiornati setup_stripe.py, routes_billing.PLANS, UI tab Abbonamento. Verificato checkout con i nuovi importi.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

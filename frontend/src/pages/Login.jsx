@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
+import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 
@@ -56,7 +57,8 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern flex items-center justify-center px-4 py-24">
+        <div className="min-h-screen bg-navy grid-pattern flex items-center justify-center px-4 pt-32 pb-24">
+            <div className="fixed top-0 inset-x-0 z-50"><LaunchBanner /></div>
             <div className="w-full max-w-md">
                 <div className="flex justify-center">
                     <Link to="/" data-testid="login-logo"><Logo size={44} /></Link>

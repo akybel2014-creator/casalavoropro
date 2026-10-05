@@ -47,7 +47,7 @@ export default function NuovaRichiesta() {
     };
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern px-4 py-24">
+        <div className="min-h-screen bg-navy grid-pattern px-4 pt-32 pb-24">
             <div className="max-w-2xl mx-auto">
                 <h1 className="font-display font-black text-3xl text-white tracking-tight">Nuova richiesta di preventivo</h1>
                 <p className="mt-2 text-sm text-slate-400">

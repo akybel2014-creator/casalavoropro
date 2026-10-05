@@ -51,7 +51,7 @@ export default function DashboardAdmin() {
     ];
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern px-4 py-24" data-testid="dashboard-admin">
+        <div className="min-h-screen bg-navy grid-pattern px-4 pt-32 pb-24" data-testid="dashboard-admin">
             <div className="max-w-6xl mx-auto">
                 <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Amministrazione</p>
                 <h1 className="mt-1 font-display font-black text-3xl text-white tracking-tight">Ciao {user?.name}</h1>

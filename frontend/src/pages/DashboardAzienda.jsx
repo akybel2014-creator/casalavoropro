@@ -208,7 +208,7 @@ export default function DashboardAzienda() {
     const foto = mine?.foto || [];
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern px-4 py-24" data-testid="dashboard-azienda">
+        <div className="min-h-screen bg-navy grid-pattern px-4 pt-32 pb-24" data-testid="dashboard-azienda">
             <div className="max-w-5xl mx-auto">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>

@@ -141,7 +141,7 @@ export default function DashboardPrivato() {
     };
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern px-4 py-24" data-testid="dashboard-privato">
+        <div className="min-h-screen bg-navy grid-pattern px-4 pt-32 pb-24" data-testid="dashboard-privato">
             <div className="max-w-5xl mx-auto">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>

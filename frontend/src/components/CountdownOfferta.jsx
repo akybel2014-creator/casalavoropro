@@ -15,7 +15,7 @@ function diff() {
     };
 }
 
-export function CountdownOfferta({ tone = "onDark", className = "" }) {
+export function CountdownOfferta({ tone = "onDark", className = "", compact = false }) {
     const [t, setT] = useState(diff);
 
     useEffect(() => {
@@ -24,6 +24,20 @@ export function CountdownOfferta({ tone = "onDark", className = "" }) {
     }, []);
 
     if (t.scaduta) return null;
+
+    if (compact) {
+        return (
+            <span className={`inline-flex items-center gap-1 font-display font-black tabular-nums ${className}`} data-testid="countdown-offerta-compact">
+                <span data-testid="countdown-giorni">{String(t.giorni).padStart(2, "0")}g</span>
+                <span className="opacity-60">:</span>
+                <span data-testid="countdown-ore">{String(t.ore).padStart(2, "0")}h</span>
+                <span className="opacity-60">:</span>
+                <span data-testid="countdown-min">{String(t.minuti).padStart(2, "0")}m</span>
+                <span className="opacity-60">:</span>
+                <span data-testid="countdown-sec">{String(t.secondi).padStart(2, "0")}s</span>
+            </span>
+        );
+    }
 
     const onOrange = tone === "onOrange";
     const pill = onOrange ? "bg-navy text-white" : "bg-brand/15 text-white ring-1 ring-brand/40";

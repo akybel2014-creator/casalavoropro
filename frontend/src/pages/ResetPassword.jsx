@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
+import LaunchBanner from "@/components/site/LaunchBanner";
 import { api, formatApiError } from "@/lib/api";
 
 export default function ResetPassword() {
@@ -27,7 +28,8 @@ export default function ResetPassword() {
     };
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern flex items-center justify-center px-4 py-24">
+        <div className="min-h-screen bg-navy grid-pattern flex items-center justify-center px-4 pt-32 pb-24">
+            <div className="fixed top-0 inset-x-0 z-50"><LaunchBanner /></div>
             <div className="w-full max-w-md rounded-3xl border border-white/10 bg-navy-700/70 p-8 sm:p-10">
                 <div className="flex justify-center"><Logo size={40} /></div>
                 <h1 className="mt-6 font-display font-black text-2xl text-white tracking-tight">Scegli una nuova password</h1>

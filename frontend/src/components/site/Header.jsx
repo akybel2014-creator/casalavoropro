@@ -4,6 +4,7 @@ import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
+import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 
 export const NAV_ITEMS = [
@@ -90,6 +91,7 @@ export default function Header() {
                     : "bg-navy/40 backdrop-blur-md border-white/5"
             }`}
         >
+            <LaunchBanner />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16 sm:h-[72px]">
                     <Link to="/" data-testid="header-logo" className="shrink-0">

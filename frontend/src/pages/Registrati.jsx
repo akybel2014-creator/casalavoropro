@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/Logo";
+import LaunchBanner from "@/components/site/LaunchBanner";
 import { CountdownOfferta } from "@/components/CountdownOfferta";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/api";
@@ -55,7 +56,8 @@ export default function Registrati() {
     const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 
     return (
-        <div className="min-h-screen bg-navy grid-pattern flex items-center justify-center px-4 py-24">
+        <div className="min-h-screen bg-navy grid-pattern flex items-center justify-center px-4 pt-32 pb-24">
+            <div className="fixed top-0 inset-x-0 z-50"><LaunchBanner /></div>
             <div className="w-full max-w-lg">
                 <div className="flex justify-center">
                     <Link to="/" data-testid="register-logo"><Logo size={44} /></Link>

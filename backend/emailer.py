@@ -180,3 +180,84 @@ async def send_quote_accepted(to: str, azienda_nome: str, titolo: str):
             f'<p>Contatta il cliente per pianificare l\'intervento di {escape(azienda_nome)}.</p>')
     await send_email(to=to, subject="Preventivo accettato dal cliente", html=_wrap(
         "Preventivo accettato", body, "Vai al pannello", f"{FRONTEND_URL}/dashboard/azienda"))
+
+
+
+def _d_it(iso: str) -> str:
+    y, m, d = iso.split("-")
+    return f"{d}/{m}/{y}"
+
+
+def _eur(v) -> str:
+    return f"{float(v):,.2f} EUR".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _noleggio_box(p: dict) -> str:
+    righe = [
+        ("Mezzo", p.get("annuncio_titolo", "")),
+        ("Periodo", f"{_d_it(p['dal'])} - {_d_it(p['al'])} ({p.get('giorni', 0)} giorni)"),
+        ("Totale stimato", _eur(p.get("totale", 0))),
+    ]
+    if p.get("caparra_importo"):
+        righe.append(("Caparra", _eur(p["caparra_importo"])))
+    if p.get("nota"):
+        righe.append(("Nota", p["nota"]))
+    cells = "".join(
+        f'<tr><td style="padding:4px 0;color:#94A3B8;width:140px;">{escape(k)}</td>'
+        f'<td style="padding:4px 0;color:#F8FAFC;font-weight:bold;">{escape(str(v))}</td></tr>' for k, v in righe)
+    return f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0;font-size:14px;">{cells}</table>'
+
+
+NOLEGGIO_EVENTI = {
+    "richiesta": {
+        "privato": ("Richiesta di noleggio inviata", "Richiesta inviata",
+                    "Abbiamo inviato la tua richiesta a <strong>{azienda}</strong>. Riceverai una email appena verrà confermata o rifiutata.",
+                    "Le mie prenotazioni", "/dashboard"),
+        "azienda": ("Nuova richiesta di noleggio", "Nuova richiesta di noleggio",
+                    "<strong>{cliente}</strong> ha richiesto il noleggio di un tuo mezzo. Conferma o rifiuta le date dal pannello.",
+                    "Gestisci la richiesta", "/dashboard/azienda"),
+    },
+    "confermata": {
+        "privato": ("Noleggio confermato", "Noleggio confermato",
+                    "<strong>{azienda}</strong> ha confermato il tuo noleggio. Per bloccare le date paga la caparra con carta dal tuo pannello.",
+                    "Paga la caparra", "/dashboard"),
+        "azienda": ("Hai confermato un noleggio", "Noleggio confermato",
+                    "Hai confermato il noleggio richiesto da <strong>{cliente}</strong>. Ti avviseremo quando la caparra sarà pagata.",
+                    "Vai al pannello", "/dashboard/azienda"),
+    },
+    "rifiutata": {
+        "privato": ("Noleggio non disponibile", "Richiesta rifiutata",
+                    "Purtroppo <strong>{azienda}</strong> non può confermare il noleggio nelle date richieste. Puoi scegliere un altro periodo o un altro mezzo.",
+                    "Cerca un altro mezzo", "/noleggio"),
+        "azienda": ("Hai rifiutato una richiesta di noleggio", "Richiesta rifiutata",
+                    "Hai rifiutato la richiesta di <strong>{cliente}</strong>. Le date sono di nuovo disponibili nel calendario.",
+                    "Vai al pannello", "/dashboard/azienda"),
+    },
+    "annullata": {
+        "privato": ("Prenotazione annullata", "Prenotazione annullata",
+                    "Hai annullato la richiesta di noleggio presso <strong>{azienda}</strong>.",
+                    "Le mie prenotazioni", "/dashboard"),
+        "azienda": ("Prenotazione annullata dal cliente", "Prenotazione annullata",
+                    "<strong>{cliente}</strong> ha annullato la richiesta di noleggio. Le date sono di nuovo libere.",
+                    "Vai al pannello", "/dashboard/azienda"),
+    },
+    "caparra_pagata": {
+        "privato": ("Caparra ricevuta: noleggio bloccato", "Caparra pagata",
+                    "Abbiamo registrato il pagamento della caparra: le date sono bloccate per te presso <strong>{azienda}</strong>. Il saldo si regola direttamente con l'azienda.",
+                    "Le mie prenotazioni", "/dashboard"),
+        "azienda": ("Caparra pagata dal cliente", "Caparra ricevuta",
+                    "<strong>{cliente}</strong> ha pagato la caparra: il noleggio è bloccato. Organizza la consegna del mezzo.",
+                    "Vai al pannello", "/dashboard/azienda"),
+    },
+}
+
+
+async def send_noleggio_event(to: str, ruolo: str, evento: str, p: dict):
+    conf = NOLEGGIO_EVENTI.get(evento, {}).get(ruolo)
+    if not conf or not to:
+        return
+    subject, title, intro, cta, path = conf
+    saluto = escape(p.get("azienda_nome", "") if ruolo == "azienda" else p.get("client_name", ""))
+    body = (f"<p>Ciao {saluto},</p><p>{intro.format(azienda=escape(p.get('azienda_nome', '')), cliente=escape(p.get('client_name', '')))}</p>"
+            f"{_noleggio_box(p)}")
+    await send_email(to=to, subject=subject, html=_wrap(title, body, cta, f"{FRONTEND_URL}{path}"))

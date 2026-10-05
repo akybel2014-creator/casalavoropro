@@ -7,6 +7,7 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from core import db, now, clean_doc, require_roles, notify
+from emailer import send_noleggio_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,6 +49,27 @@ class StatoIn(BaseModel):
 
 def _pub(doc: dict) -> dict:
     return clean_doc(doc, drop=("password_hash", "owner_id"))
+
+
+CAPARRA_PERC = 0.20
+CAPARRA_MIN = 10.0
+
+
+def calcola_caparra(totale: float) -> float:
+    return round(max(CAPARRA_MIN, totale * CAPARRA_PERC), 2)
+
+
+async def _email_entrambi(p: dict, evento: str):
+    """Sends the event email to both the private client and the company owner (best effort)."""
+    try:
+        for uid, ruolo in ((p.get("client_id"), "privato"), (p.get("owner_id"), "azienda")):
+            if not uid:
+                continue
+            u = await db.users.find_one({"_id": ObjectId(uid)}, {"email": 1})
+            if u and u.get("email"):
+                await send_noleggio_event(u["email"], ruolo, evento, p)
+    except Exception:
+        logger.exception("email noleggio failed")
 
 
 @router.get("/annunci/{annuncio_id}/disponibilita")
@@ -103,6 +125,7 @@ async def crea_prenotazione(annuncio_id: str, inp: PrenotazioneIn, user: dict = 
     await notify(annuncio["owner_id"], "Nuova richiesta di noleggio",
                  f"{user['name']} chiede «{annuncio['titolo']}» dal {dal.strftime('%d/%m/%Y')} al {al.strftime('%d/%m/%Y')} ({giorni} gg).",
                  link="/dashboard/azienda")
+    await _email_entrambi(doc, "richiesta")
     return _pub(doc)
 
 
@@ -130,12 +153,17 @@ async def cambia_stato(prenotazione_id: str, inp: StatoIn, user: dict = Depends(
         raise HTTPException(status_code=403, detail="Permesso negato")
     if doc["stato"] != "richiesta":
         raise HTTPException(status_code=400, detail="La prenotazione è già stata gestita")
-    await db.prenotazioni.update_one({"_id": oid}, {"$set": {"stato": inp.stato, "updated_at": now()}})
+    updates = {"stato": inp.stato, "updated_at": now()}
+    if inp.stato == "confermata":
+        updates["caparra_importo"] = calcola_caparra(doc.get("totale", 0))
+        updates["caparra_stato"] = "da_pagare"
+    await db.prenotazioni.update_one({"_id": oid}, {"$set": updates})
     label = "confermato" if inp.stato == "confermata" else "rifiutato"
     await notify(doc["client_id"], f"Noleggio {label}",
                  f"{doc['azienda_nome']} ha {label} il noleggio di «{doc['annuncio_titolo']}» dal {doc['dal']} al {doc['al']}.",
                  link="/dashboard")
     fresh = await db.prenotazioni.find_one({"_id": oid})
+    await _email_entrambi(fresh, inp.stato)
     return _pub(fresh)
 
 
@@ -154,4 +182,46 @@ async def annulla(prenotazione_id: str, user: dict = Depends(require_roles("priv
                  f"{user['name']} ha annullato la richiesta per «{doc['annuncio_titolo']}» ({doc['dal']} → {doc['al']}).",
                  link="/dashboard/azienda")
     fresh = await db.prenotazioni.find_one({"_id": oid})
+    await _email_entrambi(fresh, "annullata")
     return _pub(fresh)
+
+
+class CaparraCheckoutIn(BaseModel):
+    origin_url: str
+
+
+@router.post("/prenotazioni/{prenotazione_id}/caparra/checkout")
+async def caparra_checkout(prenotazione_id: str, inp: CaparraCheckoutIn, user: dict = Depends(require_roles("privato"))):
+    from routes_billing import create_caparra_session
+    oid = _oid(prenotazione_id, "Prenotazione non trovata")
+    doc = await db.prenotazioni.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Prenotazione non trovata")
+    if doc["client_id"] != user["id"]:
+        raise HTTPException(status_code=403, detail="Permesso negato")
+    if doc["stato"] != "confermata":
+        raise HTTPException(status_code=400, detail="La caparra si paga solo dopo la conferma dell'azienda")
+    if doc.get("caparra_stato") == "pagata":
+        raise HTTPException(status_code=400, detail="Caparra già pagata")
+    importo = doc.get("caparra_importo") or calcola_caparra(doc.get("totale", 0))
+    return await create_caparra_session(doc, importo, user["id"], inp.origin_url)
+
+
+async def segna_caparra_pagata(prenotazione_id: str, payment_intent: str | None):
+    """Called by billing when a deposit checkout is paid. Idempotent."""
+    oid = ObjectId(prenotazione_id)
+    res = await db.prenotazioni.update_one(
+        {"_id": oid, "caparra_stato": {"$ne": "pagata"}},
+        {"$set": {"caparra_stato": "pagata", "caparra_paid_at": now(), "caparra_payment_intent": payment_intent}})
+    if not res.modified_count:
+        return
+    p = await db.prenotazioni.find_one({"_id": oid})
+    if not p:
+        return
+    await notify(p["owner_id"], "Caparra pagata",
+                 f"{p['client_name']} ha pagato la caparra ({p.get('caparra_importo', 0):.2f} EUR) per «{p['annuncio_titolo']}» ({p['dal']} → {p['al']}).",
+                 link="/dashboard/azienda")
+    await notify(p["client_id"], "Caparra registrata",
+                 f"Caparra pagata: il noleggio di «{p['annuncio_titolo']}» dal {p['dal']} al {p['al']} è bloccato.",
+                 link="/dashboard")
+    await _email_entrambi(p, "caparra_pagata")

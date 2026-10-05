@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, Check, X, Ban, Truck } from "lucide-react";
+import { CalendarDays, Check, X, Ban, Truck, CreditCard, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STATO = {
@@ -12,7 +12,18 @@ const STATO = {
 const eur = (n) => Number(n).toLocaleString("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 const dIt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
 
-export function PrenotazioniList({ items, ruolo, onStato, onAnnulla }) {
+function CaparraBadge({ p }) {
+    if (p.stato !== "confermata" || !p.caparra_importo) return null;
+    const pagata = p.caparra_stato === "pagata";
+    return (
+        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${pagata ? "bg-emerald-500/15 text-emerald-400" : "bg-brand/15 text-brand"}`} data-testid={`prenotazione-caparra-${p.id}`}>
+            {pagata ? <ShieldCheck className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
+            {pagata ? `Caparra pagata ${eur(p.caparra_importo)}` : `Caparra da pagare ${eur(p.caparra_importo)}`}
+        </span>
+    );
+}
+
+export function PrenotazioniList({ items, ruolo, onStato, onAnnulla, onPagaCaparra, payingId }) {
     if (items === null) return <p className="text-sm text-slate-500">Caricamento prenotazioni…</p>;
     if (items.length === 0) {
         return (
@@ -39,6 +50,7 @@ export function PrenotazioniList({ items, ruolo, onStato, onAnnulla }) {
                                 <Truck className="h-4 w-4 text-brand shrink-0" /> {p.annuncio_titolo}
                             </Link>
                             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATO[p.stato]?.[0]}`} data-testid={`prenotazione-stato-${p.id}`}>{STATO[p.stato]?.[1]}</span>
+                            <CaparraBadge p={p} />
                         </div>
                         <p className="mt-1 text-sm text-slate-300">
                             <CalendarDays className="h-3.5 w-3.5 inline text-brand mr-1" />
@@ -60,7 +72,13 @@ export function PrenotazioniList({ items, ruolo, onStato, onAnnulla }) {
                                 </Button>
                             </>
                         )}
-                        {ruolo === "privato" && (p.stato === "richiesta" || p.stato === "confermata") && (
+                        {ruolo === "privato" && p.stato === "confermata" && p.caparra_stato === "da_pagare" && (
+                            <Button size="sm" disabled={payingId === p.id} onClick={() => onPagaCaparra(p.id)} data-testid={`prenotazione-paga-caparra-${p.id}`}
+                                className="rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/20">
+                                <CreditCard className="h-4 w-4 mr-1.5" /> {payingId === p.id ? "Apertura…" : `Paga caparra ${eur(p.caparra_importo)}`}
+                            </Button>
+                        )}
+                        {ruolo === "privato" && (p.stato === "richiesta" || (p.stato === "confermata" && p.caparra_stato !== "pagata")) && (
                             <Button size="sm" variant="ghost" onClick={() => onAnnulla(p.id)} data-testid={`prenotazione-annulla-${p.id}`} className="rounded-full text-slate-400 hover:text-red-400 hover:bg-white/5">
                                 <Ban className="h-4 w-4 mr-1" /> Annulla
                             </Button>

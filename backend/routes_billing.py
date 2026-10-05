@@ -38,6 +38,54 @@ async def _activate_pro(user_id: str):
                                 {"$set": {"plan": "pro", "subscription_status": "active"}})
 
 
+async def _on_paid(record: dict):
+    if not record:
+        return
+    if record.get("kind") == "caparra":
+        from routes_prenotazioni import segna_caparra_pagata
+        await segna_caparra_pagata(record["prenotazione_id"], record.get("stripe_payment_intent_id"))
+    else:
+        await _activate_pro(record.get("user_id"))
+
+
+def _create_session(**kwargs):
+    if TAX_MODE == "full":
+        try:
+            return stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except Exception as e:
+            msg = (getattr(e, "user_message", "") or str(e)).lower()
+            if "managed payments" in msg or "ineligible" in msg:
+                return stripe.checkout.Session.create(**kwargs, automatic_tax={"enabled": True},
+                                                      billing_address_collection="required")
+            raise
+    if TAX_MODE == "calc_only":
+        return stripe.checkout.Session.create(**kwargs, automatic_tax={"enabled": True},
+                                              billing_address_collection="required")
+    return stripe.checkout.Session.create(**kwargs)
+
+
+async def create_caparra_session(prenotazione: dict, importo: float, user_id: str, origin_url: str):
+    pid = str(prenotazione["_id"])
+    session = _create_session(
+        line_items=[{"quantity": 1, "price_data": {
+            "currency": "eur", "unit_amount": int(round(importo * 100)),
+            "product_data": {"name": f"Caparra noleggio: {prenotazione.get('annuncio_titolo', '')}",
+                             "description": f"Periodo {prenotazione['dal']} - {prenotazione['al']} · {prenotazione.get('azienda_nome', '')}",
+                             "tax_code": "txcd_20030000"},
+        }}],
+        mode="payment",
+        success_url=f"{origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}&tipo=caparra",
+        cancel_url=f"{origin_url}/dashboard",
+        metadata={"user_id": user_id, "kind": "caparra", "prenotazione_id": pid},
+    )
+    await payment_transactions.insert_one({
+        "session_id": session.id, "user_id": user_id, "kind": "caparra", "prenotazione_id": pid,
+        "amount": int(round(importo * 100)), "currency": "eur",
+        "status": "initiated", "payment_status": "pending", "created_at": now(), "updated_at": now(),
+    })
+    return {"checkout_url": session.url, "session_id": session.id}
+
+
 @router.get("/billing/plans")
 async def list_plans():
     return {"plans": PLANS}
@@ -87,7 +135,7 @@ async def create_checkout(req: CheckoutRequest, user: dict = Depends(require_rol
     else:
         session = stripe.checkout.Session.create(**kwargs)
 
-    payment_transactions.insert_one({
+    await payment_transactions.insert_one({
         "session_id": session.id, "user_id": user["id"], "lookup_key": req.lookup_key,
         "amount": (price.unit_amount or 0) * req.quantity, "currency": price.currency,
         "status": "initiated", "payment_status": "pending", "created_at": now(),
@@ -98,26 +146,26 @@ async def create_checkout(req: CheckoutRequest, user: dict = Depends(require_rol
 
 @router.get("/payments/status/{session_id}")
 async def get_status(session_id: str):
-    record = payment_transactions.find_one({"session_id": session_id})
+    record = await payment_transactions.find_one({"session_id": session_id})
     if not record:
         raise HTTPException(status_code=404, detail="Transazione non trovata")
     if record.get("payment_status") != "paid":
         try:
             s = stripe.checkout.Session.retrieve(session_id)
             if s.payment_status == "paid" or s.status == "complete":
-                payment_transactions.update_one(
+                await payment_transactions.update_one(
                     {"session_id": session_id, "payment_status": {"$ne": "paid"}},
                     {"$set": {"status": "completed", "payment_status": "paid",
                               "stripe_subscription_id": s.subscription,
                               "stripe_payment_intent_id": s.payment_intent,
                               "updated_at": now()}})
-                record = payment_transactions.find_one({"session_id": session_id})
+                record = await payment_transactions.find_one({"session_id": session_id})
                 if record and record.get("payment_status") == "paid":
-                    await _activate_pro(record.get("user_id"))
+                    await _on_paid(record)
         except Exception:
             pass
     return {"session_id": record["session_id"], "status": record["status"],
-            "payment_status": record["payment_status"]}
+            "payment_status": record["payment_status"], "kind": record.get("kind", "abbonamento")}
 
 
 @router.post("/stripe/webhook")
@@ -131,29 +179,28 @@ async def stripe_webhook(request: Request):
     obj, t = event["data"]["object"], event["type"]
 
     if t == "checkout.session.completed":
-        res = payment_transactions.update_one(
+        res = await payment_transactions.update_one(
             {"session_id": obj["id"], "payment_status": {"$ne": "paid"}},
             {"$set": {"status": "completed", "payment_status": obj.get("payment_status", "paid"),
                       "stripe_subscription_id": obj.get("subscription"),
                       "stripe_payment_intent_id": obj.get("payment_intent"),
                       "updated_at": now()}})
         if res.modified_count:
-            rec = payment_transactions.find_one({"session_id": obj["id"]})
-            if rec:
-                await _activate_pro(rec.get("user_id"))
+            rec = await payment_transactions.find_one({"session_id": obj["id"]})
+            await _on_paid(rec)
     elif t == "checkout.session.async_payment_succeeded":
-        payment_transactions.update_one({"session_id": obj["id"]},
+        await payment_transactions.update_one({"session_id": obj["id"]},
                                         {"$set": {"payment_status": "paid", "updated_at": now()}})
     elif t == "checkout.session.async_payment_failed":
-        payment_transactions.update_one({"session_id": obj["id"]},
+        await payment_transactions.update_one({"session_id": obj["id"]},
                                         {"$set": {"status": "failed", "payment_status": "failed",
                                                   "updated_at": now()}})
     elif t == "checkout.session.expired":
-        payment_transactions.update_one({"session_id": obj["id"]},
+        await payment_transactions.update_one({"session_id": obj["id"]},
                                         {"$set": {"status": "expired", "payment_status": "expired",
                                                   "updated_at": now()}})
     elif t == "charge.refunded":
-        payment_transactions.update_one({"stripe_payment_intent_id": obj.get("payment_intent")},
+        await payment_transactions.update_one({"stripe_payment_intent_id": obj.get("payment_intent")},
                                         {"$set": {"status": "refunded", "payment_status": "refunded",
                                                   "updated_at": now()}})
     return {"status": "ok"}

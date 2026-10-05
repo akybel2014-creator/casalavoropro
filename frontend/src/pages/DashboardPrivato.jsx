@@ -93,6 +93,18 @@ export default function DashboardPrivato() {
 
     useEffect(() => { load(); }, [load]);
 
+    const [payingId, setPayingId] = useState(null);
+    const pagaCaparra = async (id) => {
+        setPayingId(id);
+        try {
+            const { data } = await api.post(`/prenotazioni/${id}/caparra/checkout`, { origin_url: window.location.origin });
+            window.location.href = data.checkout_url;
+        } catch (e) {
+            toast.error(formatApiError(e));
+            setPayingId(null);
+        }
+    };
+
     const annullaPrenotazione = async (id) => {
         try {
             const { data } = await api.post(`/prenotazioni/${id}/annulla`);
@@ -265,7 +277,7 @@ export default function DashboardPrivato() {
                     </TabsContent>
 
                     <TabsContent value="noleggi" className="mt-6" data-testid="dashboard-noleggi">
-                        <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} />
+                        <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} onPagaCaparra={pagaCaparra} payingId={payingId} />
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">

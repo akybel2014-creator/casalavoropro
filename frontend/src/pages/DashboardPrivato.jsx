@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart } from "lucide-react";
+import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
 import { Stars, StarInput } from "@/components/StarRating";
 import ChatDialog from "@/components/ChatDialog";
 import { PreferiteList } from "@/components/PreferiteList";
+import { PrenotazioniList } from "@/components/PrenotazioniList";
 
 const STATO_STYLES = {
     aperta: "bg-blue-500/15 text-blue-400",
@@ -73,22 +74,34 @@ export default function DashboardPrivato() {
     const [notifiche, setNotifiche] = useState([]);
     const [unreadChat, setUnreadChat] = useState({});
     const [preferite, setPreferite] = useState(null);
+    const [prenotazioni, setPrenotazioni] = useState(null);
 
     const load = useCallback(async () => {
         try {
-            const [r, n, u, p] = await Promise.all([
-                api.get("/richieste/mine"), api.get("/notifiche"), api.get("/chat/unread-count"), api.get("/preferiti"),
+            const [r, n, u, p, b] = await Promise.all([
+                api.get("/richieste/mine"), api.get("/notifiche"), api.get("/chat/unread-count"), api.get("/preferiti"), api.get("/prenotazioni/mine"),
             ]);
             setRichieste(r.data);
             setNotifiche(n.data);
             setUnreadChat(u.data.per_risposta || {});
             setPreferite(p.data);
+            setPrenotazioni(b.data);
         } catch (e) {
             toast.error(formatApiError(e));
         }
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    const annullaPrenotazione = async (id) => {
+        try {
+            const { data } = await api.post(`/prenotazioni/${id}/annulla`);
+            setPrenotazioni((prev) => (prev || []).map((x) => (x.id === id ? data : x)));
+            toast.success("Prenotazione annullata");
+        } catch (e) {
+            toast.error(formatApiError(e));
+        }
+    };
 
     const rimuoviPreferita = async (id, nome) => {
         try {
@@ -137,6 +150,10 @@ export default function DashboardPrivato() {
                         <TabsTrigger value="preferite" data-testid="dashboard-privato-tab-preferite" className="data-[state=active]:text-white">
                             <Heart className="h-4 w-4 mr-1.5" /> Preferite
                             {preferite?.length > 0 && <span className="ml-1.5 rounded-full bg-brand/20 text-brand text-[11px] font-bold px-1.5">{preferite.length}</span>}
+                        </TabsTrigger>
+                        <TabsTrigger value="noleggi" data-testid="dashboard-privato-tab-noleggi" className="data-[state=active]:text-white">
+                            <CalendarDays className="h-4 w-4 mr-1.5" /> Noleggi
+                            {prenotazioni?.some((p) => p.stato === "richiesta") && <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
                         </TabsTrigger>
                         <TabsTrigger value="notifiche" data-testid="dashboard-privato-tab-notifications" className="data-[state=active]:text-white">
                             <Bell className="h-4 w-4 mr-1.5" /> Notifiche
@@ -245,6 +262,10 @@ export default function DashboardPrivato() {
 
                     <TabsContent value="preferite" className="mt-6" data-testid="dashboard-preferite">
                         <PreferiteList items={preferite} onRemove={rimuoviPreferita} />
+                    </TabsContent>
+
+                    <TabsContent value="noleggi" className="mt-6" data-testid="dashboard-noleggi">
+                        <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} />
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">

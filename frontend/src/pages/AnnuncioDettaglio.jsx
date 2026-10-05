@@ -5,6 +5,7 @@ import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { annuncioImg, prezzoLabel, ContattoAzienda, FILES_BASE } from "@/components/AnnuncioCard";
+import { NoleggioCalendar } from "@/components/NoleggioCalendar";
 
 export default function AnnuncioDettaglio() {
     const { id } = useParams();
@@ -23,6 +24,10 @@ export default function AnnuncioDettaglio() {
     const back = noleggio ? "/noleggio" : "/mercatino";
 
     const richiedi = () => {
+        if (noleggio) {
+            document.querySelector('[data-testid="noleggio-calendar"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+        }
         if (!user) return navigate("/login");
         if (user.role === "privato") {
             const q = new URLSearchParams({
@@ -61,6 +66,7 @@ export default function AnnuncioDettaglio() {
                                     ))}
                                 </div>
                             )}
+                            {noleggio && <div className="mt-6"><NoleggioCalendar annuncio={a} /></div>}
                             <div className="mt-6 rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
                                 <h2 className="font-display font-bold text-white text-xl">Descrizione</h2>
                                 <p className="mt-3 text-slate-300 leading-relaxed whitespace-pre-line" data-testid="annuncio-descrizione">{a.descrizione}</p>
@@ -85,7 +91,7 @@ export default function AnnuncioDettaglio() {
                                 </div>
                                 <Button onClick={richiedi} data-testid="annuncio-richiedi-button"
                                     className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/25 font-semibold">
-                                    <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Richiedi disponibilità" : "Contatta il venditore"}
+                                    <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Scegli le date e prenota" : "Contatta il venditore"}
                                 </Button>
                                 <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">
                                     <ShieldCheck className="h-3.5 w-3.5 text-brand" /> Annuncio pubblicato da un'azienda con abbonamento PRO.

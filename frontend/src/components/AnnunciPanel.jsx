@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Truck, Recycle, Trash2, ImagePlus, Loader2, Lock, Eye, EyeOff, MapPin } from "lucide-react";
+import { Plus, Truck, Recycle, Trash2, ImagePlus, Loader2, Lock, Eye, EyeOff, MapPin, Pencil, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,22 +10,42 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, formatApiError } from "@/lib/api";
 import { annuncioImg, prezzoLabel, FILES_BASE } from "@/components/AnnuncioCard";
+import { PrenotazioniList } from "@/components/PrenotazioniList";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 const EMPTY = { tipo: "noleggio", titolo: "", descrizione: "", categoria: "", zona: "", prezzo: "", unita: "giorno", stato: "Buono" };
 
-function NuovoAnnuncioDialog({ meta, zoneDefault, onCreated }) {
+function toForm(a, zoneDefault) {
+    if (!a) return { ...EMPTY, zona: zoneDefault || "" };
+    return { tipo: a.tipo, titolo: a.titolo, descrizione: a.descrizione, categoria: a.categoria, zona: a.zona, prezzo: String(a.prezzo), unita: a.unita || "giorno", stato: a.stato || "Buono" };
+}
+
+function AnnuncioDialog({ meta, zoneDefault, annuncio, onCreated, onUpdated }) {
+    const editing = !!annuncio;
     const [open, setOpen] = useState(false);
-    const [form, setForm] = useState({ ...EMPTY, zona: zoneDefault || "" });
+    const [form, setForm] = useState(() => toForm(annuncio, zoneDefault));
     const [busy, setBusy] = useState(false);
     const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
     const usato = form.tipo === "usato";
+
+    const openChange = (v) => {
+        setOpen(v);
+        if (v) setForm(toForm(annuncio, zoneDefault));
+    };
 
     const submit = async (e) => {
         e.preventDefault();
         setBusy(true);
         try {
             const body = { ...form, prezzo: parseFloat(form.prezzo), unita: usato ? "fisso" : form.unita, stato: usato ? form.stato : null };
+            if (editing) {
+                const { tipo, ...updates } = body;
+                const { data } = await api.put(`/annunci/${annuncio.id}`, updates);
+                toast.success("Annuncio aggiornato!");
+                setOpen(false);
+                onUpdated(data);
+                return;
+            }
             const { data } = await api.post("/annunci", body);
             toast.success("Annuncio pubblicato! Ora aggiungi le foto.");
             setOpen(false);
@@ -39,19 +59,25 @@ function NuovoAnnuncioDialog({ meta, zoneDefault, onCreated }) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={openChange}>
             <DialogTrigger asChild>
-                <Button data-testid="annuncio-new-button" className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                    <Plus className="h-4 w-4 mr-1.5" /> Nuovo annuncio
-                </Button>
+                {editing ? (
+                    <Button size="icon" variant="ghost" data-testid={`my-annuncio-edit-${annuncio.id}`} aria-label="Modifica annuncio" className="text-slate-400 hover:text-white hover:bg-white/5">
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                ) : (
+                    <Button data-testid="annuncio-new-button" className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                        <Plus className="h-4 w-4 mr-1.5" /> Nuovo annuncio
+                    </Button>
+                )}
             </DialogTrigger>
-            <DialogContent className="bg-navy-700 border-white/10 text-white max-h-[90vh] overflow-y-auto" data-testid="annuncio-dialog">
-                <DialogHeader><DialogTitle className="font-display">Pubblica un annuncio</DialogTitle></DialogHeader>
+            <DialogContent className="bg-navy-700 border-white/10 text-white max-h-[90vh] overflow-y-auto" data-testid={editing ? `annuncio-edit-dialog-${annuncio.id}` : "annuncio-dialog"}>
+                <DialogHeader><DialogTitle className="font-display">{editing ? "Modifica annuncio" : "Pubblica un annuncio"}</DialogTitle></DialogHeader>
                 <form onSubmit={submit} className="space-y-4" data-testid="annuncio-form">
                     <div className="grid grid-cols-2 gap-2" data-testid="annuncio-tipo-toggle">
                         {[{ v: "noleggio", l: "Noleggio", I: Truck }, { v: "usato", l: "Vendita usato", I: Recycle }].map((o) => (
-                            <button key={o.v} type="button" onClick={() => set("tipo")(o.v)} data-testid={`annuncio-tipo-${o.v}`}
-                                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${form.tipo === o.v ? "border-brand bg-brand/15 text-brand" : "border-white/10 text-slate-400 hover:text-white"}`}>
+                            <button key={o.v} type="button" disabled={editing} onClick={() => set("tipo")(o.v)} data-testid={`annuncio-tipo-${o.v}`}
+                                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${form.tipo === o.v ? "border-brand bg-brand/15 text-brand" : "border-white/10 text-slate-400 hover:text-white"}`}>
                                 <o.I className="h-4 w-4" /> {o.l}
                             </button>
                         ))}
@@ -107,7 +133,7 @@ function NuovoAnnuncioDialog({ meta, zoneDefault, onCreated }) {
                     </div>
                     <Button type="submit" disabled={busy || !form.categoria} data-testid="annuncio-submit-button"
                         className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold">
-                        {busy ? "Pubblicazione…" : "Pubblica annuncio"}
+                        {busy ? "Salvataggio…" : editing ? "Salva modifiche" : "Pubblica annuncio"}
                     </Button>
                 </form>
             </DialogContent>
@@ -115,7 +141,7 @@ function NuovoAnnuncioDialog({ meta, zoneDefault, onCreated }) {
     );
 }
 
-function AnnuncioRow({ a, onChange, onDelete }) {
+function AnnuncioRow({ a, meta, onChange, onDelete }) {
     const fileRef = useRef(null);
     const [uploading, setUploading] = useState(false);
     const noleggio = a.tipo === "noleggio";
@@ -175,6 +201,7 @@ function AnnuncioRow({ a, onChange, onDelete }) {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
+                            <AnnuncioDialog meta={meta} annuncio={a} onUpdated={onChange} />
                             <label className="flex items-center gap-2 text-xs text-slate-300">
                                 {a.attivo ? <Eye className="h-3.5 w-3.5 text-emerald-400" /> : <EyeOff className="h-3.5 w-3.5 text-slate-500" />}
                                 <Switch checked={!!a.attivo} onCheckedChange={toggleAttivo} data-testid={`my-annuncio-attivo-${a.id}`} className="data-[state=checked]:bg-brand" />
@@ -209,14 +236,16 @@ function AnnuncioRow({ a, onChange, onDelete }) {
 
 export function AnnunciPanel({ azienda, onGoToAbbonamento }) {
     const [items, setItems] = useState(null);
+    const [prenotazioni, setPrenotazioni] = useState(null);
     const [meta, setMeta] = useState({ categorie: [], unita: [], stati_usato: [] });
     const isPro = azienda?.plan === "pro";
 
     const load = useCallback(async () => {
         try {
-            const [m, a] = await Promise.all([api.get("/annunci/meta"), api.get("/annunci/mine")]);
+            const [m, a, p] = await Promise.all([api.get("/annunci/meta"), api.get("/annunci/mine"), api.get("/prenotazioni/azienda")]);
             setMeta(m.data);
             setItems(a.data);
+            setPrenotazioni(p.data);
         } catch (e) {
             toast.error(formatApiError(e));
         }
@@ -225,6 +254,16 @@ export function AnnunciPanel({ azienda, onGoToAbbonamento }) {
     useEffect(() => { load(); }, [load]);
 
     const replace = (fresh) => setItems((list) => list.map((x) => (x.id === fresh.id ? fresh : x)));
+    const cambiaStato = async (id, stato) => {
+        try {
+            const { data } = await api.post(`/prenotazioni/${id}/stato`, { stato });
+            setPrenotazioni((list) => list.map((x) => (x.id === id ? data : x)));
+            toast.success(stato === "confermata" ? "Noleggio confermato: il cliente è stato avvisato" : "Richiesta rifiutata");
+        } catch (err) {
+            toast.error(formatApiError(err));
+        }
+    };
+    const inAttesa = prenotazioni?.filter((p) => p.stato === "richiesta").length || 0;
     const remove = async (a) => {
         try {
             await api.delete(`/annunci/${a.id}`);
@@ -257,7 +296,7 @@ export function AnnunciPanel({ azienda, onGoToAbbonamento }) {
                     <h3 className="font-display font-bold text-white text-xl">I tuoi annunci</h3>
                     <p className="mt-1 text-sm text-slate-400">Mezzi a noleggio e attrezzatura usata visibili su /noleggio e /mercatino.</p>
                 </div>
-                <NuovoAnnuncioDialog meta={meta} zoneDefault={azienda?.zone?.[0]} onCreated={(a) => setItems((list) => [a, ...(list || [])])} />
+                <AnnuncioDialog meta={meta} zoneDefault={azienda?.zone?.[0]} onCreated={(a) => setItems((list) => [a, ...(list || [])])} />
             </div>
             {items && items.length === 0 && (
                 <div className="rounded-3xl border border-dashed border-white/15 p-10 text-center" data-testid="annunci-mine-empty">
@@ -265,7 +304,16 @@ export function AnnunciPanel({ azienda, onGoToAbbonamento }) {
                     <p className="mt-3 text-sm text-slate-400">Nessun annuncio ancora. Pubblica il primo: bastano titolo, prezzo e una foto.</p>
                 </div>
             )}
-            {items && items.map((a) => <AnnuncioRow key={a.id} a={a} onChange={replace} onDelete={remove} />)}
+            {items && items.map((a) => <AnnuncioRow key={a.id} a={a} meta={meta} onChange={replace} onDelete={remove} />)}
+
+            <div className="pt-6 border-t border-white/10" data-testid="prenotazioni-azienda">
+                <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-brand" /> Richieste di noleggio
+                    {inAttesa > 0 && <span className="rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold px-2 py-0.5" data-testid="prenotazioni-in-attesa">{inAttesa} da gestire</span>}
+                </h3>
+                <p className="mt-1 mb-4 text-sm text-slate-400">Conferma o rifiuta le date richieste dai privati: i giorni confermati o in attesa risultano occupati nel calendario.</p>
+                <PrenotazioniList items={prenotazioni} ruolo="azienda" onStato={cambiaStato} />
+            </div>
         </div>
     );
 }

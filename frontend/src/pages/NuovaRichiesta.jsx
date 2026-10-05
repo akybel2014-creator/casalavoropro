@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
-import { CATEGORIES } from "@/components/landing/CategoryGrid";
+import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 
 export default function NuovaRichiesta() {
     const navigate = useNavigate();
@@ -68,7 +68,7 @@ export default function NuovaRichiesta() {
                                     <SelectValue placeholder="Scegli categoria" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-navy-700 border-white/10">
-                                    {CATEGORIES.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                                    {SERVICE_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

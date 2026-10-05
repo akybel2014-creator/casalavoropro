@@ -11,7 +11,7 @@ import LaunchBanner from "@/components/site/LaunchBanner";
 import { CountdownOfferta } from "@/components/CountdownOfferta";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/api";
-import { CATEGORIES } from "@/components/landing/CategoryGrid";
+import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 
 export default function Registrati() {
     const navigate = useNavigate();
@@ -106,14 +106,14 @@ export default function Registrati() {
                                 <div className="space-y-2">
                                     <Label className="text-slate-300">Categorie di lavoro</Label>
                                     <div className="flex flex-wrap gap-1.5" data-testid="register-categories">
-                                        {CATEGORIES.map((c) => (
-                                            <button key={c.name} type="button" onClick={() => toggleCat(c.name)}
+                                        {SERVICE_CATEGORIES.map((c) => (
+                                            <button key={c} type="button" onClick={() => toggleCat(c)}
                                                 className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-                                                    categorie.includes(c.name)
+                                                    categorie.includes(c)
                                                         ? "border-brand bg-brand/15 text-brand"
                                                         : "border-white/15 text-slate-400 hover:text-white"
                                                 }`}>
-                                                {c.name}
+                                                {c}
                                             </button>
                                         ))}
                                     </div>

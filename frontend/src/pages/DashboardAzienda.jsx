@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "react-router-dom";
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { CATEGORIES } from "@/components/landing/CategoryGrid";
+import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
 import ChatDialog from "@/components/ChatDialog";
 import { AnnunciPanel } from "@/components/AnnunciPanel";
@@ -340,14 +340,14 @@ export default function DashboardAzienda() {
                                     <div className="space-y-2">
                                         <Label className="text-slate-300">Categorie</Label>
                                         <div className="flex flex-wrap gap-1.5" data-testid="profile-categories">
-                                            {CATEGORIES.map((c) => (
-                                                <button key={c.name} type="button" onClick={() => toggleCat(c.name)}
+                                            {SERVICE_CATEGORIES.map((c) => (
+                                                <button key={c} type="button" onClick={() => toggleCat(c)}
                                                     className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-                                                        mine.categorie?.includes(c.name)
+                                                        mine.categorie?.includes(c)
                                                             ? "border-brand bg-brand/15 text-brand"
                                                             : "border-white/15 text-slate-400 hover:text-white"
                                                     }`}>
-                                                    {c.name}
+                                                    {c}
                                                 </button>
                                             ))}
                                         </div>

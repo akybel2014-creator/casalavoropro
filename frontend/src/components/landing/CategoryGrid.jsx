@@ -13,6 +13,42 @@ export const CATEGORIES = [
     { name: "Altri Servizi", count: "2.400 aziende", icon: LayoutGrid, id: "category-card-altri-servizi" },
 ];
 
+// Elenco completo delle categorie di servizio selezionabili (registrazione azienda, nuova richiesta, filtri).
+// La griglia in home resta curata (CATEGORIES); qui c'è l'elenco completo deduplicato.
+export const SERVICE_CATEGORIES = [
+    "Assicurazione",
+    "Catering",
+    "Edilizia",
+    "Elettricità",
+    "Geometra",
+    "Giardinaggio",
+    "Giardiniere",
+    "Idraulica",
+    "Idraulico",
+    "Imbiancatura",
+    "Imbianchino",
+    "Installazione Condizionatori",
+    "Investigatore Privato",
+    "NCC",
+    "Noleggio con Conducente",
+    "Notaio",
+    "Nutrizionista",
+    "Pavimenti",
+    "Personal Trainer",
+    "Psicologo",
+    "Pulizia",
+    "Pulizie a Fondo",
+    "Riparazione Elettrodomestici",
+    "Ristrutturazione Casa",
+    "Ristrutturazioni",
+    "Sale per Compleanni",
+    "Svuota Cantine",
+    "Termoidraulica",
+    "Trasporti",
+    "Zanzariere",
+    "Altri Servizi",
+];
+
 export default function CategoryGrid() {
     return (
         <section id="categorie" className="relative bg-navy py-16 sm:py-24 lg:py-32">

@@ -92,6 +92,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
   - DashboardAzienda tab Abbonamento reso condizionale: active_trial → card offerta lancio; active (pagato) → "Abbonamento attivo"; trial_expired/free → piani a pagamento Base/Pro + pulsanti Stripe checkout ripristinati + nota "offerta terminata". Ripristinata la funzione checkout().
   - Test: /app/backend/tests/test_cron_offerta.py (expire/skip/reminder/idempotenza PASS) + iteration_7.json (UI 3 stati PASS, checkout→Stripe OK).
   - NOTA: le modifiche (crons + dashboard + email promemoria) richiedono un REDEPLOY per attivarsi in produzione (le schedule cron si sincronizzano al deploy).
+- Nuove categorie di servizio (2026-10-05): aggiunto export SERVICE_CATEGORIES in components/landing/CategoryGrid.jsx (elenco completo deduplicato: vecchie showcase + Assicurazione, Catering, Geometra, Giardiniere, Idraulico, Imbianchino, Installazione Condizionatori, Investigatore Privato, NCC, Noleggio con Conducente, Notaio, Nutrizionista, Personal Trainer, Psicologo, Pulizia, Pulizie a Fondo, Riparazione Elettrodomestici, Ristrutturazione Casa, Ristrutturazioni, Sale per Compleanni, Svuota Cantine, Trasporti, Zanzariere). Selettori/filtri (Registrati, DashboardAzienda, NuovaRichiesta, Aziende) ora usano SERVICE_CATEGORIES. La griglia home (CATEGORIES) resta curata. Backend: categoria è testo libero, nessuna modifica. Verificato via screenshot.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

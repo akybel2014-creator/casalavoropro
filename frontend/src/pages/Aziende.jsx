@@ -5,7 +5,7 @@ import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES } from "@/components/landing/CategoryGrid";
+import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
 import MapView from "@/components/MapView";
 import { LayoutGrid, Map as MapIcon } from "lucide-react";
@@ -122,8 +122,8 @@ export default function Aziende() {
                             </SelectTrigger>
                             <SelectContent className="bg-navy-700 border-white/10">
                                 <SelectItem value="all">Tutte le categorie</SelectItem>
-                                {CATEGORIES.map((c) => (
-                                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                                {SERVICE_CATEGORIES.map((c) => (
+                                    <SelectItem key={c} value={c}>{c}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>

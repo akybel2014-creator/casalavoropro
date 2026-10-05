@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CountdownOfferta } from "@/components/CountdownOfferta";
 
 const PRIVATO = {
     title: "Sei un Privato?",
@@ -59,6 +60,7 @@ function CtaCard({ data, variant }) {
                     </li>
                 ))}
             </ul>
+            {orange && <CountdownOfferta tone="onOrange" className="mt-7" />}
             <Button
                 data-testid={data.testid}
                 onClick={() => navigate(data.to)}

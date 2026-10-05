@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/Logo";
+import { CountdownOfferta } from "@/components/CountdownOfferta";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/api";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
@@ -62,6 +63,15 @@ export default function Registrati() {
                 <div className="mt-8 rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-9 shadow-2xl">
                     <h1 className="font-display font-black text-2xl text-white tracking-tight">Crea il tuo account</h1>
                     <p className="mt-1 text-sm text-slate-400">Gratis, senza vincoli. Scegli chi sei.</p>
+
+                    {ruolo === "azienda" && (
+                        <div className="mt-5 rounded-2xl border border-brand/30 bg-brand/10 p-4" data-testid="register-offerta-lancio">
+                            <p className="text-sm font-semibold" style={{ color: "#FFFFFF" }}>
+                                Offerta Lancio Fondatori: profilo PRO 100% GRATIS fino al 31 Dicembre, senza carta di credito.
+                            </p>
+                            <CountdownOfferta tone="onDark" className="mt-3" />
+                        </div>
+                    )}
 
                     <div className="mt-6 grid grid-cols-2 gap-3" data-testid="register-role-toggle">
                         {[

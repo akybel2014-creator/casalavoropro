@@ -124,7 +124,7 @@ def _wrap(title: str, body_html: str, cta_text: str = "", cta_href: str = "") ->
             f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
             f'style="background-color:#0B132B;border-radius:16px;overflow:hidden;">'
             f'<tr><td style="padding:24px 32px;background-color:#0B132B;">'
-            f'<span style="color:#FF5A1F;font-weight:800;font-size:20px;font-family:Arial,sans-serif;">CasaLavori<span style="color:#ffffff">PRO</span></span>'
+            f'<span style="color:#FF5A1F;font-weight:800;font-size:20px;font-family:Arial,sans-serif;">CasaLavoro<span style="color:#ffffff">PRO</span></span>'
             f'</td></tr>'
             f'<tr><td style="padding:8px 32px 8px 32px;color:#F8FAFC;font-family:Arial,sans-serif;'
             f'font-size:22px;font-weight:bold;">{escape(title)}</td></tr>'
@@ -137,11 +137,22 @@ def _wrap(title: str, body_html: str, cta_text: str = "", cta_href: str = "") ->
 
 async def send_welcome(to: str, name: str, ruolo: str):
     if ruolo == "azienda":
-        body = (f'<p>Ciao {escape(name)}, benvenuto nella rete di {escape(EMAIL_FROM_NAME)}.</p>'
-                f'<p>Completa il profilo della tua impresa e richiedi la verifica PRO: le aziende '
-                f'verificate ricevono piu richieste di preventivo dai privati della tua zona.</p>')
-        await send_email(to=to, subject="Benvenuto su CasaLavoroPRO", html=_wrap(
-            "Benvenuto, azienda PRO", body, "Completa il profilo", f"{FRONTEND_URL}/dashboard/azienda"))
+        body = (f'<p>Ciao {escape(name)}, benvenuto nella rete di {escape(EMAIL_FROM_NAME)}!</p>'
+                f'<p style="background-color:#FF5A1F;color:#ffffff;padding:14px 18px;border-radius:10px;'
+                f'font-weight:bold;font-size:16px;">Offerta Lancio Fondatori 2026: il tuo profilo PRO '
+                f'&egrave; 100&#37; GRATIS fino al 31 Dicembre 2026. Nessuna carta di credito richiesta.</p>'
+                f'<p>Da subito hai attive <strong>tutte le funzioni PRO</strong>:</p>'
+                f'<ul style="padding-left:18px;margin:8px 0;">'
+                f'<li>Richieste di lavoro e preventivi illimitati gratis</li>'
+                f'<li>Sezione Annunci Noleggio Attrezzatura inclusa</li>'
+                f'<li>Vendita Macchinari Usati senza commissioni</li>'
+                f'<li>Badge PRO e massima visibilit&agrave; nelle ricerche locali</li>'
+                f'</ul>'
+                f'<p>Completa ora il profilo della tua impresa e richiedi la verifica: le aziende '
+                f'verificate ricevono pi&ugrave; richieste di preventivo. Blocca il tuo posto da Fondatore '
+                f'prima che scada l\'offerta!</p>')
+        await send_email(to=to, subject="Il tuo profilo PRO è GRATIS fino al 31 Dicembre · Offerta Fondatori", html=_wrap(
+            "Benvenuto, Fondatore PRO", body, "Completa il profilo", f"{FRONTEND_URL}/dashboard/azienda"))
     else:
         body = (f'<p>Ciao {escape(name)}, benvenuto su {escape(EMAIL_FROM_NAME)}.</p>'
                 f'<p>Descrivi il lavoro da fare in casa: riceverai preventivi gratuiti da aziende '

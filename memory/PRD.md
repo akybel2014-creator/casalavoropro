@@ -80,6 +80,9 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
   - DashboardAzienda tab Abbonamento: rimossi prezzi €/mese €/anno e pulsanti Stripe (checkout). Mostra card offerta lancio + badge "Profilo PRO attivo · gratis fino al 31 Dicembre 2026".
   - Footer: rimossi telefono e indirizzo (restano email info@casalavoropro.com + orari).
   - SEO potenziata: title/description/keywords ottimizzati, Open Graph + Twitter card, JSON-LD (Organization/WebSite/Service), /robots.txt, /sitemap.xml, /og-image.svg. Dominio canonical: casalavoropro.com.
+- Email Benvenuto Fondatori (2026-10-05): emailer.send_welcome (ramo azienda) riscritto per spiegare accesso PRO gratis fino al 31/12 con elenco funzioni incluse + CTA profilo. Fixato anche il logo nell'header email (CasaLavoro PRO). Invio verificato via Resend (HTTP 202 Accepted su delivered@resend.dev).
+- Countdown Offerta (2026-10-05): nuovo componente /components/CountdownOfferta.jsx (deadline 2026-12-31 23:59:59 +01:00) mostrato sul box azienda in home (tone onOrange) e sulla pagina /registrati?ruolo=azienda (tone onDark). Verificato il rendering live.
+- Deploy richiesto dall'utente (2026-10-05) per pubblicare nome nuovo + offerta lancio + countdown + email fondatori.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

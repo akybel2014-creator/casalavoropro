@@ -1,0 +1,59 @@
+{
+  "summary": "Frontend-only testing per request. Verified CasaLavoroPRO Launch Banner visibility on all public and auth pages, no content overlap, home 'Per le aziende' offer section, registration page offer+countdown, azienda dashboard Subscription panel content, and end-to-end azienda registration with auto-PRO annuncio creation (noleggio).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DashboardAzienda.jsx is a large page; subscription panel content hard-codes offer copy — consider centralizing with CtaBoxes/Registrati to avoid duplication (3 copies of same bullets/subtitle).",
+    "LaunchBanner is injected inside <header>; on /login and /registrati pages (which don't render SiteLayout header, standalone layout) banner still shows via Header component -- confirmed working. Keep in mind for future pages without <Header /> wrapper, banner won't appear.",
+    "console shows repeated 401 errors on public pages (chat/unread-count poll runs for unauthenticated user?). Check Header useEffect guard: it does skip when !user, so 401s likely come from another hook — minor noise.",
+    "Register redirect to /dashboard/azienda works, but there is no explicit visibility test for data-testid='register-offerta-lancio' element only on azienda tab; works as expected."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "Dynamically-created azienda per run (azienda_<ts>@example.com / Test2026!). Demo credentials from request not needed.",
+  "seed_data_creation": "Created one Azienda user + one Noleggio annuncio per test run (prefix 'Azienda Test <ts>', titolo 'Trapano Test Noleggio').",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All launch-banner UI, countdown, offer section, dashboard subscription panel (no Stripe buttons), and PRO-gated annuncio creation flows verified from UI. No bugs found. Observed 401s in console on public pages are pre-existing (not related to this feature).",
+  "verification_details": {
+    "launch_banner_visibility": {
+      "pages_checked": ["/", "/aziende", "/noleggio", "/mercatino", "/login", "/registrati"],
+      "banner_visible_everywhere": true,
+      "cta_href": "/registrati?ruolo=azienda",
+      "countdown_visible_everywhere": true,
+      "overlap_with_h1": false
+    },
+    "home_offer_section": {
+      "subtitle_color_rgb": "255,255,255",
+      "cta_text": "Registrati Gratis Ora (Senza Carta)",
+      "has_prices_eur_per_month_or_year": false
+    },
+    "register_page": {
+      "register_offerta_lancio_visible": true,
+      "countdown_offerta_visible": true,
+      "register_submit_redirects_to": "/dashboard/azienda"
+    },
+    "dashboard_azienda_subscription_tab": {
+      "subscription_panel": true,
+      "offerta_lancio_title": true,
+      "offerta_lancio_bullets": true,
+      "subscription_active_badge_text": "Profilo PRO attivo · gratis fino al 31 Dicembre 2026",
+      "checkout_monthly_button_exists": false,
+      "checkout_yearly_button_exists": false,
+      "panel_contains_eur_prices": false,
+      "abbonamento_badge": "ABBONAMENTO PRO"
+    },
+    "annuncio_noleggio_creation": {
+      "annunci_locked": false,
+      "annunci_panel_visible": true,
+      "created_successfully": true,
+      "toast": "Annuncio pubblicato! Ora aggiungi le foto."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+crons:
+  - name: offer-reminder
+    description: "Invia promemoria alle aziende in prova a 7 e 1 giorni dalla fine dell'Offerta Fondatori"
+    cron: "0 9 * * *"
+    endpoint: "{{BASE_URL}}/api/cron/offer-reminder"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true
+  - name: offer-expire
+    description: "Dopo il 31/12 converte le aziende con prova scaduta e riattiva i piani a pagamento"
+    cron: "30 0 * * *"
+    endpoint: "{{BASE_URL}}/api/cron/offer-expire"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

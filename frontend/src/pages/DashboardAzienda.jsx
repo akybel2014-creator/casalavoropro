@@ -88,6 +88,7 @@ export default function DashboardAzienda() {
     const [unreadChat, setUnreadChat] = useState({});
     const [busy, setBusy] = useState(false);
     const [geoBusy, setGeoBusy] = useState(false);
+    const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
     const fileRef = useRef(null);
     const [tab, setTab] = useState("leads");
@@ -197,6 +198,19 @@ export default function DashboardAzienda() {
     };
 
     const toggleCat = (c) => setMine((m) => ({ ...m, categorie: m.categorie?.includes(c) ? m.categorie.filter((x) => x !== c) : [...(m.categorie || []), c] }));
+
+    const checkout = async (lookupKey) => {
+        setCheckingOut(true);
+        try {
+            const { data } = await api.post("/payments/checkout", {
+                lookup_key: lookupKey, origin_url: window.location.origin,
+            });
+            window.location.href = data.checkout_url;
+        } catch (err) {
+            toast.error(formatApiError(err));
+            setCheckingOut(false);
+        }
+    };
 
     const VER_STYLES = {
         none: ["bg-white/5 text-slate-400", "Non richiesta"],
@@ -515,36 +529,92 @@ export default function DashboardAzienda() {
                     </TabsContent>
 
                     <TabsContent value="abbonamento" className="mt-6" data-testid="subscription-panel">
-                        <div className="relative overflow-hidden rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10 shadow-2xl shadow-brand/10">
-                            <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-brand/20 blur-3xl" aria-hidden="true" />
-                            <span className="inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1 text-xs font-bold uppercase tracking-wide text-white" data-testid="offerta-lancio-badge">
-                                Riservato ai fondatori
-                            </span>
-                            <h3 className="mt-4 font-display font-black tracking-tight text-2xl sm:text-3xl text-white" data-testid="offerta-lancio-title">
-                                Offerta Lancio Fondatori 2026
-                            </h3>
-                            <p className="mt-3 max-w-2xl text-base sm:text-lg font-semibold" style={{ color: "#FFFFFF" }} data-testid="offerta-lancio-subtitle">
-                                Tutte le funzioni del piano PRO sono 100% GRATUITE fino al 31 Dicembre. Nessuna carta di credito richiesta. Blocca il tuo profilo prima che scada l'offerta!
-                            </p>
-                            <ul className="mt-7 space-y-3" data-testid="offerta-lancio-bullets">
-                                {[
-                                    "Richieste di lavoro e preventivi illimitati gratis",
-                                    "Incluso: Sezione Annunci Noleggio Attrezzatura",
-                                    "Incluso: Vendita Macchinari Usati senza commissioni",
-                                    "Badge PRO e massima visibilità nelle ricerche locali",
-                                ].map((f) => (
-                                    <li key={f} className="flex items-start gap-3 text-sm sm:text-base text-white">
-                                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/20 text-brand">
-                                            <Check className="h-3.5 w-3.5" />
-                                        </span>
-                                        {f}
-                                    </li>
-                                ))}
-                            </ul>
-                            <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
-                                <Check className="h-4 w-4" /> Profilo PRO attivo · gratis fino al 31 Dicembre 2026
-                            </p>
-                        </div>
+                        {mine?.subscription_status === "active_trial" ? (
+                            <div className="relative overflow-hidden rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10 shadow-2xl shadow-brand/10">
+                                <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-brand/20 blur-3xl" aria-hidden="true" />
+                                <span className="inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1 text-xs font-bold uppercase tracking-wide text-white" data-testid="offerta-lancio-badge">
+                                    Riservato ai fondatori
+                                </span>
+                                <h3 className="mt-4 font-display font-black tracking-tight text-2xl sm:text-3xl text-white" data-testid="offerta-lancio-title">
+                                    Offerta Lancio Fondatori 2026
+                                </h3>
+                                <p className="mt-3 max-w-2xl text-base sm:text-lg font-semibold" style={{ color: "#FFFFFF" }} data-testid="offerta-lancio-subtitle">
+                                    Tutte le funzioni del piano PRO sono 100% GRATUITE fino al 31 Dicembre. Nessuna carta di credito richiesta. Blocca il tuo profilo prima che scada l'offerta!
+                                </p>
+                                <ul className="mt-7 space-y-3" data-testid="offerta-lancio-bullets">
+                                    {[
+                                        "Richieste di lavoro e preventivi illimitati gratis",
+                                        "Incluso: Sezione Annunci Noleggio Attrezzatura",
+                                        "Incluso: Vendita Macchinari Usati senza commissioni",
+                                        "Badge PRO e massima visibilità nelle ricerche locali",
+                                    ].map((f) => (
+                                        <li key={f} className="flex items-start gap-3 text-sm sm:text-base text-white">
+                                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/20 text-brand">
+                                                <Check className="h-3.5 w-3.5" />
+                                            </span>
+                                            {f}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
+                                    <Check className="h-4 w-4" /> Profilo PRO attivo · gratis fino al 31 Dicembre 2026
+                                </p>
+                            </div>
+                        ) : mine?.subscription_status === "active" ? (
+                            <div className="rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10">
+                                <h3 className="font-display font-bold text-white text-xl">Piano Pro</h3>
+                                <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
+                                    {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Annunci noleggio e usato illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
+                                        <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
+                                    ))}
+                                </ul>
+                                <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
+                                    <Check className="h-4 w-4" /> Abbonamento attivo
+                                </p>
+                            </div>
+                        ) : (
+                            <div data-testid="subscription-paid-plans">
+                                {mine?.subscription_status === "trial_expired" && (
+                                    <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200" data-testid="trial-expired-note">
+                                        L'Offerta Lancio Fondatori è terminata. Attiva un piano PRO per continuare a ricevere richieste illimitate e pubblicare annunci noleggio e usato.
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7">
+                                        <h3 className="font-display font-bold text-white text-xl">Base</h3>
+                                        <p className="mt-1 font-display font-black text-3xl text-white">Gratis</p>
+                                        <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
+                                            {["Profilo azienda nella directory", "Ricevi richieste della tua categoria", "Invia fino a 2 preventivi al mese"].map((f) => (
+                                                <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-slate-500" /> {f}</li>
+                                            ))}
+                                        </ul>
+                                        <p className="mt-6 text-xs text-slate-500">Il tuo piano attuale</p>
+                                    </div>
+
+                                    <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 shadow-2xl shadow-brand/10">
+                                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">CONSIGLIATO</span>
+                                        <h3 className="font-display font-bold text-white text-xl">Pro</h3>
+                                        <p className="mt-1 font-display font-black text-3xl text-white" data-testid="pro-price-monthly">€3,99<span className="text-base font-semibold text-slate-400">/mese</span></p>
+                                        <p className="text-xs text-slate-400" data-testid="pro-price-yearly">oppure €39,99/anno (2 mesi gratis)</p>
+                                        <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
+                                            {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Annunci noleggio e usato illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
+                                                <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
+                                            ))}
+                                        </ul>
+                                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                                            <Button onClick={() => checkout("pro_monthly")} disabled={checkingOut} data-testid="checkout-monthly-button"
+                                                className="flex-1 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                                {checkingOut && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Attiva mensile
+                                            </Button>
+                                            <Button onClick={() => checkout("pro_yearly")} disabled={checkingOut} data-testid="checkout-yearly-button" variant="outline"
+                                                className="flex-1 rounded-xl border-brand text-brand hover:bg-brand hover:text-navy font-semibold">
+                                                Attiva annuale
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </div>

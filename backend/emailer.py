@@ -161,6 +161,23 @@ async def send_welcome(to: str, name: str, ruolo: str):
             "Benvenuto su CasaLavoroPRO", body, "Richiedi un preventivo", f"{FRONTEND_URL}/nuova-richiesta"))
 
 
+async def send_offer_reminder(to: str, name: str, days_left: int):
+    giorni = "giorno" if days_left == 1 else "giorni"
+    body = (f'<p>Ciao {escape(name)},</p>'
+            f'<p style="background-color:#FF5A1F;color:#ffffff;padding:14px 18px;border-radius:10px;'
+            f'font-weight:bold;font-size:16px;">Mancano solo {days_left} {giorni} alla fine dell\'Offerta '
+            f'Lancio Fondatori 2026.</p>'
+            f'<p>Il tuo profilo PRO &egrave; ancora <strong>100&#37; GRATIS fino al 31 Dicembre</strong>. '
+            f'Dopo questa data, per continuare a usare le funzioni PRO (preventivi illimitati, annunci '
+            f'noleggio e vendita usato, badge PRO e massima visibilit&agrave;) sar&agrave; necessario '
+            f'attivare un abbonamento.</p>'
+            f'<p>Approfitta ora: completa il profilo della tua impresa e richiedi la verifica per ricevere '
+            f'pi&ugrave; richieste di preventivo.</p>')
+    await send_email(to=to, subject=f"Mancano {days_left} {giorni}: la tua Offerta Fondatori sta per scadere",
+                     html=_wrap("L'offerta sta per scadere", body, "Vai al profilo", f"{FRONTEND_URL}/dashboard/azienda"))
+
+
+
 async def send_new_quote(to: str, client_name: str, azienda_nome: str, prezzo: float):
     body = (f'<p>Ciao {escape(client_name)}, hai ricevuto un nuovo preventivo da '
             f'<strong>{escape(azienda_nome)}</strong>.</p>'

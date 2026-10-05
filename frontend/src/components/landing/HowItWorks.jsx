@@ -18,7 +18,7 @@ const STEPS = [
     {
         n: "03",
         title: "Un solo intermediario",
-        desc: "CasaLavoriPRO gestisce messaggistica, verifiche e preventivi su una singola piattaforma intuitiva, senza costi nascosti o commissioni sulle opere.",
+        desc: "CasaLavoroPRO gestisce messaggistica, verifiche e preventivi su una singola piattaforma intuitiva, senza costi nascosti o commissioni sulle opere.",
         badge: "Semplice & Diretto",
         id: "come-funziona-step-3",
     },

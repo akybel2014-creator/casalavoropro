@@ -4,12 +4,75 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0B132B" />
-        <meta name="description" content="CasaLavoriPRO — Il marketplace che unisce privati e aziende qualificate per i lavori in casa: idraulica, elettricità, ristrutturazioni e altro. Preventivi gratuiti, aziende verificate." />
+        <title>CasaLavoroPRO — Preventivi gratuiti da aziende e professionisti verificati</title>
+        <meta name="description" content="CasaLavoroPRO è il marketplace italiano che unisce privati, aziende e professionisti verificati per lavori in casa: idraulica, elettricità, ristrutturazioni, imbianchino, noleggio attrezzatura e mercatino dell'usato. Preventivi gratuiti in 2 minuti, aziende controllate." />
+        <meta name="keywords" content="preventivi lavori casa, idraulico, elettricista, ristrutturazioni, imbianchino, noleggio attrezzatura edile, macchinari usati, aziende edili verificate, professionisti casa, marketplace lavori, CasaLavoroPRO" />
+        <meta name="author" content="CasaLavoroPRO" />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <meta name="language" content="Italian" />
+        <link rel="canonical" href="https://casalavoropro.com/" />
         <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="CasaLavoroPRO" />
+        <meta property="og:locale" content="it_IT" />
+        <meta property="og:url" content="https://casalavoropro.com/" />
+        <meta property="og:title" content="CasaLavoroPRO — Preventivi gratuiti da aziende e professionisti verificati" />
+        <meta property="og:description" content="Il marketplace italiano per i lavori in casa: idraulica, elettricità, ristrutturazioni, noleggio attrezzatura e mercatino dell'usato. Preventivi gratuiti, aziende verificate." />
+        <meta property="og:image" content="%PUBLIC_URL%/og-image.svg" />
+
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="CasaLavoroPRO — Preventivi gratuiti da aziende verificate" />
+        <meta name="twitter:description" content="Il marketplace italiano per i lavori in casa. Preventivi gratuiti in 2 minuti, aziende e professionisti verificati." />
+        <meta name="twitter:image" content="%PUBLIC_URL%/og-image.svg" />
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-        <title>CasaLavoriPRO — Il marketplace dei lavori in casa</title>
+
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "Organization",
+                    "@id": "https://casalavoropro.com/#organization",
+                    "name": "CasaLavoroPRO",
+                    "url": "https://casalavoropro.com/",
+                    "description": "Marketplace italiano che collega privati con aziende e professionisti verificati per lavori in casa, noleggio attrezzatura e vendita di macchinari usati.",
+                    "areaServed": "IT",
+                    "contactPoint": {
+                        "@type": "ContactPoint",
+                        "email": "info@casalavoropro.com",
+                        "contactType": "customer support",
+                        "availableLanguage": "Italian"
+                    }
+                },
+                {
+                    "@type": "WebSite",
+                    "@id": "https://casalavoropro.com/#website",
+                    "url": "https://casalavoropro.com/",
+                    "name": "CasaLavoroPRO",
+                    "inLanguage": "it-IT",
+                    "publisher": { "@id": "https://casalavoropro.com/#organization" },
+                    "potentialAction": {
+                        "@type": "SearchAction",
+                        "target": "https://casalavoropro.com/aziende?q={search_term_string}",
+                        "query-input": "required name=search_term_string"
+                    }
+                },
+                {
+                    "@type": "Service",
+                    "name": "Preventivi per lavori in casa",
+                    "provider": { "@id": "https://casalavoropro.com/#organization" },
+                    "areaServed": "IT",
+                    "serviceType": ["Idraulica", "Elettricità", "Ristrutturazioni", "Imbianchino", "Noleggio attrezzatura", "Mercatino usato"]
+                }
+            ]
+        }
+        </script>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>

@@ -18,18 +18,15 @@ const PRIVATO = {
 };
 
 const AZIENDA = {
-    title: "Sei un'Azienda?",
-    subtitle: "Vuoi aumentare il tuo fatturato, acquisire nuovi cantieri e far rendere il tuo parco macchine?",
+    title: "Sei un'Azienda o un Professionista?",
+    subtitle: "Attiva ora il tuo profilo PRO: durante l'Offerta Lancio Fondatori è tutto gratis, senza carta di credito.",
     bullets: [
-        "Ricevi richieste lavorative nella tua provincia",
-        "Pagina profilo indicizzata su Google con portfolio",
-        "Sistema di gestione preventivi e chat cliente",
-        "Noleggia i tuoi macchinari fermi: entrate extra nei giorni di inattività",
-        "Vendi l'attrezzatura usata nel Mercatino con badge venditore verificato",
-        "Annunci noleggio e usato illimitati inclusi nell'abbonamento PRO",
-        "Piani di abbonamento flessibili e rimborso crediti",
+        "Richieste di lavoro e preventivi illimitati gratis",
+        "Incluso: Sezione Annunci Noleggio Attrezzatura",
+        "Incluso: Vendita Macchinari Usati senza commissioni",
+        "Badge PRO e massima visibilità nelle ricerche locali",
     ],
-    cta: "Registra la tua Azienda",
+    cta: "Registrati Gratis Ora (Senza Carta)",
     to: "/registrati?ruolo=azienda",
     testid: "cta-azienda-button",
 };
@@ -86,12 +83,15 @@ export default function CtaBoxes() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.15 }}
                     transition={{ duration: 0.6 }}
-                    className="max-w-2xl"
+                    className="max-w-3xl"
                 >
-                    <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Scegli il tuo lato</p>
+                    <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Riservato ai fondatori</p>
                     <h2 className="mt-3 font-display font-black tracking-tight text-2xl sm:text-3xl lg:text-4xl text-white">
-                        Due posti a tavola, uno stesso obiettivo
+                        Offerta Lancio Fondatori 2026
                     </h2>
+                    <p className="mt-4 text-base sm:text-lg font-semibold text-white" style={{ color: "#FFFFFF" }} data-testid="offerta-lancio-subtitle">
+                        Tutte le funzioni del piano PRO sono 100% GRATUITE fino al 31 Dicembre. Nessuna carta di credito richiesta. Blocca il tuo profilo prima che scada l'offerta!
+                    </p>
                 </motion.div>
                 <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                     <CtaCard data={PRIVATO} variant="dark" />

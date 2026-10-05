@@ -23,7 +23,7 @@ from routes_annunci import router as annunci_router  # noqa: E402
 from routes_prenotazioni import router as prenotazioni_router  # noqa: E402
 from seed import seed_demo_data, backfill_emergenze, backfill_geo, seed_annunci_demo  # noqa: E402
 
-app = FastAPI(title="CasaLavoriPRO API")
+app = FastAPI(title="CasaLavoroPRO API")
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
@@ -42,7 +42,7 @@ api_router.include_router(prenotazioni_router)
 
 @api_router.get("/")
 async def root():
-    return {"message": "CasaLavoriPRO API is running"}
+    return {"message": "CasaLavoroPRO API is running"}
 
 
 app.include_router(api_router)

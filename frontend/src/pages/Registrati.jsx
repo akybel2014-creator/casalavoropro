@@ -42,7 +42,7 @@ export default function Registrati() {
                 };
             }
             const { user } = await register(payload);
-            toast.success(`Benvenuto su CasaLavoriPRO, ${user.name}!`);
+            toast.success(`Benvenuto su CasaLavoroPRO, ${user.name}!`);
             navigate(dashboardPathFor(user.role));
         } catch (err) {
             setError(formatApiError(err));

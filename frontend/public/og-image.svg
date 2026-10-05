@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+    <rect width="1200" height="630" fill="#0B132B"/>
+    <rect width="1200" height="630" fill="url(#g)" opacity="0.18"/>
+    <defs>
+        <radialGradient id="g" cx="80%" cy="15%" r="70%">
+            <stop offset="0%" stop-color="#FF5A1F"/>
+            <stop offset="100%" stop-color="#0B132B"/>
+        </radialGradient>
+    </defs>
+    <g transform="translate(96,210)">
+        <rect width="120" height="120" rx="26" fill="#0B132B" stroke="rgba(255,255,255,0.14)"/>
+        <path d="M26 62 L60 28 L94 62" fill="none" stroke="#FF5A1F" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M41 58 V92 H79 V58" fill="none" stroke="#F8FAFC" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="53" y="72" width="13" height="20" rx="3" fill="#FF5A1F"/>
+    </g>
+    <text x="250" y="300" font-family="Arial, sans-serif" font-size="68" font-weight="800" fill="#F8FAFC">CasaLavoro<tspan fill="#FF5A1F">PRO</tspan></text>
+    <text x="96" y="430" font-family="Arial, sans-serif" font-size="40" font-weight="600" fill="#CBD5E1">Preventivi gratuiti da aziende e professionisti verificati</text>
+    <text x="96" y="492" font-family="Arial, sans-serif" font-size="30" font-weight="400" fill="#94A3B8">Idraulica · Elettricità · Ristrutturazioni · Noleggio · Mercatino usato</text>
+</svg>

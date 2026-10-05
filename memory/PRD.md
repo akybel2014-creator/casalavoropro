@@ -73,6 +73,13 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Dominio: l'utente ha indicato https://casalovoropro.com/ (possibile refuso di casalavoripro.com). Istruzioni fornite: Manage Publishes -> Domain; Auto-Link oppure DNS manuale (A root 162.159.142.117 e 172.66.2.113; CNAME www); SSL automatico Cloudflare; propagazione 5-15 min (max 24-48h); nessun costo extra.
 - Testing agent iteration_5: 15/15 backend (incluso refund Stripe reale) + frontend OK. Redeploy rilanciato.
 - Prezzi abbonamento PRO cambiati (richiesta utente 2026-10-05): 3,99 €/mese (pro_monthly, 399 cent) e 39,99 €/anno (pro_yearly, 3999 cent). Vecchi price Stripe disattivati, nuovi creati con transfer_lookup_key; aggiornati setup_stripe.py, routes_billing.PLANS, UI tab Abbonamento. Verificato checkout con i nuovi importi.
+- OFFERTA LANCIO FONDATORI (2026-10-05): strategia di lancio gratuita.
+  - Brand rinominato da "CasaLavoriPRO" a "CasaLavoroPRO" (solo display: logo, header, footer, email, titoli, index.html). Email interne (admin@casalavoripro.it) e APP_NAME storage invariati per non rompere login/upload.
+  - Backend routes_auth.register: ogni nuova azienda riceve automaticamente plan="pro", subscription_status="active_trial", trial_ends_at=2026-12-31, offerta_lancio=True → sblocca TUTTE le funzioni PRO (annunci noleggio/usato) senza carta. Verificato via curl: registrazione + creazione annuncio noleggio OK.
+  - Home CtaBoxes: titolo "Offerta Lancio Fondatori 2026", sottotitolo bianco #FFFFFF, box azienda con 4 bullet e unico pulsante "Registrati Gratis Ora (Senza Carta)" → /registrati?ruolo=azienda. Prezzi rimossi.
+  - DashboardAzienda tab Abbonamento: rimossi prezzi €/mese €/anno e pulsanti Stripe (checkout). Mostra card offerta lancio + badge "Profilo PRO attivo · gratis fino al 31 Dicembre 2026".
+  - Footer: rimossi telefono e indirizzo (restano email info@casalavoropro.com + orari).
+  - SEO potenziata: title/description/keywords ottimizzati, Open Graph + Twitter card, JSON-LD (Organization/WebSite/Service), /robots.txt, /sitemap.xml, /og-image.svg. Dominio canonical: casalavoropro.com.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

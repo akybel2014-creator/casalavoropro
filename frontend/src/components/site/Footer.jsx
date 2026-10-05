@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail } from "lucide-react";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
@@ -66,13 +66,7 @@ export default function Footer() {
                         <h4 className="font-display font-semibold text-white">Contatti</h4>
                         <ul className="mt-4 space-y-3 text-sm text-slate-400">
                             <li className="flex items-center gap-2.5">
-                                <Mail className="h-4 w-4 text-brand" /> info@casalavoripro.it
-                            </li>
-                            <li className="flex items-center gap-2.5">
-                                <Phone className="h-4 w-4 text-brand" /> +39 02 0000 0000
-                            </li>
-                            <li className="flex items-center gap-2.5">
-                                <MapPin className="h-4 w-4 text-brand" /> Via dei Lavori 1, 20100 Milano
+                                <Mail className="h-4 w-4 text-brand" /> info@casalavoropro.com
                             </li>
                         </ul>
                         <p className="mt-5 text-xs text-slate-500">
@@ -82,7 +76,7 @@ export default function Footer() {
                 </div>
 
                 <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p className="text-xs text-slate-500">© 2026 CasaLavoriPRO. Tutti i diritti riservati.</p>
+                    <p className="text-xs text-slate-500">© 2026 CasaLavoroPRO. Tutti i diritti riservati.</p>
                     <p className="text-xs text-slate-500">Privacy Policy · Termini di servizio · Cookie</p>
                 </div>
             </div>

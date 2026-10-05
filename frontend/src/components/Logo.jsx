@@ -14,7 +14,7 @@ export function Logo({ size = 36, className = "" }) {
         <span className={`inline-flex items-center gap-2.5 ${className}`}>
             <LogoMark size={size} />
             <span className="font-display font-extrabold tracking-tight text-xl leading-none">
-                <span className="text-white">CasaLavori</span>
+                <span className="text-white">CasaLavoro</span>
                 <span className="text-brand">PRO</span>
             </span>
         </span>

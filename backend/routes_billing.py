@@ -19,6 +19,18 @@ except ImportError:
 
 payment_transactions = db["payment_transactions"]
 
+TRIAL_DAYS = 14
+
+
+async def trial_eligible(user_id: str) -> bool:
+    """New companies only: never had an active/paid PRO and never used the trial."""
+    az = await db.aziende.find_one({"owner_id": user_id}, {"trial_used": 1, "subscription_status": 1, "plan": 1})
+    if not az or az.get("trial_used") or az.get("plan") == "pro" or az.get("subscription_status") == "active":
+        return False
+    paid = await payment_transactions.find_one({"user_id": user_id, "payment_status": "paid", "kind": {"$ne": "caparra"}})
+    return paid is None
+
+
 PLANS = [
     {"id": "free", "nome": "Base", "prezzo": "Gratis",
      "features": ["Profilo azienda nella directory", "Ricevi richieste della tua categoria",
@@ -31,11 +43,15 @@ PLANS = [
 ]
 
 
-async def _activate_pro(user_id: str):
+async def _activate_pro(user_id: str, trial_days: int = 0):
     if not user_id:
         return
-    await db.aziende.update_one({"owner_id": user_id},
-                                {"$set": {"plan": "pro", "subscription_status": "active"}})
+    updates = {"plan": "pro", "subscription_status": "active"}
+    if trial_days:
+        from datetime import timedelta
+        updates.update({"trial_used": True, "subscription_status": "trialing",
+                        "trial_ends_at": now() + timedelta(days=trial_days)})
+    await db.aziende.update_one({"owner_id": user_id}, {"$set": updates})
 
 
 async def _on_paid(record: dict):
@@ -45,7 +61,7 @@ async def _on_paid(record: dict):
         from routes_prenotazioni import segna_caparra_pagata
         await segna_caparra_pagata(record["prenotazione_id"], record.get("stripe_payment_intent_id"))
     else:
-        await _activate_pro(record.get("user_id"))
+        await _activate_pro(record.get("user_id"), record.get("trial_days", 0))
 
 
 def _create_session(**kwargs):
@@ -123,13 +139,17 @@ async def create_checkout(req: CheckoutRequest, user: dict = Depends(require_rol
     if not prices:
         raise HTTPException(status_code=500, detail=f"Prezzo non trovato: {req.lookup_key}")
     price = prices[0]
+    trial_days = TRIAL_DAYS if (price.recurring and await trial_eligible(user["id"])) else 0
     kwargs = dict(
         line_items=[{"price": price.id, "quantity": req.quantity}],
         mode="subscription" if price.recurring else "payment",
         success_url=f"{req.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{req.origin_url}/payment/cancel",
-        metadata={"user_id": user["id"], "lookup_key": req.lookup_key},
+        metadata={"user_id": user["id"], "lookup_key": req.lookup_key, "trial_days": str(trial_days)},
     )
+    if trial_days:
+        kwargs["subscription_data"] = {"trial_period_days": trial_days}
+        kwargs["payment_method_collection"] = "always"
     if TAX_MODE == "full":
         try:
             session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
@@ -156,12 +176,17 @@ async def create_checkout(req: CheckoutRequest, user: dict = Depends(require_rol
         session = stripe.checkout.Session.create(**kwargs)
 
     await payment_transactions.insert_one({
-        "session_id": session.id, "user_id": user["id"], "lookup_key": req.lookup_key,
+        "session_id": session.id, "user_id": user["id"], "lookup_key": req.lookup_key, "trial_days": trial_days,
         "amount": (price.unit_amount or 0) * req.quantity, "currency": price.currency,
         "status": "initiated", "payment_status": "pending", "created_at": now(),
         "updated_at": now(),
     })
-    return {"checkout_url": session.url, "session_id": session.id}
+    return {"checkout_url": session.url, "session_id": session.id, "trial_days": trial_days}
+
+
+@router.get("/billing/trial")
+async def my_trial(user: dict = Depends(require_roles("azienda"))):
+    return {"eligible": await trial_eligible(user["id"]), "days": TRIAL_DAYS}
 
 
 @router.get("/payments/status/{session_id}")
@@ -172,7 +197,7 @@ async def get_status(session_id: str):
     if record.get("payment_status") != "paid":
         try:
             s = stripe.checkout.Session.retrieve(session_id)
-            if s.payment_status == "paid" or s.status == "complete":
+            if s.payment_status in ("paid", "no_payment_required") or s.status == "complete":
                 await payment_transactions.update_one(
                     {"session_id": session_id, "payment_status": {"$ne": "paid"}},
                     {"$set": {"status": "completed", "payment_status": "paid",
@@ -201,7 +226,7 @@ async def stripe_webhook(request: Request):
     if t == "checkout.session.completed":
         res = await payment_transactions.update_one(
             {"session_id": obj["id"], "payment_status": {"$ne": "paid"}},
-            {"$set": {"status": "completed", "payment_status": obj.get("payment_status", "paid"),
+            {"$set": {"status": "completed", "payment_status": "paid",
                       "stripe_subscription_id": obj.get("subscription"),
                       "stripe_payment_intent_id": obj.get("payment_intent"),
                       "updated_at": now()}})

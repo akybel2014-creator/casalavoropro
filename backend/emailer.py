@@ -140,14 +140,14 @@ async def send_welcome(to: str, name: str, ruolo: str):
         body = (f'<p>Ciao {escape(name)}, benvenuto nella rete di {escape(EMAIL_FROM_NAME)}.</p>'
                 f'<p>Completa il profilo della tua impresa e richiedi la verifica PRO: le aziende '
                 f'verificate ricevono piu richieste di preventivo dai privati della tua zona.</p>')
-        await send_email(to=to, subject="Benvenuto su CasaLavoriPRO", html=_wrap(
+        await send_email(to=to, subject="Benvenuto su CasaLavoroPRO", html=_wrap(
             "Benvenuto, azienda PRO", body, "Completa il profilo", f"{FRONTEND_URL}/dashboard/azienda"))
     else:
         body = (f'<p>Ciao {escape(name)}, benvenuto su {escape(EMAIL_FROM_NAME)}.</p>'
                 f'<p>Descrivi il lavoro da fare in casa: riceverai preventivi gratuiti da aziende '
                 f'verificate della tua citta. Nessun costo, nessun vincolo.</p>')
-        await send_email(to=to, subject="Benvenuto su CasaLavoriPRO", html=_wrap(
-            "Benvenuto su CasaLavoriPRO", body, "Richiedi un preventivo", f"{FRONTEND_URL}/nuova-richiesta"))
+        await send_email(to=to, subject="Benvenuto su CasaLavoroPRO", html=_wrap(
+            "Benvenuto su CasaLavoroPRO", body, "Richiedi un preventivo", f"{FRONTEND_URL}/nuova-richiesta"))
 
 
 async def send_new_quote(to: str, client_name: str, azienda_nome: str, prezzo: float):

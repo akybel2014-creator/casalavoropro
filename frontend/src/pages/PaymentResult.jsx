@@ -49,7 +49,7 @@ export function PaymentSuccess() {
                     <>
                         <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto" />
                         <h1 className="mt-5 font-display font-black text-2xl text-white">{caparra ? "Caparra pagata: noleggio bloccato!" : "Abbonamento PRO attivo!"}</h1>
-                        <p className="mt-2 text-sm text-slate-400">{caparra ? "Le date sono riservate per te. L'azienda è stata avvisata e ti contatterà per la consegna." : "Il tuo profilo e ora in evidenza nella directory. Grazie per aver scelto CasaLavoriPRO."}</p>
+                        <p className="mt-2 text-sm text-slate-400">{caparra ? "Le date sono riservate per te. L'azienda è stata avvisata e ti contatterà per la consegna." : "Il tuo profilo e ora in evidenza nella directory. Grazie per aver scelto CasaLavoroPRO."}</p>
                         <Button asChild className="mt-6 w-full rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold">
                             <Link to={dashHref} data-testid="payment-success-dashboard-link">{caparra ? "Vai alle mie prenotazioni" : "Vai al pannello azienda"}</Link>
                         </Button>

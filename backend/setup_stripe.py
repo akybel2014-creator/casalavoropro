@@ -57,7 +57,7 @@ print("tax_mode:", tax_mode)
 CATALOG = [
     {
         "emergent_product_id": "casalavoripro_pro_plan",
-        "name": "CasaLavoriPRO Piano Pro",
+        "name": "CasaLavoroPRO Piano Pro",
         "tax_code": "txcd_10103001",
         "prices": [
             {"lookup_key": "pro_monthly", "amount": 399, "currency": "eur", "interval": "month"},

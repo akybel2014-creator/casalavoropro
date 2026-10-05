@@ -63,7 +63,7 @@ export default function Login() {
                 </div>
                 <div className="mt-8 rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-9 shadow-2xl">
                     <h1 className="font-display font-black text-2xl text-white tracking-tight">Accedi</h1>
-                    <p className="mt-1 text-sm text-slate-400">Entra nella tua area CasaLavoriPRO</p>
+                    <p className="mt-1 text-sm text-slate-400">Entra nella tua area CasaLavoroPRO</p>
 
                     <form onSubmit={submit} className="mt-7 space-y-5" data-testid="login-form">
                         <div className="space-y-2">

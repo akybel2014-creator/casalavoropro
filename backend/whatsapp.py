@@ -23,7 +23,7 @@ async def send_whatsapp_alert(to_phone: str, azienda_nome: str, titolo: str, zon
         logger.info("WhatsApp skipped (numero non E.164): %s", to_phone)
         return False
     text = (
-        "CasaLavoriPRO - Richiesta URGENTE\n"
+        "CasaLavoroPRO - Richiesta URGENTE\n"
         f"{azienda_nome}, un cliente cerca: {titolo} ({zona}).\n"
         f"Apri il pannello per inviare il tuo preventivo: {FRONTEND_URL}/dashboard/azienda"
     )

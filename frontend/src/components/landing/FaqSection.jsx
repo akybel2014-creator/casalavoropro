@@ -20,7 +20,7 @@ const FAQS = [
         a: "Le aziende della tua zona vengono notificate subito dopo l'invio della richiesta. Nella maggior parte dei casi i primi preventivi arrivano entro 24-48 ore.",
     },
     {
-        q: "In quali città è attivo CasaLavoriPRO?",
+        q: "In quali città è attivo CasaLavoroPRO?",
         a: "Siamo presenti in tutta Italia: la ricerca funziona per città e province. Se non trovi aziende nella tua zona, scrivici e attiveremo la tua area il prima possibile.",
     },
     {

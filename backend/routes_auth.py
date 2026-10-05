@@ -1,6 +1,6 @@
 import secrets
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from typing import Optional, List
 from bson import ObjectId
 from html import escape
@@ -13,6 +13,10 @@ from emailer import send_welcome, send_email, _wrap, FRONTEND_URL
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Offerta Lancio Fondatori 2026: ogni nuova azienda/professionista ottiene PRO gratis
+# fino al 31 dicembre 2026, senza richiesta di dati di pagamento.
+LAUNCH_TRIAL_END = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
 
 class AziendaRegIn(BaseModel):
@@ -68,7 +72,9 @@ async def register(inp: RegisterIn, response: Response):
             "zone": a.zone, "piva": a.piva or "", "descrizione": a.descrizione or "",
             "telefono": "", "sito": "", "durc_number": "", "docs": [],
             "verified": False, "verification_status": "none",
-            "plan": "free", "subscription_status": "none",
+            "plan": "pro", "subscription_status": "active_trial",
+            "trial_used": True, "trial_ends_at": LAUNCH_TRIAL_END,
+            "offerta_lancio": True,
             "emergenze": False, "emergenze_weekend": False,
             "emergenze_notturno": False, "emergenze_telefono": "",
             "rating": 0.0, "recensioni": 0, "created_at": now(),
@@ -81,7 +87,7 @@ async def register(inp: RegisterIn, response: Response):
     user_out = clean_doc(user_doc)
     user_out["id"] = user_id
 
-    await notify(user_id, "Benvenuto su CasaLavoriPRO",
+    await notify(user_id, "Benvenuto su CasaLavoroPRO",
                  "Il tuo account e attivo. Esplora la piattaforma e inizia subito.")
     try:
         await send_welcome(email, user_out["name"], inp.ruolo)

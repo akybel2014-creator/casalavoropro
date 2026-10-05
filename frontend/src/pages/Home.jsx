@@ -3,6 +3,7 @@ import Hero from "@/components/landing/Hero";
 import ValueBadges from "@/components/landing/ValueBadges";
 import Marquee from "@/components/landing/Marquee";
 import CategoryGrid from "@/components/landing/CategoryGrid";
+import NoleggioUsato from "@/components/landing/NoleggioUsato";
 import HowItWorks from "@/components/landing/HowItWorks";
 import CtaBoxes from "@/components/landing/CtaBoxes";
 import Emergenze from "@/components/landing/Emergenze";
@@ -22,6 +23,7 @@ export default function Home() {
             <ValueBadges />
             <Marquee />
             <CategoryGrid />
+            <NoleggioUsato />
             <HowItWorks />
             <Emergenze />
             <CtaBoxes />

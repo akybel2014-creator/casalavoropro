@@ -10,6 +10,8 @@ export const NAV_ITEMS = [
     { label: "Home", to: "/", id: "header-nav-home" },
     { label: "Come funziona", to: "/#come-funziona", id: "header-nav-come-funziona" },
     { label: "Categorie", to: "/#categorie", id: "header-nav-categorie" },
+    { label: "Noleggio Attrezzi", to: "/#noleggio-attrezzi", id: "header-nav-noleggio" },
+    { label: "Mercatino Usato", to: "/#mercatino-usato", id: "header-nav-mercatino" },
     { label: "Aziende", to: "/aziende", id: "header-nav-aziende" },
     { label: "Per le aziende", to: "/#per-le-aziende", id: "header-nav-per-aziende" },
     { label: "FAQ", to: "/#faq", id: "header-nav-faq" },
@@ -94,21 +96,21 @@ export default function Header() {
                         <Logo />
                     </Link>
 
-                    <nav className="hidden lg:flex items-center gap-1">
+                    <nav className="hidden xl:flex items-center gap-0.5 xl:gap-1">
                         {NAV_ITEMS.map((item) => (
                             <a
                                 key={item.to}
                                 href={item.to}
                                 data-testid={item.id}
                                 onClick={(e) => onNavClick(e, item.to)}
-                                className="px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                                className="px-2.5 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap"
                             >
                                 {item.label}
                             </a>
                         ))}
                     </nav>
 
-                    <div className="hidden lg:flex items-center gap-2">
+                    <div className="hidden xl:flex items-center gap-2">
                         {user ? (
                             <>
                                 <Button
@@ -159,7 +161,7 @@ export default function Header() {
 
                     <button
                         data-testid="header-mobile-toggle"
-                        className="lg:hidden p-2 text-slate-200 rounded-lg hover:bg-white/10"
+                        className="xl:hidden p-2 text-slate-200 rounded-lg hover:bg-white/10"
                         aria-label="Apri menu"
                         onClick={() => setOpen((v) => !v)}
                     >
@@ -169,7 +171,7 @@ export default function Header() {
             </div>
 
             {open && (
-                <div className="lg:hidden border-t border-white/10 bg-navy/95 backdrop-blur-xl px-4 pb-6 pt-2">
+                <div className="xl:hidden border-t border-white/10 bg-navy/95 backdrop-blur-xl px-4 pb-6 pt-2">
                     <nav className="flex flex-col">
                         {NAV_ITEMS.map((item) => (
                             <a

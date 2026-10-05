@@ -19,11 +19,14 @@ const PRIVATO = {
 
 const AZIENDA = {
     title: "Sei un'Azienda?",
-    subtitle: "Vuoi aumentare il tuo fatturato ed acquisire nuovi cantieri?",
+    subtitle: "Vuoi aumentare il tuo fatturato, acquisire nuovi cantieri e far rendere il tuo parco macchine?",
     bullets: [
         "Ricevi richieste lavorative nella tua provincia",
         "Pagina profilo indicizzata su Google con portfolio",
         "Sistema di gestione preventivi e chat cliente",
+        "Noleggia i tuoi macchinari fermi: entrate extra nei giorni di inattività",
+        "Vendi l'attrezzatura usata nel Mercatino con badge venditore verificato",
+        "Annunci noleggio e usato illimitati inclusi nell'abbonamento PRO",
         "Piani di abbonamento flessibili e rimborso crediti",
     ],
     cta: "Registra la tua Azienda",

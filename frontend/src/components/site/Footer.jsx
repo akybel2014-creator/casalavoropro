@@ -54,6 +54,8 @@ export default function Footer() {
                         <ul className="mt-4 space-y-2.5 text-sm text-slate-400">
                             <li><Link className="hover:text-brand transition-colors" to="/#come-funziona">Come funziona</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/#categorie">Categorie</Link></li>
+                            <li><Link className="hover:text-brand transition-colors" to="/#noleggio-attrezzi">Noleggio Attrezzi</Link></li>
+                            <li><Link className="hover:text-brand transition-colors" to="/#mercatino-usato">Mercatino Usato</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/aziende">Directory aziende</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/#per-le-aziende">Per le aziende</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/#faq">FAQ</Link></li>

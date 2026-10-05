@@ -49,6 +49,12 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Nota: le schede noleggio/usato sono VETRINA STATICA; un vero marketplace annunci (CRUD per aziende abbonate) resta in backlog.
 - GitHub: il codice è React/Node (frontend) + FastAPI; l'invio su GitHub avviene tramite il pulsante "Save to Github" della chat, non dall'agente.
 
+## Aggiunte del 2026-10-05 (pomeriggio) — Marketplace annunci reale
+- Collezione `annunci` {tipo noleggio|usato, titolo, descrizione, categoria (lista fissa in routes_annunci.CATEGORIE_ANNUNCI), zona, prezzo, unita giorno|settimana|mese|fisso, stato (usato), attivo, foto[] via object storage, immagine_url (solo demo), azienda_id/nome/verified/telefono, owner_id}. Seed idempotente di 8 annunci demo per le aziende PRO.
+- API: GET /api/annunci (filtri tipo, categoria, zona, q, prezzo_min, prezzo_max, limit; solo attivi, senza owner_id), GET /api/annunci/meta, GET /api/annunci/mine, GET /api/annunci/{id}, POST /api/annunci (solo azienda con plan=pro, altrimenti 402), PUT/DELETE /api/annunci/{id} (solo proprietario), POST /api/annunci/{id}/foto (max 4, JPG/PNG/WEBP 5MB), DELETE /api/annunci/{id}/foto/{foto_id}.
+- Frontend: pagine /noleggio e /mercatino (Annunci.jsx, filtri in query string), /annunci/:id (dettaglio con galleria, contatto azienda, "Richiedi disponibilità" -> /nuova-richiesta precompilata per i privati), tab "Annunci" in dashboard azienda (AnnunciPanel: crea, nascondi/mostra, foto, elimina; aziende FREE vedono upsell -> tab Abbonamento). Homepage NoleggioUsato ora dinamica (ultimi 4 per tipo). Menu/footer puntano alle pagine dedicate.
+- Testing agent iteration_2: 20/20 backend + tutti i flussi frontend OK. Redeploy rilanciato (asincrono).
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.
@@ -56,7 +62,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 
 ## Backlog
 - P0: tema WordPress nativo (fase 2 dichiarata dall'utente, da definire).
-- P1: notifiche WhatsApp (Twilio — servono chiavi utente), Mapbox (serve token pk.), dominio personalizzato dopo deploy, marketplace annunci noleggio/usato reale (CRUD aziende PRO, pagine dedicate, filtri).
+- P1: notifiche WhatsApp (Twilio — servono chiavi utente), Mapbox (serve token pk.), dominio personalizzato dopo deploy, modifica annuncio esistente (oggi solo attivo/nascondi + foto), richieste di noleggio con date/calendario.
 - P2: recensioni reali post-lavoro, chat integrata, mappa nella directory, SEO/OG avanzati.
 
 ## Note

@@ -1,0 +1,29 @@
+{
+  "summary": "E2E testing della feature 'Annunci noleggio e usato' (backend + frontend). 20/20 pytest backend passano. Tutti i flussi frontend testati (pubblico /noleggio, /mercatino, filtri, dettaglio, prefill /nuova-richiesta, homepage dinamica, dashboard PRO CRUD + foto upload/delete, dashboard FREE locked -> abbonamento). Nessun bug trovato.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_annunci.py",
+    "/app/test_reports/pytest/annunci.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_annunci.py validation: PUT con updates={} va benissimo ma `_validate` viene chiamato con tipo del doc esistente — ok. Nessun check esplicito per non modificare `tipo`: l'input model non permette tipo, OK.",
+    "foto upload accetta JPEG/PNG/WEBP ma il MIME check si basa solo su content_type del multipart (facilmente spoofabile). Non critico per demo.",
+    "immagine_url fallback demo è su Unsplash/Pexels: dipendenza esterna possibile flaky, come già notato in iteration_1."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_annunci.py"
+  ],
+  "success_rate": {"backend": "100% (20/20)", "frontend": "100%"},
+  "test_credentials": "PRO info@caloreeclima.it / Demo2026!, FREE info@colorartimbiancatura.it / Demo2026!, Privato mario.rossi@example.com / Demo2026!",
+  "seed_data_creation": "Tutti gli annunci TEST_* creati durante i test sono stati eliminati via DELETE (fixture scope=module con teardown + delete esplicito al termine del flusso dashboard PRO). Nessun dato residuo verificato.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite in /app/backend/tests/test_annunci.py — include 20 test (meta, lista pubblica + filtri, create/validation/permessi 401/402/403, mine, update, delete, foto upload/limit/txt/delete). Rotta login è /login (non /accedi). Dashboard azienda è /dashboard/azienda. Select categoria/stato sono shadcn: usare click sul trigger e poi get_by_role('option', name=...). Il bottone 'Richiedi disponibilità' su dettaglio precompila /nuova-richiesta con query string e categoria 'Altri Servizi' di default.",
+  "rca of the issue": "N/A — tutti i test passano."
+}

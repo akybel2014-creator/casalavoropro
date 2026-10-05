@@ -165,3 +165,50 @@ async def backfill_emergenze():
             {"$set": {"emergenze": em, "emergenze_weekend": wk,
                       "emergenze_notturno": nt, "emergenze_telefono": tel}},
         )
+
+
+
+DEMO_ANNUNCI = [
+    ("Lampioni Idraulica", "noleggio", "Miniescavatore 1,8 t cingolato", "Movimento terra", "Torino", 140, "giorno", None,
+     "Miniescavatore con benna da 40 cm, ideale per scavi in giardino e allacci. Guidabile con patente B, consegna in cantiere inclusa in provincia.",
+     "https://images.unsplash.com/photo-1759950345011-ee5a96640e00?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+    ("EdilNuova Costruzioni", "noleggio", "Betoniera 350 L elettrica", "Edilizia e betoniere", "Roma", 35, "giorno", None,
+     "Betoniera professionale 230V da 350 litri, revisionata. Trasporto incluso nel comune di Roma.",
+     "https://images.unsplash.com/photo-1770822662967-7f66605f9103?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+    ("EdilNuova Costruzioni", "noleggio", "Ponteggio modulare fino a 12 m", "Ponteggi e facciate", "Roma", 9, "mese", None,
+     "Ponteggio multidirezionale certificato, montaggio e smontaggio a cura dei nostri operai abilitati. Prezzo al m² per mese.",
+     "https://images.unsplash.com/photo-1616320999187-3c004dad4f0b?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+    ("Calore & Clima Srl", "noleggio", "Piattaforma aerea semovente 14 m", "Lavori in quota", "Milano", 190, "giorno", None,
+     "Piattaforma a forbice elettrica, altezza di lavoro 14 m. Disponibile anche con operatore qualificato PLE.",
+     "https://images.pexels.com/photos/34297398/pexels-photo-34297398.jpeg?auto=compress&cs=tinysrgb&w=800"),
+    ("Lampioni Idraulica", "usato", "Kit trapani a batteria 18V", "Elettroutensili", "Torino", 180, "fisso", "Ottimo",
+     "Due trapani avvitatori 18V con 2 batterie 4Ah, caricatore rapido e valigetta. Usati in cantiere per una stagione.",
+     "https://images.unsplash.com/photo-1546827209-a218e99fdbe9?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+    ("Calore & Clima Srl", "usato", "Smerigliatrice angolare 125 mm", "Elettroutensili", "Milano", 55, "fisso", "Buono",
+     "Smerigliatrice 1.200 W con impugnatura antivibrazione, 10 dischi da taglio inclusi.",
+     "https://images.unsplash.com/photo-1518709414768-a88981a4515d?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+    ("EdilNuova Costruzioni", "usato", "Martello demolitore 11 kg SDS-Max", "Elettroutensili", "Roma", 320, "fisso", "Revisionato",
+     "Demolitore 25 J revisionato dal centro assistenza, con punte e scalpelli. Garanzia 3 mesi.",
+     "https://images.unsplash.com/photo-1689935421853-cb23a0bc92e4?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+    ("Calore & Clima Srl", "usato", "Banco da lavoro in acciaio con morsa", "Altro", "Milano", 240, "fisso", "Ottimo",
+     "Banco 150 cm con piano in acciaio, morsa da 125 mm e due cassetti. Ritiro in sede.",
+     "https://images.unsplash.com/photo-1530191601183-4de2969575ad?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"),
+]
+
+
+async def seed_annunci_demo():
+    """Idempotent: creates demo rental/used listings for PRO demo companies if none exist."""
+    if await db.annunci.count_documents({}) > 0:
+        return
+    for nome, tipo, titolo, cat, zona, prezzo, unita, stato, descr, img in DEMO_ANNUNCI:
+        az = await db.aziende.find_one({"nome": nome})
+        if not az:
+            continue
+        await db.annunci.insert_one({
+            "tipo": tipo, "titolo": titolo, "descrizione": descr, "categoria": cat, "zona": zona,
+            "prezzo": float(prezzo), "unita": unita, "stato": stato, "attivo": True,
+            "azienda_id": str(az["_id"]), "azienda_nome": az["nome"], "azienda_verified": bool(az.get("verified")),
+            "azienda_telefono": az.get("telefono", ""), "owner_id": az["owner_id"],
+            "foto": [], "immagine_url": img, "created_at": now(),
+        })
+    logger.info("Demo annunci seeded")

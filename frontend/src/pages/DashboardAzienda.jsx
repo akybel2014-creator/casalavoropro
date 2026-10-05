@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
 import ChatDialog from "@/components/ChatDialog";
+import { AnnunciPanel } from "@/components/AnnunciPanel";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
@@ -90,6 +91,7 @@ export default function DashboardAzienda() {
     const [uploading, setUploading] = useState(false);
     const [geoBusy, setGeoBusy] = useState(false);
     const fileRef = useRef(null);
+    const [tab, setTab] = useState("leads");
 
     const load = useCallback(async () => {
         try {
@@ -235,7 +237,7 @@ export default function DashboardAzienda() {
                     </div>
                 </div>
 
-                <Tabs defaultValue="leads" className="mt-8">
+                <Tabs value={tab} onValueChange={setTab} className="mt-8">
                     <TabsList className="bg-navy-700 border border-white/10 flex-wrap h-auto">
                         <TabsTrigger value="leads" data-testid="dashboard-azienda-tab-leads" className="data-[state=active]:text-white">
                             <Briefcase className="h-4 w-4 mr-1.5" /> Richieste in arrivo
@@ -246,13 +248,16 @@ export default function DashboardAzienda() {
                         <TabsTrigger value="galleria" data-testid="dashboard-azienda-tab-galleria" className="data-[state=active]:text-white">
                             <Camera className="h-4 w-4 mr-1.5" /> Galleria
                         </TabsTrigger>
+                        <TabsTrigger value="annunci" data-testid="dashboard-azienda-tab-annunci" className="data-[state=active]:text-white">
+                            <Truck className="h-4 w-4 mr-1.5" /> Annunci
+                        </TabsTrigger>
                         <TabsTrigger value="verifica" className="data-[state=active]:text-white">
                             <ShieldCheck className="h-4 w-4 mr-1.5" /> Verifica
                         </TabsTrigger>
                         <TabsTrigger value="emergenze" data-testid="dashboard-azienda-tab-emergenze" className="data-[state=active]:text-white">
                             <Siren className="h-4 w-4 mr-1.5" /> Emergenze
                         </TabsTrigger>
-                        <TabsTrigger value="abbonamento" className="data-[state=active]:text-white">
+                        <TabsTrigger value="abbonamento" data-testid="dashboard-azienda-tab-abbonamento" className="data-[state=active]:text-white">
                             <CreditCard className="h-4 w-4 mr-1.5" /> Abbonamento
                         </TabsTrigger>
                     </TabsList>
@@ -427,6 +432,10 @@ export default function DashboardAzienda() {
                                 </div>
                             )}
                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="annunci" className="mt-6">
+                        <AnnunciPanel azienda={mine} onGoToAbbonamento={() => setTab("abbonamento")} />
                     </TabsContent>
 
                     <TabsContent value="verifica" className="mt-6">

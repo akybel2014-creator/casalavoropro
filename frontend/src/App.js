@@ -7,6 +7,8 @@ import Footer from "@/components/site/Footer";
 import Home from "@/pages/Home";
 import Aziende from "@/pages/Aziende";
 import AziendaDettaglio from "@/pages/AziendaDettaglio";
+import Annunci from "@/pages/Annunci";
+import AnnuncioDettaglio from "@/pages/AnnuncioDettaglio";
 import Login from "@/pages/Login";
 import Registrati from "@/pages/Registrati";
 import NuovaRichiesta from "@/pages/NuovaRichiesta";
@@ -151,6 +153,9 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="/aziende" element={<Aziende />} />
                             <Route path="/aziende/:id" element={<AziendaDettaglio />} />
+                            <Route path="/noleggio" element={<Annunci tipo="noleggio" />} />
+                            <Route path="/mercatino" element={<Annunci tipo="usato" />} />
+                            <Route path="/annunci/:id" element={<AnnuncioDettaglio />} />
                             <Route path="*" element={<NotFound />} />
                         </Route>
                         <Route path="/login" element={<Login />} />

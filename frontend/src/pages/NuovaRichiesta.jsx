@@ -16,11 +16,11 @@ export default function NuovaRichiesta() {
     const [params] = useSearchParams();
     const { user } = useAuth();
     const [form, setForm] = useState({
-        titolo: "",
+        titolo: params.get("titolo") || "",
         categoria: params.get("categoria") || "",
         zona: params.get("zona") || "",
         budget: "",
-        descrizione: "",
+        descrizione: params.get("descrizione") || "",
         urgente: false,
     });
     const [error, setError] = useState("");

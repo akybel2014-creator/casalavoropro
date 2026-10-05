@@ -2,6 +2,21 @@ import { Link } from "react-router-dom";
 import { Facebook, Instagram, Linkedin, Mail } from "lucide-react";
 import Logo from "@/components/Logo";
 
+const SOCIALS = [
+    { id: "facebook", label: "Facebook", href: process.env.REACT_APP_SOCIAL_FACEBOOK || "https://www.facebook.com/casalavoropro", Icon: Facebook },
+    { id: "instagram", label: "Instagram", href: process.env.REACT_APP_SOCIAL_INSTAGRAM || "https://www.instagram.com/casalavoropro", Icon: Instagram },
+    { id: "linkedin", label: "LinkedIn", href: process.env.REACT_APP_SOCIAL_LINKEDIN || "https://www.linkedin.com/company/casalavoropro", Icon: Linkedin },
+    { id: "tiktok", label: "TikTok", href: process.env.REACT_APP_SOCIAL_TIKTOK || "https://www.tiktok.com/@casalavoropro", Icon: TikTokIcon },
+];
+
+function TikTokIcon({ className = "" }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+            <path d="M16.6 5.82a4.28 4.28 0 0 1-1.06-2.82h-3.2v12.9a2.55 2.55 0 1 1-2.55-2.55c.26 0 .51.04.74.11V9.2a5.86 5.86 0 0 0-.74-.05A5.75 5.75 0 1 0 15.54 15V8.9a7.46 7.46 0 0 0 4.36 1.4V7.1a4.29 4.29 0 0 1-3.3-1.28z" />
+        </svg>
+    );
+}
+
 export default function Footer() {
     return (
         <footer id="contatti" className="border-t border-white/10 bg-navy/95">
@@ -16,36 +31,19 @@ export default function Footer() {
                             Preventivi gratuiti, aziende verificate, un solo intermediario.
                         </p>
                         <div className="mt-6 flex items-center gap-3">
-                            <a
-                                data-testid="footer-social-facebook"
-                                href="https://facebook.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label="Facebook"
-                                className="p-2.5 rounded-full border border-white/10 text-slate-300 hover:text-white hover:border-brand hover:text-brand transition-colors"
-                            >
-                                <Facebook className="h-4 w-4" />
-                            </a>
-                            <a
-                                data-testid="footer-social-instagram"
-                                href="https://instagram.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label="Instagram"
-                                className="p-2.5 rounded-full border border-white/10 text-slate-300 hover:text-white hover:border-brand hover:text-brand transition-colors"
-                            >
-                                <Instagram className="h-4 w-4" />
-                            </a>
-                            <a
-                                data-testid="footer-social-linkedin"
-                                href="https://linkedin.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label="LinkedIn"
-                                className="p-2.5 rounded-full border border-white/10 text-slate-300 hover:text-white hover:border-brand hover:text-brand transition-colors"
-                            >
-                                <Linkedin className="h-4 w-4" />
-                            </a>
+                            {SOCIALS.map(({ id, label, href, Icon }) => (
+                                <a
+                                    key={id}
+                                    data-testid={`footer-social-${id}`}
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={label}
+                                    className="p-2.5 rounded-full border border-white/10 text-slate-300 hover:border-brand hover:text-brand transition-colors"
+                                >
+                                    <Icon className="h-4 w-4" />
+                                </a>
+                            ))}
                         </div>
                     </div>
 

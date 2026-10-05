@@ -74,7 +74,7 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
     await db.preferiti.create_index([("user_id", 1), ("azienda_id", 1)], unique=True)
-    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.password_reset_tokens.create_index("token")
     try:
         await db.aziende.create_index("location", sparse=True)
     except Exception:

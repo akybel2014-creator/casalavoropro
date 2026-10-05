@@ -47,7 +47,7 @@ async def create_richiesta(inp: RichiestaIn, user: dict = Depends(require_roles(
     out = clean_doc(doc)
     out["id"] = str(res.inserted_id)
 
-    matching = db.aziende.find({"categorie": inp.categoria.strip()})
+    matching = db.aziende.find({"categorie": inp.categoria.strip()}).limit(500)
     async for a in matching:
         if inp.urgente and a.get("emergenze"):
             phone = a.get("emergenze_telefono") or a.get("telefono") or ""
@@ -66,15 +66,29 @@ async def create_richiesta(inp: RichiestaIn, user: dict = Depends(require_roles(
 async def my_richieste(user: dict = Depends(require_roles("privato"))):
     reqs = await db.richieste.find({"client_id": user["id"]}) \
         .sort("created_at", -1).to_list(100)
+    rids = [str(r["_id"]) for r in reqs]
+
+    # Batch (evita N+1): una query per risposte e una per recensioni su tutti gli id.
+    risposte_by_rid = {}
+    if rids:
+        all_risposte = await db.risposte.find({"richiesta_id": {"$in": rids}}) \
+            .sort("created_at", -1).to_list(2000)
+        for x in all_risposte:
+            risposte_by_rid.setdefault(x["richiesta_id"], []).append(clean_doc(x))
+
+    rec_by_rid = {}
+    if rids:
+        all_rec = await db.recensioni.find({"richiesta_id": {"$in": rids}}).to_list(1000)
+        for rc in all_rec:
+            rec_by_rid[rc["richiesta_id"]] = clean_doc(rc)
+
     out = []
     for r in reqs:
         rid = str(r["_id"])
-        risposte = await db.risposte.find({"richiesta_id": rid}).sort("created_at", -1).to_list(50)
         item = clean_doc(r)
         item["id"] = rid
-        item["risposte"] = [clean_doc(x) for x in risposte]
-        rec = await db.recensioni.find_one({"richiesta_id": rid})
-        item["recensione"] = clean_doc(rec) if rec else None
+        item["risposte"] = risposte_by_rid.get(rid, [])
+        item["recensione"] = rec_by_rid.get(rid)
         out.append(item)
     return out
 

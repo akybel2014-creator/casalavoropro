@@ -61,6 +61,12 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Frontend: NoleggioCalendar (react-day-picker range, giorni occupati disabilitati, stima totale, nota) nel dettaglio annunci noleggio; tab "Noleggi" dashboard privato (annulla); sezione "Richieste di noleggio" nella tab Annunci azienda (conferma/rifiuta, badge "da gestire").
 - Testing agent iteration_3: 17/17 backend + frontend OK.
 
+## Aggiunte del 2026-10-05 (notte) — Email noleggio + Caparra Stripe
+- Email (Resend/Emergent) a cliente E azienda per ogni evento noleggio: richiesta, confermata, rifiutata, annullata, caparra_pagata (`emailer.send_noleggio_event`, tabella NOLEGGIO_EVENTI). Per gli account demo con email fittizie Resend risponde 422 "undeliverable" (atteso).
+- Caparra: alla conferma dell'azienda `caparra_importo = max(10€, 20% totale)`, `caparra_stato = da_pagare`. POST /api/prenotazioni/{id}/caparra/checkout (privato) crea Stripe Checkout one-shot (price_data con tax_code txcd_20030000, metadata kind=caparra). `payment_transactions.kind` distingue abbonamento/caparra; GET /api/payments/status e webhook chiamano `_on_paid` -> `segna_caparra_pagata` (idempotente, notifiche + email). Annullamento vietato dopo caparra pagata. UI: badge caparra + bottone "Paga caparra" nella tab Noleggi; /payment/success?tipo=caparra con copy dedicato.
+- BUG FIX pre-esistente: routes_billing usava motor senza await (status Stripe dava 500 e la transazione non veniva salvata) — corretto.
+- Testing agent iteration_4: 10/10 backend + frontend OK. Redeploy rilanciato.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.
@@ -68,7 +74,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 
 ## Backlog
 - P0: tema WordPress nativo (fase 2 dichiarata dall'utente, da definire).
-- P1: notifiche WhatsApp (Twilio — servono chiavi utente), Mapbox (serve token pk.), dominio personalizzato dopo deploy (utente non ha ancora indicato il dominio), email Resend per conferma/rifiuto noleggio, pagamento caparra noleggio via Stripe.
+- P1: notifiche WhatsApp (Twilio — servono chiavi utente, mai fornite), Mapbox (serve token pk.), dominio personalizzato dopo deploy (utente non ha ancora indicato il dominio), rimborso caparra su annullamento azienda, recensioni sui noleggi.
 - P2: recensioni reali post-lavoro, chat integrata, mappa nella directory, SEO/OG avanzati.
 
 ## Note

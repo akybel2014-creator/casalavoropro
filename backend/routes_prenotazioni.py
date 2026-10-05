@@ -177,6 +177,8 @@ async def annulla(prenotazione_id: str, user: dict = Depends(require_roles("priv
         raise HTTPException(status_code=403, detail="Permesso negato")
     if doc["stato"] not in ATTIVE:
         raise HTTPException(status_code=400, detail="Prenotazione già chiusa")
+    if doc.get("caparra_stato") == "pagata":
+        raise HTTPException(status_code=400, detail="Caparra già pagata: per annullare contatta direttamente l'azienda")
     await db.prenotazioni.update_one({"_id": oid}, {"$set": {"stato": "annullata", "updated_at": now()}})
     await notify(doc["owner_id"], "Noleggio annullato",
                  f"{user['name']} ha annullato la richiesta per «{doc['annuncio_titolo']}» ({doc['dal']} → {doc['al']}).",

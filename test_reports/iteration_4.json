@@ -1,0 +1,39 @@
+{
+  "summary": "Tested CasaLavoriPRO caparra online + email events + Stripe abbonamento regression (iteration 4). All 10 backend pytest cases passed. Frontend verified: dashboard privato shows caparra badge + bottone paga, click redirects to checkout.stripe.com. Noted behaviour: annulla() by privato is still allowed AFTER caparra pagata (prenotazione -> annullata, caparra_stato stays 'pagata'). Likely a bug — rental is 'blocked' per email copy but client can cancel without refund logic. Reporting to main agent.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/prenotazioni/{id}/annulla", "issue": "Il privato puo annullare una prenotazione anche dopo aver pagato la caparra. Lo stato diventa 'annullata' ma caparra_stato resta 'pagata' e nessun rimborso/notifica di rimborso viene gestito. Confermare se e comportamento voluto; in caso contrario bloccare annullo o scatenare refund."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_caparra.py",
+    "/app/test_reports/pytest/caparra.xml"
+  ],
+  "action_items": [
+    "Decidere comportamento per annulla dopo caparra pagata (bloccare o gestire refund + notifica).",
+    "Opzionale: migliorare messaggistica log quando Resend restituisce 422 'Undeliverable recipient' per email demo fittizie — oggi finisce come ERROR nei log ma e atteso. Potrebbe essere declassato a WARNING per account demo."
+  ],
+  "critical_code_review_comments": [
+    "routes_billing.get_status aggiornato correttamente (await su motor): verificato live, nessun 500 ne AttributeError al retrieve.",
+    "routes_prenotazioni.segna_caparra_pagata e idempotente (update_one con filtro caparra_stato!=pagata) e genera notifiche solo al primo passaggio: verificato via chiamata diretta (asyncio).",
+    "calcola_caparra: formula max(10, totale*0.20) coerente con la risposta API (84.0 per totale 420.0).",
+    "emailer._assert_safe_email: nessun ValueError nei log per i template noleggio; invio reale a delivered@resend.dev restituisce 202 Accepted — email path OK.",
+    "routes_prenotazioni.annulla non considera caparra_stato='pagata' — vedi minor issue."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_caparra.py (nuovo file di test pytest)"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100% (badge + pay button + redirect to Stripe)"},
+  "test_credentials": "Come da review request (Mario Rossi, Lampioni, EdilNuova, ColorArte).",
+  "seed_data_creation": "Prenotazione di test creata e usata per flusso caparra; pagamento simulato via segna_caparra_pagata (pi_test_1). Prenotazione simulata rimasta in stato 'annullata' con caparra 'pagata' (vedere pid stampato nei log pytest). PID preesistente 6ac39449df1417d3ea14b630 ancora in stato confermata/da_pagare per il test frontend. Nuovo utente delivered+test...@resend.dev registrato per verifica email reale (welcome mail accettata 202).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend caparra flow completo e verde. L'unico punto aperto e la policy annulla post-caparra pagata (behaviour verificato: ancora consentito). Stripe checkout non e stato completato in automazione (sandbox non reclamata) — verifica di payment/success?tipo=caparra non eseguita end-to-end; il redirect verso checkout.stripe.com funziona.",
+  "rca of the issue": "N/A — nessun bug critico. L'issue del 500 su /api/payments/status pre-fix era dovuta all'uso di dict.get su un motor Future (vedi vecchi stacktrace nei log: '_asyncio.Future object has no attribute get'); risolto con 'await payment_transactions.find_one(...)' in routes_billing.get_status."
+}

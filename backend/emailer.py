@@ -161,8 +161,23 @@ async def send_welcome(to: str, name: str, ruolo: str):
             "Benvenuto su CasaLavoroPRO", body, "Richiedi un preventivo", f"{FRONTEND_URL}/nuova-richiesta"))
 
 
-async def send_offer_reminder(to: str, name: str, days_left: int):
+async def send_offer_reminder(to: str, name: str, days_left: int, leads: int = 0, preventivi: int = 0):
     giorni = "giorno" if days_left == 1 else "giorni"
+    # Blocco statistiche personalizzato per spingere l'azienda a restare.
+    if leads > 0 or preventivi > 0:
+        righe = ""
+        if leads > 0:
+            righe += (f'<tr><td style="padding:6px 0;font-size:28px;font-weight:800;color:#FF5A1F;">{leads}</td>'
+                      f'<td style="padding:6px 0 6px 12px;font-size:14px;color:#334155;">richieste di lavoro ricevute nelle tue categorie</td></tr>')
+        if preventivi > 0:
+            righe += (f'<tr><td style="padding:6px 0;font-size:28px;font-weight:800;color:#FF5A1F;">{preventivi}</td>'
+                      f'<td style="padding:6px 0 6px 12px;font-size:14px;color:#334155;">preventivi che hai inviato ai clienti</td></tr>')
+        stats = (f'<p style="margin-top:16px;font-weight:600;color:#0B132B;">Ecco cosa ti ha gi&agrave; portato CasaLavoroPRO:</p>'
+                 f'<table style="border-collapse:collapse;margin:4px 0 8px;">{righe}</table>'
+                 f'<p>Non perdere questo flusso di opportunit&agrave;: mantieni attivo il tuo profilo PRO.</p>')
+    else:
+        stats = ('<p style="margin-top:16px;">Completa il profilo e richiedi la verifica: le aziende verificate '
+                 'ricevono molte pi&ugrave; richieste di lavoro e inviano pi&ugrave; preventivi.</p>')
     body = (f'<p>Ciao {escape(name)},</p>'
             f'<p style="background-color:#FF5A1F;color:#ffffff;padding:14px 18px;border-radius:10px;'
             f'font-weight:bold;font-size:16px;">Mancano solo {days_left} {giorni} alla fine dell\'Offerta '
@@ -171,10 +186,10 @@ async def send_offer_reminder(to: str, name: str, days_left: int):
             f'Dopo questa data, per continuare a usare le funzioni PRO (preventivi illimitati, annunci '
             f'noleggio e vendita usato, badge PRO e massima visibilit&agrave;) sar&agrave; necessario '
             f'attivare un abbonamento.</p>'
-            f'<p>Approfitta ora: completa il profilo della tua impresa e richiedi la verifica per ricevere '
-            f'pi&ugrave; richieste di preventivo.</p>')
+            f'{stats}')
     await send_email(to=to, subject=f"Mancano {days_left} {giorni}: la tua Offerta Fondatori sta per scadere",
                      html=_wrap("L'offerta sta per scadere", body, "Vai al profilo", f"{FRONTEND_URL}/dashboard/azienda"))
+
 
 
 

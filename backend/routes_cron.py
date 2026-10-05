@@ -58,7 +58,12 @@ async def _run_offer_reminder():
         if not owner or not owner.get("email"):
             continue
         try:
-            await send_offer_reminder(owner["email"], owner.get("name", "") or az.get("nome", ""), days_left)
+            leads = 0
+            cats = az.get("categorie") or []
+            if cats:
+                leads = await db.richieste.count_documents({"categoria": {"$in": cats}})
+            preventivi = await db.risposte.count_documents({"azienda_id": str(az["_id"])})
+            await send_offer_reminder(owner["email"], owner.get("name", "") or az.get("nome", ""), days_left, leads, preventivi)
             # Se inviamo il promemoria a 1 giorno, segniamo anche quello a 7 come superato.
             new_sent = sorted(already | ({1, 7} if milestone == 1 else {7}))
             await db.aziende.update_one({"_id": az["_id"]}, {"$set": {"offerta_reminders_sent": new_sent}})

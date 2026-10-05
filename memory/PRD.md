@@ -67,6 +67,12 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - BUG FIX pre-esistente: routes_billing usava motor senza await (status Stripe dava 500 e la transazione non veniva salvata) — corretto.
 - Testing agent iteration_4: 10/10 backend + frontend OK. Redeploy rilanciato.
 
+## Aggiunte del 2026-10-05 (tarda notte) — Rimborso caparra + Recensioni noleggio
+- POST /api/prenotazioni/{id}/annulla-azienda {motivo}: l'azienda annulla (anche se confermata); se caparra pagata -> `routes_billing.rimborsa_caparra` (stripe.Refund su caparra_payment_intent, fallback su payment_transactions) -> caparra_stato 'rimborsata', caparra_refund_id; stato 'annullata', annullata_da 'azienda'; notifica + email evento 'annullata_azienda'. Senza PI noto -> 400 e nessun cambio stato.
+- Recensioni noleggio: POST /api/prenotazioni/{id}/recensione {voto_mezzo, voto_azienda, commento} (solo confermata e al < oggi, una per prenotazione) -> collezione `recensioni_noleggio`; rating/recensioni su annuncio (media voto_mezzo) e su azienda (media combinata recensioni lavori + voto_azienda). GET /api/annunci/{id}/recensioni pubblico. UI: stelle su AnnuncioCard e dettaglio (+ lista recensioni), box recensione nella tab Noleggi del privato, badge "Caparra rimborsata", bottone "Annulla / Annulla e rimborsa" per l'azienda (confirm + prompt motivo).
+- Dominio: l'utente ha indicato https://casalovoropro.com/ (possibile refuso di casalavoripro.com). Istruzioni fornite: Manage Publishes -> Domain; Auto-Link oppure DNS manuale (A root 162.159.142.117 e 172.66.2.113; CNAME www); SSL automatico Cloudflare; propagazione 5-15 min (max 24-48h); nessun costo extra.
+- Testing agent iteration_5: 15/15 backend (incluso refund Stripe reale) + frontend OK. Redeploy rilanciato.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.
@@ -74,7 +80,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 
 ## Backlog
 - P0: tema WordPress nativo (fase 2 dichiarata dall'utente, da definire).
-- P1: notifiche WhatsApp (Twilio — servono chiavi utente, mai fornite), Mapbox (serve token pk.), dominio personalizzato dopo deploy (utente non ha ancora indicato il dominio), rimborso caparra su annullamento azienda, recensioni sui noleggi.
+- P1: notifiche WhatsApp (Twilio — servono chiavi utente, mai fornite), Mapbox (serve token pk.), collegamento dominio (in attesa che l'utente configuri DNS/Auto-Link), promemoria email pre-consegna noleggio, calendario occupazione nella dashboard azienda.
 - P2: recensioni reali post-lavoro, chat integrata, mappa nella directory, SEO/OG avanzati.
 
 ## Note

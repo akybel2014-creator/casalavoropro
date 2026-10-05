@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 5 covers CasaLavoriPRO Rimborso caparra (annulla-azienda + Stripe Refund) and Recensioni noleggio. 15/15 backend pytest cases PASS including real Stripe PaymentIntent + Refund flow in test mode. Frontend verified end-to-end with Playwright: Mario privato sees prenotazione-recensione-{pid} and caparra badge; annuncio card shows annuncio-rating 5.0; detail page shows annuncio-detail-rating + annuncio-recensioni with 1 review; EdilNuova owner sees prenotazione-annulla-azienda-{pid} button, native confirm+prompt dialogs work, toast 'Noleggio annullato' appears and the booking becomes 'Annullata' with motivo persisted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/aziende/{id} after first rental review", "issue": "_recompute_azienda_rating OVERWRITES cosmetic seeded counts (es. EdilNuova rating 4.9/recensioni 132) with the actual counts from db.recensioni + db.recensioni_noleggio (0 + 1 = 1 → rating 4.0). First recensione therefore DROPS public rating & review count. If seeded counts are supposed to be preserved, _recompute_azienda_rating should merge with seed baseline or seed must insert actual recensioni docs."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_recensioni_rimborso.py",
+    "/app/test_reports/pytest/recensioni_rimborso.xml"
+  ],
+  "action_items": [
+    "Decidere se mantenere i count seed su aziende (recensioni/rating) oppure allineare lo stato seed con documenti reali in db.recensioni così che _recompute_azienda_rating non produca una regressione visibile al primo rating di noleggio."
+  ],
+  "critical_code_review_comments": [
+    "routes_prenotazioni.annulla_azienda: ordine corretto (controlla owner, stato ATTIVE, rimborsa solo se caparra_stato=='pagata'); se rimborsa_caparra solleva 400 (nessun PI) la prenotazione NON viene aggiornata — verificato con test dedicato.",
+    "routes_billing.rimborsa_caparra: fallback su payment_transactions quando caparra_payment_intent non è su prenotazione; raise HTTPException(400) se non trova nulla. Buon pattern.",
+    "routes_prenotazioni.recensisci_noleggio: validazione completa (403 owner mismatch, 400 non confermata, 400 periodo non concluso, 400 duplicato, 422 Pydantic su voto/commento). Nota: ricalcolo rating azienda sovrascrive seed cosmetici (vedi minor).",
+    "GET /api/annunci/{id}/recensioni esclude client_id (projection) correttamente — nessun leak PII."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_recensioni_rimborso.py (nuovo file pytest)"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% (recensione, rating card/detail, annulla-azienda con dialog nativi)"},
+  "test_credentials": "Come da review (Mario Rossi, EdilNuova, Lampioni, Calore, ColorArte).",
+  "seed_data_creation": "Prenotazione MARIO_PID 6ac39a0fd79613950e825cb2 è ora recensita (voto_mezzo 5, voto_azienda 4). Annuncio Betoniera 6ac38bcc988bbc4a470b08f3 ha ora rating=5.0 e recensioni=1 nella collezione annunci. Azienda EdilNuova rating=4.0 recensioni=1 dopo _recompute. Tutte le prenotazioni TEST_* create durante i test sono state cancellate (10 doc rimossi).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Il flusso rimborso Stripe reale è verificato: Refund id 're_*' valido, verificato con stripe.Refund.retrieve (status pending/succeeded). payment_transactions aggiornato a refunded quando il record esisteva (nel test refund diretto senza session, il record non viene creato e il ramo di update è no-op; comportamento corretto). Nessun bug critico: solo decisione di prodotto sul rating cosmetico delle aziende.",
+  "rca of the issue": "Minor: _recompute_azienda_rating ricalcola rating/recensioni partendo esclusivamente dai documenti reali in db.recensioni e db.recensioni_noleggio. Se le aziende seedate hanno campi 'rating' e 'recensioni' popolati per effetto scenico senza documenti reali sottostanti, la prima recensione reale azzera il count mostrato. Mitigazione: (a) scrivere documenti reali in db.recensioni al seed, o (b) sommare al seed baseline nel recompute (es. preservare recensioni_seed quando n_tot<recensioni_seed)."
+}

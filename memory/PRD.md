@@ -42,6 +42,13 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Badge messaggi non letti (2026-10-02 sera): contatore nel menu (Header) e sulle card di entrambe le dashboard, polling 20s + aggiornamento alla chiusura chat; le richieste chiuse con risposta dell'azienda restano ora nel feed azienda (chat raggiungibile); header presente anche nelle dashboard.
 - Deploy: richiesto dall'utente ma bloccato su saldo ECU insufficiente (50 ECU/mese richiesti, 45 disponibili). Da rilanciare dopo il ricaricamento. Il dominio personalizzato si collega dopo il primo deploy dalle impostazioni di pubblicazione.
 
+## Aggiunte del 2026-10-05
+- Deploy: health check statico superato (deployment_agent: pass); pipeline di deploy avviata dalla piattaforma in background.
+- Aziende preferite (solo privati): collezione `preferiti` {user_id, azienda_id, created_at} con indice unico; endpoint GET /api/preferiti, GET /api/preferiti/ids, PUT/DELETE /api/preferiti/{azienda_id}. Cuore sulle card directory e bottone largo nel profilo azienda (anonimo -> redirect login; aziende non vedono il cuore). Dashboard privato: nuova tab "Preferite" con "Ricontatta al volo" (prefill categoria/zona), "Profilo", rimozione. Testato con testing agent (iteration_1: 7/7 backend + frontend OK).
+- Homepage: voci menu "Noleggio Attrezzi" (/#noleggio-attrezzi) e "Mercatino Usato" (/#mercatino-usato) in header (nav desktop da breakpoint xl, mobile sotto) e footer; nuova sezione `NoleggioUsato.jsx` sotto la griglia categorie con 4 schede macchinari a noleggio + 4 schede usato (contenuto statico di vetrina, immagini Unsplash/Pexels); box arancione "Sei un'Azienda?" aggiornato con vantaggi noleggio/vendita usato per abbonati PRO.
+- Nota: le schede noleggio/usato sono VETRINA STATICA; un vero marketplace annunci (CRUD per aziende abbonate) resta in backlog.
+- GitHub: il codice è React/Node (frontend) + FastAPI; l'invio su GitHub avviene tramite il pulsante "Save to Github" della chat, non dall'agente.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.
@@ -49,7 +56,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 
 ## Backlog
 - P0: tema WordPress nativo (fase 2 dichiarata dall'utente, da definire).
-- P1: notifiche WhatsApp (Twilio — servono chiavi utente), notifiche in-app anche per aziende, upload documenti/portfolio (object storage).
+- P1: notifiche WhatsApp (Twilio — servono chiavi utente), Mapbox (serve token pk.), dominio personalizzato dopo deploy, marketplace annunci noleggio/usato reale (CRUD aziende PRO, pagine dedicate, filtri).
 - P2: recensioni reali post-lavoro, chat integrata, mappa nella directory, SEO/OG avanzati.
 
 ## Note

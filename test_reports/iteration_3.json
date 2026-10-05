@@ -1,0 +1,23 @@
+{
+  "summary": "Full backend + frontend testing of nuove feature CasaLavoriPRO: (1) Calendario noleggio + prenotazioni, (2) PUT /annunci/{id} modifica. 17/17 backend tests pytest green (disponibilita, create validazione, totale per unita giorno/mese, overlap 409, gestione azienda conferma/rifiuto, annullamento privato, notifiche, modifica annuncio). Frontend playwright: calendario anonimo con button disabilitato 'Accedi per prenotare', selezione date privato -> riepilogo con giorni/totale coerente (9€/mese * ceil(4/30)=1 ->9€ e stima aggiorna), submit genera toast successo e popola noleggio-occupati, dashboard azienda EdilNuova mostra badge '1 da gestire' e conferma -> 'Confermata' con toast, modifica annuncio apre annuncio-edit-dialog-{id}, 'Salva modifiche', toast 'Annuncio aggiornato!' e row aggiornata. Tutto green.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_prenotazioni.py",
+    "/app/test_reports/pytest/prenotazioni.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_prenotazioni.py: owner_id dell'annuncio viene usato come proprietario della prenotazione lato azienda; se un'azienda avesse più utenti owner (user_id diverso dall'owner originale) non vedrebbe le richieste. Attualmente il modello è 1 owner per azienda -> OK, ma nota per futuro.",
+    "NoleggioCalendar.jsx: overlapsBooked usa parseISO lato client ma non blocca la selezione quando react-day-picker consente intervalli attraverso giorni disabilitati; fallback con toast 'Il periodo scelto include giorni già occupati' presente -> OK.",
+    "AnnuncioUpdateIn permette 'attivo' booleano: utile per toggle; _validate chiama control categoria/unita solo se chiave presente nel dict -> corretto."
+  ],
+  "updated_files": ["/app/backend/tests/test_prenotazioni.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Da /app/memory/test_credentials.md e payload richiesta: mario.rossi@example.com, info@caloreeclima.it, info@edilnuovacostruzioni.it (tutti Demo2026!)",
+  "seed_data_creation": "Create e poi annullate prenotazioni test per Piattaforma aerea/Ponteggio/Betoniera; creato e cancellato annuncio test per PUT; prenotazione UI 2027-10-02->05 annullata via API dopo test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest file in /app/backend/tests/test_prenotazioni.py riusabile. Frontend: dashboard privato mostra prenotazioni ordinate per 'dal' asc, quindi la richiesta appena creata può non essere la prima card. Azienda dashboard: /dashboard/azienda tab 'annunci' contiene sezione prenotazioni-azienda in fondo.",
+  "rca of the issue": "Nessun bug trovato."
+}

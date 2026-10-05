@@ -55,6 +55,12 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Frontend: pagine /noleggio e /mercatino (Annunci.jsx, filtri in query string), /annunci/:id (dettaglio con galleria, contatto azienda, "Richiedi disponibilità" -> /nuova-richiesta precompilata per i privati), tab "Annunci" in dashboard azienda (AnnunciPanel: crea, nascondi/mostra, foto, elimina; aziende FREE vedono upsell -> tab Abbonamento). Homepage NoleggioUsato ora dinamica (ultimi 4 per tipo). Menu/footer puntano alle pagine dedicate.
 - Testing agent iteration_2: 20/20 backend + tutti i flussi frontend OK. Redeploy rilanciato (asincrono).
 
+## Aggiunte del 2026-10-05 (sera) — Modifica annuncio + Calendario noleggio
+- Modifica annuncio: AnnuncioDialog riusato in modalità edit (matita in ogni riga della tab Annunci) -> PUT /api/annunci/{id} (tipo non modificabile).
+- Prenotazioni noleggio: collezione `prenotazioni` {annuncio_id, annuncio_titolo, azienda_id/nome, owner_id, client_id/name, dal, al (ISO date), giorni, prezzo, unita, totale, nota, stato richiesta|confermata|rifiutata|annullata}. API: GET /api/annunci/{id}/disponibilita (pubblica), POST /api/annunci/{id}/prenotazioni (privato; valida date, max 180 gg, 409 su sovrapposizione con richiesta/confermata), GET /api/prenotazioni/mine, GET /api/prenotazioni/azienda, POST /api/prenotazioni/{id}/stato (azienda: confermata|rifiutata), POST /api/prenotazioni/{id}/annulla (privato). Notifiche in-app a entrambe le parti. Totale: giorno*gg, settimana*ceil(gg/7), mese*ceil(gg/30).
+- Frontend: NoleggioCalendar (react-day-picker range, giorni occupati disabilitati, stima totale, nota) nel dettaglio annunci noleggio; tab "Noleggi" dashboard privato (annulla); sezione "Richieste di noleggio" nella tab Annunci azienda (conferma/rifiuta, badge "da gestire").
+- Testing agent iteration_3: 17/17 backend + frontend OK.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.
@@ -62,7 +68,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 
 ## Backlog
 - P0: tema WordPress nativo (fase 2 dichiarata dall'utente, da definire).
-- P1: notifiche WhatsApp (Twilio — servono chiavi utente), Mapbox (serve token pk.), dominio personalizzato dopo deploy, modifica annuncio esistente (oggi solo attivo/nascondi + foto), richieste di noleggio con date/calendario.
+- P1: notifiche WhatsApp (Twilio — servono chiavi utente), Mapbox (serve token pk.), dominio personalizzato dopo deploy (utente non ha ancora indicato il dominio), email Resend per conferma/rifiuto noleggio, pagamento caparra noleggio via Stripe.
 - P2: recensioni reali post-lavoro, chat integrata, mappa nella directory, SEO/OG avanzati.
 
 ## Note

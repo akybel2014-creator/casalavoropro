@@ -108,6 +108,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
   - Upload foto portfolio aziende (routes_gallery.py) e annunci (routes_annunci.py): nuova funzione optimize_image() con Pillow -> ridimensiona lato lungo a max 1600px, corregge EXIF, converte in WebP q82. ~85% piu leggere (test 3.5MB->544KB). content_type salvato come image/webp. Fallback a originale in caso di errore.
   - AnnuncioCard placeholder Unsplash: fm=jpg->auto=format, w=800->560, q=70; img con loading=lazy + decoding=async.
   - AnnuncioDettaglio (main decoding=async, thumbnails lazy+async), AziendaDettaglio gallery (lazy+async).
+- Effetto blur-up caricamento immagini (2026-07): nuovo componente components/BlurImage.jsx (placeholder animato/shimmer + dissolvenza blur->sharp su onLoad/onError, transizione solo opacity/filter/transform). Applicato a: Hero home, AnnuncioCard (lista noleggio/mercatino), AnnuncioDettaglio immagine principale (key per reset ad ogni cambio miniatura), galleria AziendaDettaglio. Verificato: frontend compila, effetto visibile su /noleggio.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

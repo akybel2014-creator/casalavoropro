@@ -6,6 +6,7 @@ import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { annuncioImg, prezzoLabel, ContattoAzienda, FILES_BASE } from "@/components/AnnuncioCard";
+import { BlurImage } from "@/components/BlurImage";
 import { NoleggioCalendar } from "@/components/NoleggioCalendar";
 
 export default function AnnuncioDettaglio() {
@@ -56,8 +57,8 @@ export default function AnnuncioDettaglio() {
                 {a && (
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8" data-testid="annuncio-detail">
                         <div className="lg:col-span-7">
-                            <div className="rounded-3xl overflow-hidden border border-white/10 bg-navy-700/60">
-                                <img src={images[active]} alt={a.titolo} decoding="async" className="w-full h-72 sm:h-[420px] object-cover" data-testid="annuncio-main-img" />
+                            <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-navy-700/60">
+                                <BlurImage key={images[active]} src={images[active]} alt={a.titolo} loading="eager" imgClassName="w-full h-72 sm:h-[420px] object-cover" data-testid="annuncio-main-img" />
                             </div>
                             {images.length > 1 && (
                                 <div className="mt-3 grid grid-cols-4 gap-3">

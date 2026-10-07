@@ -15,10 +15,19 @@ router = APIRouter()
 TIPI = ("noleggio", "usato")
 UNITA = ("giorno", "settimana", "mese", "fisso")
 STATI_USATO = ("Nuovo", "Ottimo", "Buono", "Revisionato", "Da sistemare")
-CATEGORIE_ANNUNCI = [
-    "Movimento terra", "Edilizia e betoniere", "Ponteggi e facciate", "Lavori in quota",
-    "Elettroutensili", "Giardinaggio", "Idraulica e riscaldamento", "Trasporto e sollevamento", "Altro",
-]
+CATEGORIE_ANNUNCI = {
+    "Movimento terra": ["Escavatori", "Miniescavatori", "Pale e terne", "Rulli compattatori", "Dumper"],
+    "Edilizia e betoniere": ["Betoniere", "Impastatrici", "Vibratori per calcestruzzo", "Montacarichi", "Puntelli e casseforme"],
+    "Ponteggi e facciate": ["Ponteggi", "Trabattelli", "Piattaforme di facciata", "Reti e teli"],
+    "Lavori in quota": ["Piattaforme aeree", "Sollevatori telescopici", "Scale e ponti su ruote"],
+    "Elettroutensili": ["Trapani e avvitatori", "Smerigliatrici", "Seghe circolari", "Martelli demolitori", "Generatori"],
+    "Giardinaggio": ["Tagliaerba", "Decespugliatori", "Motoseghe", "Biotrituratori", "Soffiatori"],
+    "Idraulica e riscaldamento": ["Pompe", "Disgorgatrici", "Saldatrici per tubi", "Riscaldatori"],
+    "Trasporto e sollevamento": ["Transpallet", "Carrelli elevatori", "Gru", "Argani", "Rimorchi"],
+    "Pulizia industriale": ["Idropulitrici", "Aspiratori industriali", "Lavasciuga pavimenti", "Generatori di vapore"],
+    "Altro": ["Altro"],
+}
+ALL_SOTTOCATEGORIE = {s for subs in CATEGORIE_ANNUNCI.values() for s in subs}
 MAX_FOTO_ANNUNCIO = 4
 
 
@@ -27,6 +36,7 @@ class AnnuncioIn(BaseModel):
     titolo: str = Field(min_length=3, max_length=120)
     descrizione: str = Field(min_length=10, max_length=2000)
     categoria: str
+    sottocategoria: Optional[str] = None
     zona: str = Field(min_length=2, max_length=80)
     prezzo: float = Field(gt=0, le=1_000_000)
     unita: str = "giorno"
@@ -38,6 +48,7 @@ class AnnuncioUpdateIn(BaseModel):
     titolo: Optional[str] = Field(None, min_length=3, max_length=120)
     descrizione: Optional[str] = Field(None, min_length=10, max_length=2000)
     categoria: Optional[str] = None
+    sottocategoria: Optional[str] = None
     zona: Optional[str] = Field(None, min_length=2, max_length=80)
     prezzo: Optional[float] = Field(None, gt=0, le=1_000_000)
     unita: Optional[str] = None
@@ -50,6 +61,13 @@ def _validate(data: dict, tipo: str):
         raise HTTPException(status_code=400, detail="Tipo annuncio non valido")
     if "categoria" in data and data["categoria"] not in CATEGORIE_ANNUNCI:
         raise HTTPException(status_code=400, detail="Categoria non valida")
+    if data.get("sottocategoria"):
+        sub = data["sottocategoria"]
+        cat = data.get("categoria")
+        if cat and sub not in CATEGORIE_ANNUNCI.get(cat, []):
+            raise HTTPException(status_code=400, detail="Sottocategoria non valida per la categoria scelta")
+        if not cat and sub not in ALL_SOTTOCATEGORIE:
+            raise HTTPException(status_code=400, detail="Sottocategoria non valida")
     if "unita" in data and data["unita"] not in UNITA:
         raise HTTPException(status_code=400, detail="Unità di prezzo non valida")
     if tipo == "usato":
@@ -86,7 +104,8 @@ async def _pro_azienda(user: dict) -> dict:
 
 @router.get("/annunci/meta")
 async def annunci_meta():
-    return {"categorie": CATEGORIE_ANNUNCI, "unita": list(UNITA), "stati_usato": list(STATI_USATO)}
+    return {"categorie": list(CATEGORIE_ANNUNCI.keys()), "sottocategorie": CATEGORIE_ANNUNCI,
+            "unita": list(UNITA), "stati_usato": list(STATI_USATO)}
 
 
 @router.get("/annunci/mine")
@@ -96,7 +115,7 @@ async def miei_annunci(user: dict = Depends(require_roles("azienda"))):
 
 
 @router.get("/annunci")
-async def lista_annunci(tipo: str = "", categoria: str = "", zona: str = "", q: str = "",
+async def lista_annunci(tipo: str = "", categoria: str = "", sottocategoria: str = "", zona: str = "", q: str = "",
                         prezzo_min: Optional[float] = Query(None, ge=0),
                         prezzo_max: Optional[float] = Query(None, ge=0),
                         limit: int = Query(60, ge=1, le=200)):
@@ -105,6 +124,8 @@ async def lista_annunci(tipo: str = "", categoria: str = "", zona: str = "", q: 
         query["tipo"] = tipo.strip()
     if categoria.strip():
         query["categoria"] = categoria.strip()
+    if sottocategoria.strip():
+        query["sottocategoria"] = sottocategoria.strip()
     if zona.strip():
         query["zona"] = {"$regex": re.escape(zona.strip()), "$options": "i"}
     if q.strip():

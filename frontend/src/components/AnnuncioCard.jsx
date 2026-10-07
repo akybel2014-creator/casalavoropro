@@ -42,6 +42,9 @@ export function AnnuncioCard({ a, index = 0 }) {
                 )}
                 <p className="mt-1 text-xs sm:text-sm text-slate-400 line-clamp-2">{a.descrizione}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                    {a.sottocategoria && (
+                        <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-slate-300" data-testid={`annuncio-sottocategoria-${a.id}`}>{a.sottocategoria}</span>
+                    )}
                     <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {a.zona}</span>
                     <span className="flex items-center gap-1.5 text-slate-300">{a.azienda_nome} <VerifiedBadge verified={a.azienda_verified} /></span>
                 </div>

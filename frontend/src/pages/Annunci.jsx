@@ -31,9 +31,10 @@ export default function Annunci({ tipo }) {
     const [q, setQ] = useState(params.get("q") || "");
     const [zona, setZona] = useState(params.get("zona") || "");
     const [categoria, setCategoria] = useState(params.get("categoria") || "");
+    const [sottocategoria, setSottocategoria] = useState(params.get("sottocategoria") || "");
     const [min, setMin] = useState(params.get("min") || "");
     const [max, setMax] = useState(params.get("max") || "");
-    const [meta, setMeta] = useState({ categorie: [] });
+    const [meta, setMeta] = useState({ categorie: [], sottocategorie: {} });
     const [items, setItems] = useState(null);
     const [error, setError] = useState("");
 
@@ -45,6 +46,7 @@ export default function Annunci({ tipo }) {
         setQ(params.get("q") || "");
         setZona(params.get("zona") || "");
         setCategoria(params.get("categoria") || "");
+        setSottocategoria(params.get("sottocategoria") || "");
         setMin(params.get("min") || "");
         setMax(params.get("max") || "");
     }, [params]);
@@ -55,6 +57,7 @@ export default function Annunci({ tipo }) {
             if (params.get("q")) query.set("q", params.get("q"));
             if (params.get("zona")) query.set("zona", params.get("zona"));
             if (params.get("categoria")) query.set("categoria", params.get("categoria"));
+            if (params.get("sottocategoria")) query.set("sottocategoria", params.get("sottocategoria"));
             if (params.get("min")) query.set("prezzo_min", params.get("min"));
             if (params.get("max")) query.set("prezzo_max", params.get("max"));
             const { data } = await api.get(`/annunci?${query.toString()}`);
@@ -72,6 +75,7 @@ export default function Annunci({ tipo }) {
         if (q) query.set("q", q);
         if (zona) query.set("zona", zona);
         if (categoria) query.set("categoria", categoria);
+        if (sottocategoria) query.set("sottocategoria", sottocategoria);
         if (min) query.set("min", min);
         if (max) query.set("max", max);
         setParams(query);
@@ -94,18 +98,29 @@ export default function Annunci({ tipo }) {
                             <Search className="h-4 w-4 text-brand shrink-0" />
                             <Input value={q} onChange={(e) => setQ(e.target.value)} data-testid="annunci-q-input" placeholder="Cerca attrezzo, marca o azienda" className={inputCls} />
                         </label>
-                        <label className={`${inputWrap} md:col-span-3`}>
+                        <label className={`${inputWrap} md:col-span-2`}>
                             <MapPin className="h-4 w-4 text-brand shrink-0" />
-                            <Input value={zona} onChange={(e) => setZona(e.target.value)} data-testid="annunci-zona-input" placeholder="Zona: città o provincia" className={inputCls} />
+                            <Input value={zona} onChange={(e) => setZona(e.target.value)} data-testid="annunci-zona-input" placeholder="Zona" className={inputCls} />
                         </label>
-                        <div className="md:col-span-3">
-                            <Select value={categoria || "all"} onValueChange={(v) => setCategoria(v === "all" ? "" : v)}>
+                        <div className="md:col-span-2">
+                            <Select value={categoria || "all"} onValueChange={(v) => { const nc = v === "all" ? "" : v; setCategoria(nc); setSottocategoria(""); }}>
                                 <SelectTrigger data-testid="annunci-categoria-select" className="w-full h-full rounded-xl bg-navy/80 border-white/10 text-white">
                                     <SelectValue placeholder="Categoria" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-navy-700 border-white/10">
                                     <SelectItem value="all">Tutte le categorie</SelectItem>
                                     {meta.categorie.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <Select value={sottocategoria || "all"} onValueChange={(v) => setSottocategoria(v === "all" ? "" : v)} disabled={!categoria}>
+                                <SelectTrigger data-testid="annunci-sottocategoria-select" className="w-full h-full rounded-xl bg-navy/80 border-white/10 text-white disabled:opacity-50">
+                                    <SelectValue placeholder={categoria ? "Sottocategoria" : "Tutte"} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-navy-700 border-white/10">
+                                    <SelectItem value="all">Tutte</SelectItem>
+                                    {(meta.sottocategorie?.[categoria] || []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

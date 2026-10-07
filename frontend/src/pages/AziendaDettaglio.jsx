@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon, Camera, MessageSquareHeart } from "lucide-react";
+import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon, Camera, MessageSquareHeart, Megaphone } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
@@ -25,6 +25,7 @@ export default function AziendaDettaglio() {
     const { user } = useAuth();
     const [a, setA] = useState(null);
     const [recensioni, setRecensioni] = useState([]);
+    const [offerte, setOfferte] = useState([]);
     const [error, setError] = useState("");
     const { isPreferita, toggle: togglePreferita, canSave } = usePreferiti();
 
@@ -34,6 +35,9 @@ export default function AziendaDettaglio() {
             .catch((e) => setError(formatApiError(e)));
         api.get(`/aziende/${id}/recensioni`)
             .then(({ data }) => setRecensioni(data))
+            .catch(() => {});
+        api.get(`/aziende/${id}/offerte-lavoro`)
+            .then(({ data }) => setOfferte(data))
             .catch(() => {});
     }, [id]);
 
@@ -165,6 +169,31 @@ export default function AziendaDettaglio() {
                                     </div>
                                 )}
                             </div>
+
+                            {offerte.length > 0 && (
+                                <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="company-jobs">
+                                    <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <Megaphone className="h-5 w-5 text-brand" /> Offerte di lavoro
+                                    </h2>
+                                    <div className="mt-5 space-y-4">
+                                        {offerte.map((o) => (
+                                            <div key={o.id} className="rounded-2xl border border-white/5 bg-navy/60 p-5" data-testid={`company-job-${o.id}`}>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className="font-display font-bold text-white">{o.titolo}</h3>
+                                                    <span className="rounded-full bg-brand/15 text-brand text-xs font-semibold px-2 py-0.5">{o.tipo_contratto}</span>
+                                                </div>
+                                                <p className="mt-2 text-sm text-slate-300 whitespace-pre-line">{o.descrizione}</p>
+                                                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                                                    <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {o.zona}</span>
+                                                    {o.retribuzione && <span>{o.retribuzione}</span>}
+                                                    {o.contatto_email && <a className="text-brand hover:underline" href={`mailto:${o.contatto_email}`} data-testid={`company-job-email-${o.id}`}>{o.contatto_email}</a>}
+                                                    {o.contatto_telefono && <a className="text-brand hover:underline" href={`tel:${o.contatto_telefono}`}>{o.contatto_telefono}</a>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
                                 <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">

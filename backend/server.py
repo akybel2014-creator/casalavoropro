@@ -22,6 +22,7 @@ from routes_preferiti import router as preferiti_router  # noqa: E402
 from routes_annunci import router as annunci_router  # noqa: E402
 from routes_prenotazioni import router as prenotazioni_router  # noqa: E402
 from routes_cron import router as cron_router  # noqa: E402
+from routes_offerte_lavoro import router as offerte_lavoro_router  # noqa: E402
 from seed import seed_demo_data, backfill_emergenze, backfill_geo, seed_annunci_demo  # noqa: E402
 
 app = FastAPI(title="CasaLavoroPRO API")
@@ -40,6 +41,7 @@ api_router.include_router(preferiti_router)
 api_router.include_router(annunci_router)
 api_router.include_router(prenotazioni_router)
 api_router.include_router(cron_router)
+api_router.include_router(offerte_lavoro_router)
 
 
 @api_router.get("/")

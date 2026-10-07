@@ -13,11 +13,11 @@ import { annuncioImg, prezzoLabel, FILES_BASE } from "@/components/AnnuncioCard"
 import { PrenotazioniList } from "@/components/PrenotazioniList";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
-const EMPTY = { tipo: "noleggio", titolo: "", descrizione: "", categoria: "", zona: "", prezzo: "", unita: "giorno", stato: "Buono" };
+const EMPTY = { tipo: "noleggio", titolo: "", descrizione: "", categoria: "", sottocategoria: "", zona: "", prezzo: "", unita: "giorno", stato: "Buono" };
 
 function toForm(a, zoneDefault) {
     if (!a) return { ...EMPTY, zona: zoneDefault || "" };
-    return { tipo: a.tipo, titolo: a.titolo, descrizione: a.descrizione, categoria: a.categoria, zona: a.zona, prezzo: String(a.prezzo), unita: a.unita || "giorno", stato: a.stato || "Buono" };
+    return { tipo: a.tipo, titolo: a.titolo, descrizione: a.descrizione, categoria: a.categoria, sottocategoria: a.sottocategoria || "", zona: a.zona, prezzo: String(a.prezzo), unita: a.unita || "giorno", stato: a.stato || "Buono" };
 }
 
 function AnnuncioDialog({ meta, zoneDefault, annuncio, onCreated, onUpdated }) {
@@ -89,10 +89,21 @@ function AnnuncioDialog({ meta, zoneDefault, annuncio, onCreated, onUpdated }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
                             <Label className="text-slate-300">Categoria</Label>
-                            <Select value={form.categoria} onValueChange={set("categoria")}>
+                            <Select value={form.categoria} onValueChange={(v) => setForm((f) => ({ ...f, categoria: v, sottocategoria: "" }))}>
                                 <SelectTrigger data-testid="annuncio-categoria-select" className={inputCls}><SelectValue placeholder="Scegli…" /></SelectTrigger>
                                 <SelectContent className="bg-navy-700 border-white/10">
                                     {meta.categorie.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-slate-300">Sottocategoria</Label>
+                            <Select value={form.sottocategoria || undefined} onValueChange={set("sottocategoria")} disabled={!form.categoria}>
+                                <SelectTrigger data-testid="annuncio-sottocategoria-select" className={inputCls}>
+                                    <SelectValue placeholder={form.categoria ? "Scegli…" : "Scegli prima la categoria"} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-navy-700 border-white/10">
+                                    {(meta.sottocategorie?.[form.categoria] || []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

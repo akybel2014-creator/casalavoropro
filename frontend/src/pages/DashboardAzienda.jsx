@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
 import ChatDialog from "@/components/ChatDialog";
 import { AnnunciPanel } from "@/components/AnnunciPanel";
+import { OfferteLavoroPanel } from "@/components/OfferteLavoroPanel";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
@@ -95,7 +96,7 @@ export default function DashboardAzienda() {
     const [searchParams] = useSearchParams();
     const [tab, setTab] = useState(() => {
         const t = searchParams.get("tab");
-        return ["leads", "profilo", "galleria", "annunci", "verifica", "emergenze", "abbonamento"].includes(t) ? t : "leads";
+        return ["leads", "profilo", "galleria", "annunci", "lavoro", "verifica", "emergenze", "abbonamento"].includes(t) ? t : "leads";
     });
 
     const load = useCallback(async () => {
@@ -255,6 +256,9 @@ export default function DashboardAzienda() {
                         </TabsTrigger>
                         <TabsTrigger value="annunci" data-testid="dashboard-azienda-tab-annunci" className="data-[state=active]:text-white">
                             <Truck className="h-4 w-4 mr-1.5" /> Annunci
+                        </TabsTrigger>
+                        <TabsTrigger value="lavoro" data-testid="dashboard-azienda-tab-lavoro" className="data-[state=active]:text-white">
+                            <Megaphone className="h-4 w-4 mr-1.5" /> Offerte di lavoro
                         </TabsTrigger>
                         <TabsTrigger value="verifica" className="data-[state=active]:text-white">
                             <ShieldCheck className="h-4 w-4 mr-1.5" /> Verifica
@@ -441,6 +445,10 @@ export default function DashboardAzienda() {
 
                     <TabsContent value="annunci" className="mt-6">
                         <AnnunciPanel azienda={mine} onGoToAbbonamento={() => setTab("abbonamento")} />
+                    </TabsContent>
+
+                    <TabsContent value="lavoro" className="mt-6">
+                        <OfferteLavoroPanel azienda={mine} />
                     </TabsContent>
 
                     <TabsContent value="verifica" className="mt-6">

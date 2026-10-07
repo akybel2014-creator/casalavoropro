@@ -15,6 +15,7 @@ export const NAV_ITEMS = [
     { label: "Mercatino Usato", to: "/mercatino", id: "header-nav-mercatino" },
     { label: "Aziende", to: "/aziende", id: "header-nav-aziende" },
     { label: "Per le aziende", to: "/#per-le-aziende", id: "header-nav-per-aziende" },
+    { label: "Prezzi", to: "/prezzi", id: "header-nav-prezzi" },
     { label: "FAQ", to: "/#faq", id: "header-nav-faq" },
     { label: "Contatti", to: "/#contatti", id: "header-nav-contatti" },
 ];

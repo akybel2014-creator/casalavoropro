@@ -109,6 +109,7 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
   - AnnuncioCard placeholder Unsplash: fm=jpg->auto=format, w=800->560, q=70; img con loading=lazy + decoding=async.
   - AnnuncioDettaglio (main decoding=async, thumbnails lazy+async), AziendaDettaglio gallery (lazy+async).
 - Effetto blur-up caricamento immagini (2026-07): nuovo componente components/BlurImage.jsx (placeholder animato/shimmer + dissolvenza blur->sharp su onLoad/onError, transizione solo opacity/filter/transform). Applicato a: Hero home, AnnuncioCard (lista noleggio/mercatino), AnnuncioDettaglio immagine principale (key per reset ad ogni cambio miniatura), galleria AziendaDettaglio. Verificato: frontend compila, effetto visibile su /noleggio.
+- Script conversione WebP foto esistenti (2026-07): backend/scripts/optimize_existing_photos.py. Converte in WebP (riusa optimize_image) le foto gia caricate (db.files content_type jpeg/png), riscrivendo i byte sullo STESSO path via _put_object e aggiornando content_type->image/webp nel record (serve_file usa il content_type del record, quindi nessun riferimento aziende.foto/annunci.foto da toccare). Idempotente (salta i gia-webp e quelli dove non riduce il peso), supporta --dry-run. Testato live su preview: 2 foto convertite, serving verificato image/webp, riesecuzione 0 candidate. Da eseguire in produzione: cd /app/backend && set -a && source .env && set +a && python scripts/optimize_existing_photos.py.
 
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.

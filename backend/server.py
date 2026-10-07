@@ -49,7 +49,17 @@ async def root():
     return {"message": "CasaLavoroPRO API is running"}
 
 
+@api_router.get("/health")
+async def api_health():
+    return {"status": "healthy"}
+
+
 app.include_router(api_router)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
 cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
 if "*" in cors_origins:

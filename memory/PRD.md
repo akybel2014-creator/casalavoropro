@@ -101,6 +101,8 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
   - Rimosso link 'FAQ' dal menu header (NAV_ITEMS); sezione FAQ in home invariata.
   - Test: iteration_8.json backend 100% (13/13) + frontend 100%, nessun bug. Regressione: /app/backend/tests/test_offerte_e_sottocategorie.py. Nota non bloccante: warning Radix DialogContent aria-describedby.
 
+- Fix deployment /health 404 (2026-07): il probe Kubernetes chiamava GET /health (senza prefisso /api) ricevendo 404 ripetuti -> deploy fallito. Aggiunto endpoint pubblico @app.get("/health") direttamente sull'app FastAPI (server.py) + @api_router.get("/health"), entrambi {"status":"healthy"}. Verificato 200 in locale su /health e /api/health. Deployment Agent health check: PASS, nessun blocker residuo.
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.

@@ -1,14 +1,14 @@
 import os
 import hmac
 import logging
-from datetime import timezone
+from datetime import timezone, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from bson import ObjectId
 
 from core import db, now
 from routes_auth import LAUNCH_TRIAL_END
-from emailer import send_offer_reminder, send_reactivation_email
+from emailer import send_offer_reminder, send_reactivation_email, send_noleggio_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -105,6 +105,30 @@ async def _run_offer_reactivation():
     logger.info("offer-reactivation: inviate %s email di riattivazione", sent_count)
 
 
+async def _run_noleggio_reminder():
+    """Promemoria 1 giorno prima della consegna per le prenotazioni confermate (a cliente e azienda)."""
+    domani = (now().date() + timedelta(days=1)).isoformat()
+    sent_count = 0
+    cursor = db.prenotazioni.find({
+        "stato": "confermata",
+        "dal": domani,
+        "reminder_consegna_sent": {"$ne": True},
+    })
+    async for p in cursor:
+        try:
+            for uid, ruolo in ((p.get("client_id"), "privato"), (p.get("owner_id"), "azienda")):
+                if not uid:
+                    continue
+                u = await db.users.find_one({"_id": ObjectId(uid)}, {"email": 1})
+                if u and u.get("email"):
+                    await send_noleggio_event(u["email"], ruolo, "promemoria_consegna", p)
+            await db.prenotazioni.update_one({"_id": p["_id"]}, {"$set": {"reminder_consegna_sent": True}})
+            sent_count += 1
+        except Exception:
+            logger.exception("noleggio reminder email failed for prenotazione %s", p.get("_id"))
+    logger.info("noleggio-reminder: inviati %s promemoria di consegna", sent_count)
+
+
 @router.post("/cron/offer-reminder")
 async def cron_offer_reminder(background: BackgroundTasks, authorization: str | None = Header(default=None)):
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
@@ -127,3 +151,11 @@ async def cron_offer_reactivation(background: BackgroundTasks, authorization: st
     _check_auth(authorization)
     background.add_task(_run_offer_reactivation)
     return {"ok": True, "queued": "offer-reactivation"}
+
+
+@router.post("/cron/noleggio-reminder")
+async def cron_noleggio_reminder(background: BackgroundTasks, authorization: str | None = Header(default=None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    _check_auth(authorization)
+    background.add_task(_run_noleggio_reminder)
+    return {"ok": True, "queued": "noleggio-reminder"}

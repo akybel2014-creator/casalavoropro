@@ -318,6 +318,14 @@ NOLEGGIO_EVENTI = {
                     "<strong>{cliente}</strong> ha pagato la caparra: il noleggio è bloccato. Organizza la consegna del mezzo.",
                     "Vai al pannello", "/dashboard/azienda"),
     },
+    "promemoria_consegna": {
+        "privato": ("Promemoria: il tuo noleggio inizia domani", "Il noleggio inizia domani",
+                    "Ti ricordiamo che il noleggio presso <strong>{azienda}</strong> inizia <strong>domani</strong>. Mettiti d'accordo con l'azienda per il ritiro o la consegna del mezzo.",
+                    "Le mie prenotazioni", "/dashboard"),
+        "azienda": ("Promemoria: consegna noleggio domani", "Consegna prevista domani",
+                    "Ti ricordiamo che <strong>domani</strong> inizia il noleggio richiesto da <strong>{cliente}</strong>. Prepara il mezzo e organizza la consegna.",
+                    "Vai al pannello", "/dashboard/azienda"),
+    },
 }
 
 

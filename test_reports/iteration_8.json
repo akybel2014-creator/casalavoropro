@@ -1,0 +1,31 @@
+{
+  "summary": "Backend + frontend testing per CasaLavoroPRO review (sottocategorie annunci + offerte lavoro CRUD + rimozione FAQ). 13/13 pytest backend passati. UI: FAQ rimosso dall'header, flusso completo offerte di lavoro (crea/visualizza/elimina dashboard azienda + sezione pubblica), creazione annuncio noleggio con sottocategoria dipendente, filtri /noleggio e /mercatino con sottocategoria funzionanti.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dialoghi offerta/annuncio", "issues": ["Warning React: Missing Description or aria-describedby for DialogContent (accessibilità Radix) - non bloccante"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_offerte_e_sottocategorie.py",
+    "/app/test_reports/pytest/offerte_sottocat.xml"
+  ],
+  "action_items": [
+    "Opzionale: aggiungere DialogDescription (o aria-describedby) nei DialogContent di OfferteLavoroPanel e AnnunciPanel per silenziare warning Radix."
+  ],
+  "critical_code_review_comments": [
+    "routes_annunci.py: validazione sottocategoria coerente con categoria scelta (400 confermato).",
+    "routes_offerte_lavoro.py: owner check corretto (403 confermato per update e delete da altra azienda).",
+    "GET /api/aziende/{id}/offerte-lavoro ritorna solo attivo=true come richiesto.",
+    "Entrambi i router usano clean_doc (nessun ObjectId in risposta)."
+  ],
+  "updated_files": ["/app/backend/tests/test_offerte_e_sottocategorie.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "trial@test.it / Demo2026! (PRO), info@caloreeclima.it / Demo2026! (PRO altra azienda per 403), mario.rossi@example.com / Demo2026! (privato)",
+  "seed_data_creation": "Nessun seed persistente - tutti i record TEST_* creati sono stati eliminati durante i test (cleanup).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Nuovo test regressione: /app/backend/tests/test_offerte_e_sottocategorie.py copre meta annunci, create con sottocategoria valida/invalida, filtro per sottocategoria, CRUD offerte-lavoro con validazione tipo_contratto e permessi 403, endpoint pubblico /aziende/{id}/offerte-lavoro. In Playwright usare sempre exact=True con get_by_role('option', name='Escavatori') perché 'Miniescavatori' matcha come substring."
+}

@@ -139,8 +139,14 @@ export default function Hero() {
                     >
                         <div className="relative rounded-3xl overflow-hidden border border-white/15 shadow-2xl">
                             <img
-                                src="https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=85&w=1400&auto=format&fit=crop"
+                                src="https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=760&auto=format&fit=crop"
+                                srcSet="https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=520&auto=format&fit=crop 520w, https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=760&auto=format&fit=crop 760w, https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=1040&auto=format&fit=crop 1040w"
+                                sizes="(min-width: 1024px) 520px, (min-width: 640px) 50vw, 90vw"
                                 alt="Casa moderna ristrutturata"
+                                width="760"
+                                height="520"
+                                fetchPriority="high"
+                                decoding="async"
                                 className="w-full h-[320px] sm:h-[420px] lg:h-[520px] object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/20 to-transparent" />

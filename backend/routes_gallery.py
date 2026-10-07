@@ -19,6 +19,31 @@ MAX_FOTO = 6
 MAX_SIZE = 5 * 1024 * 1024
 ALLOWED = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 
+# Ottimizzazione immagini: ridimensiona al massimo a questa larghezza e converte in WebP.
+OPTIMIZE_MAX_DIM = 1600
+OPTIMIZE_WEBP_QUALITY = 82
+
+
+def optimize_image(data: bytes) -> tuple[bytes, str, str]:
+    """Ridimensiona (lato lungo max OPTIMIZE_MAX_DIM), corregge l'orientamento EXIF e converte in WebP.
+    Ritorna (bytes, content_type, ext). In caso di errore ritorna i dati originali come fallback jpg."""
+    import io
+    from PIL import Image, ImageOps
+    try:
+        img = Image.open(io.BytesIO(data))
+        img = ImageOps.exif_transpose(img)
+        has_alpha = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
+        img = img.convert("RGBA" if has_alpha else "RGB")
+        if max(img.size) > OPTIMIZE_MAX_DIM:
+            img.thumbnail((OPTIMIZE_MAX_DIM, OPTIMIZE_MAX_DIM), Image.LANCZOS)
+        out = io.BytesIO()
+        img.save(out, format="WEBP", quality=OPTIMIZE_WEBP_QUALITY, method=6)
+        return out.getvalue(), "image/webp", "webp"
+    except Exception:
+        logger.exception("image optimize failed, storing original")
+        return data, "image/jpeg", "jpg"
+
+
 _storage_key = None
 
 
@@ -76,16 +101,16 @@ async def upload_foto(files: List[UploadFile] = File(...), user: dict = Depends(
         data = await file.read()
         if len(data) > MAX_SIZE:
             raise HTTPException(status_code=400, detail="Immagine troppo grande (max 5 MB)")
-        ext = ALLOWED[file.content_type]
-        path = f"{APP_NAME}/gallery/{azienda['_id']}/{uuidlib.uuid4()}.{ext}"
+        opt_data, opt_ct, opt_ext = optimize_image(data)
+        path = f"{APP_NAME}/gallery/{azienda['_id']}/{uuidlib.uuid4()}.{opt_ext}"
         try:
-            result = _put_object(path, data, file.content_type)
+            result = _put_object(path, opt_data, opt_ct)
         except Exception:
             logger.exception("upload failed")
             raise HTTPException(status_code=502, detail="Upload non riuscito, riprova")
         entry = {"id": str(uuidlib.uuid4()), "path": result["path"], "filename": file.filename, "created_at": now()}
         await db.files.insert_one({**entry, "owner_id": user["id"], "is_deleted": False,
-                                   "is_public": True, "content_type": file.content_type})
+                                   "is_public": True, "content_type": opt_ct})
         uploaded.append(entry)
 
     await db.aziende.update_one({"_id": azienda["_id"]}, {"$push": {"foto": {"$each": uploaded}}})

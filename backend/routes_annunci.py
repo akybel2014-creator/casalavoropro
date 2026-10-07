@@ -7,7 +7,7 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from pydantic import BaseModel, Field
 from core import db, now, clean_doc, require_roles, azienda_for_user
-from routes_gallery import _put_object, ALLOWED, MAX_SIZE, APP_NAME, EMERGENT_KEY
+from routes_gallery import _put_object, ALLOWED, MAX_SIZE, APP_NAME, EMERGENT_KEY, optimize_image
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -204,15 +204,16 @@ async def upload_foto_annuncio(annuncio_id: str, files: List[UploadFile] = File(
         data = await file.read()
         if len(data) > MAX_SIZE:
             raise HTTPException(status_code=400, detail="Immagine troppo grande (max 5 MB)")
-        path = f"{APP_NAME}/annunci/{doc['_id']}/{uuidlib.uuid4()}.{ALLOWED[file.content_type]}"
+        opt_data, opt_ct, opt_ext = optimize_image(data)
+        path = f"{APP_NAME}/annunci/{doc['_id']}/{uuidlib.uuid4()}.{opt_ext}"
         try:
-            result = _put_object(path, data, file.content_type)
+            result = _put_object(path, opt_data, opt_ct)
         except Exception:
             logger.exception("upload annuncio failed")
             raise HTTPException(status_code=502, detail="Upload non riuscito, riprova")
         entry = {"id": str(uuidlib.uuid4()), "path": result["path"], "filename": file.filename, "created_at": now()}
         await db.files.insert_one({**entry, "owner_id": user["id"], "is_deleted": False,
-                                   "is_public": True, "content_type": file.content_type})
+                                   "is_public": True, "content_type": opt_ct})
         uploaded.append(entry)
     await db.annunci.update_one({"_id": doc["_id"]}, {"$push": {"foto": {"$each": uploaded}}})
     fresh = await db.annunci.find_one({"_id": doc["_id"]})

@@ -57,14 +57,14 @@ export default function AnnuncioDettaglio() {
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8" data-testid="annuncio-detail">
                         <div className="lg:col-span-7">
                             <div className="rounded-3xl overflow-hidden border border-white/10 bg-navy-700/60">
-                                <img src={images[active]} alt={a.titolo} className="w-full h-72 sm:h-[420px] object-cover" data-testid="annuncio-main-img" />
+                                <img src={images[active]} alt={a.titolo} decoding="async" className="w-full h-72 sm:h-[420px] object-cover" data-testid="annuncio-main-img" />
                             </div>
                             {images.length > 1 && (
                                 <div className="mt-3 grid grid-cols-4 gap-3">
                                     {images.map((src, i) => (
                                         <button key={src} type="button" onClick={() => setActive(i)} data-testid={`annuncio-thumb-${i}`}
                                             className={`rounded-xl overflow-hidden border transition-colors ${i === active ? "border-brand" : "border-white/10 hover:border-white/30"}`}>
-                                            <img src={src} alt="" className="h-20 w-full object-cover" />
+                                            <img src={src} alt="" loading="lazy" decoding="async" className="h-20 w-full object-cover" />
                                         </button>
                                     ))}
                                 </div>

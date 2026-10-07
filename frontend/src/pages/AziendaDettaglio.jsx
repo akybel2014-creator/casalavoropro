@@ -139,7 +139,7 @@ export default function AziendaDettaglio() {
                                     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
                                         {a.foto.map((f) => (
                                             <div key={f.id} className="rounded-2xl overflow-hidden border border-white/10" data-testid={`company-gallery-item-${f.id}`}>
-                                                <img src={`${FILES_BASE}${f.path}`} alt={f.filename || "Lavoro realizzato"} className="w-full h-40 object-cover hover:scale-105 transition-transform duration-500" />
+                                                <img src={`${FILES_BASE}${f.path}`} alt={f.filename || "Lavoro realizzato"} loading="lazy" decoding="async" className="w-full h-40 object-cover hover:scale-105 transition-transform duration-500" />
                                             </div>
                                         ))}
                                     </div>

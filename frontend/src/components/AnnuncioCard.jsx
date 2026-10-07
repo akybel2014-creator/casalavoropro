@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "@/pages/Aziende";
 
 export const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
-const PLACEHOLDER = "https://images.unsplash.com/photo-1530191601183-4de2969575ad?crop=entropy&cs=srgb&fm=jpg&q=60&w=800";
+const PLACEHOLDER = "https://images.unsplash.com/photo-1530191601183-4de2969575ad?crop=entropy&cs=srgb&auto=format&q=70&w=560";
 
 export function annuncioImg(a) {
     if (a.foto?.length) return `${FILES_BASE}${a.foto[0].path}`;
@@ -24,7 +24,7 @@ export function AnnuncioCard({ a, index = 0 }) {
             style={{ animationDelay: `${(index % 4) * 70}ms` }}
             className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/10 bg-navy-700/60 hover:-translate-y-1.5 hover:border-brand/50 hover:shadow-xl hover:shadow-brand/10 transition-[transform,border-color,box-shadow] duration-300 animate-in fade-in slide-in-from-bottom-4">
             <Link to={`/annunci/${a.id}`} className="relative block h-44 overflow-hidden" data-testid={`annuncio-img-link-${a.id}`}>
-                <img src={annuncioImg(a)} alt={a.titolo} loading="lazy" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={annuncioImg(a)} alt={a.titolo} loading="lazy" decoding="async" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/20 to-transparent" aria-hidden="true" />
                 <span className={`absolute top-3 left-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${noleggio ? "bg-brand text-white" : "bg-emerald-500 text-navy"}`}>
                     {noleggio ? <Truck className="h-3 w-3" /> : <Recycle className="h-3 w-3" />}

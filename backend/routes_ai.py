@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
 from core import db, now, get_current_user, clean_doc
-from credits import charge, effective_ruolo
+from credits import charge, effective_ruolo, refund_charge
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
@@ -122,20 +122,18 @@ async def analizza_bolletta(file: UploadFile = File(...), user: dict = Depends(g
     if len(data) > MAX_UPLOAD:
         raise HTTPException(status_code=400, detail="File troppo grande (max 15 MB)")
 
-    # Privato = gratis; azienda = 1 credito (bolletta extra oltre i bonus).
-    charge_res = await charge(user, "analisi_bolletta", meta={"file": file.filename})
-
+    # L'analisi e gratuita per tutti: l'eventuale credito viene scalato al momento dell'invio al broker ("Risparmia Ora").
     estratto = await _gemini_json(GEMINI_BOLLETTA_MODEL, BOLLETTA_SYSTEM, BOLLETTA_PROMPT,
                                   data, "application/pdf", ".pdf")
 
     lead_doc = {
         "user_id": user["id"], "tipo": "bolletta", "stato": "lead_in_attesa",
         "filename": file.filename, "dati": estratto,
-        "charged": charge_res["charged"], "created_at": now(), "inviato_broker": False,
+        "created_at": now(), "inviato_broker": False,
     }
     res = await db.leads.insert_one(lead_doc)
     lead_doc["_id"] = res.inserted_id
-    return {"lead": clean_doc(lead_doc, drop=("user_id",)), "charged": charge_res["charged"]}
+    return {"lead": clean_doc(lead_doc, drop=("user_id",))}
 
 
 @router.get("/lead/mine")
@@ -153,6 +151,11 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
     lead = await db.leads.find_one({"_id": oid, "user_id": user["id"]})
     if not lead:
         raise HTTPException(status_code=404, detail="Lead non trovato")
+    if lead.get("inviato_broker"):
+        raise HTTPException(status_code=409, detail="Pratica gia inviata")
+
+    # Addebito: privato gratis; azienda (abbonata o pay-as-you-go) 1 credito, bonus prima (402 se saldo 0).
+    charge_res = await charge(user, "analisi_bolletta", meta={"lead_id": str(oid)})
 
     u = await db.users.find_one({"_id": ObjectId(user["id"])}, {"email": 1, "name": 1})
     payload = {
@@ -170,6 +173,7 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
             inviato = True
         except Exception:
             logger.exception("Invio lead al broker fallito")
+            await refund_charge(user["id"], charge_res, "analisi_bolletta")
             raise HTTPException(status_code=502, detail="Invio al broker non riuscito, riprova")
     else:
         # Nessun broker configurato: invio simulato (lead marcato come inviato).
@@ -177,9 +181,10 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
         inviato = True
 
     await db.leads.update_one({"_id": oid}, {"$set": {
-        "stato": "inviato_broker", "inviato_broker": True,
+        "stato": "inviato_broker", "inviato_broker": True, "charged": charge_res["charged"],
         "broker_simulato": not bool(BROKER_WEBHOOK_URL), "inviato_at": now()}})
-    return {"ok": True, "inviato": inviato, "simulato": not bool(BROKER_WEBHOOK_URL)}
+    return {"ok": True, "inviato": inviato, "simulato": not bool(BROKER_WEBHOOK_URL),
+            "charged": charge_res["charged"]}
 
 
 @router.post("/analizza-macchinario")

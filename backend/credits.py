@@ -147,6 +147,17 @@ async def grant_purchased(user_id: str, crediti: int, meta: dict | None = None):
     await _log_tx(user_id, "ricarica_stripe", int(crediti), meta)
 
 
+async def refund_charge(user_id: str, detail: dict, action: str):
+    """Rimborsa un addebito (ripristina bonus e acquistati come scalati). Usato se l'azione fallisce dopo lo scalo."""
+    if not detail or not detail.get("charged"):
+        return
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$inc": {"bonus_credits": detail.get("from_bonus", 0),
+                  "purchased_credits": detail.get("from_purchased", 0)}})
+    await _log_tx(user_id, f"rimborso_{action}", detail["charged"])
+
+
 async def init_user_credits(user_id: str, role: str, azienda: dict | None = None):
     """Imposta ruolo e crediti iniziali alla registrazione."""
     if role == "privato":

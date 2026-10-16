@@ -1,25 +1,31 @@
 import { useCallback, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
     UploadCloud, FileText, Loader2, Sparkles, TrendingDown, Zap, Gauge,
-    Building2, CheckCircle2, ArrowRight, RefreshCw,
+    Building2, CheckCircle2, ArrowRight, RefreshCw, Coins, Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useAuth } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 
 const fmtNum = (n) => (n == null ? "—" : new Intl.NumberFormat("it-IT").format(n));
 const fmtEur = (n) => (n == null ? "—" : `€${Number(n).toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
 
 export default function AnalisiEnergetica() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [phase, setPhase] = useState("upload"); // upload | analyzing | result
     const [progress, setProgress] = useState(0);
     const [dragOver, setDragOver] = useState(false);
     const [lead, setLead] = useState(null);
-    const [charged, setCharged] = useState(0);
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
+    const [showRicarica, setShowRicarica] = useState(false);
     const fileRef = useRef(null);
     const progressTimer = useRef(null);
+    const isAzienda = user?.role === "azienda";
 
     const startFakeProgress = () => {
         setProgress(8);
@@ -49,7 +55,6 @@ export default function AnalisiEnergetica() {
             stopFakeProgress();
             setProgress(100);
             setLead(data.lead);
-            setCharged(data.charged || 0);
             setTimeout(() => setPhase("result"), 400);
         } catch (err) {
             stopFakeProgress();
@@ -74,14 +79,18 @@ export default function AnalisiEnergetica() {
             setSent(true);
             toast.success("Pratica inviata con successo!");
         } catch (err) {
-            toast.error(formatApiError(err));
+            if (err?.response?.status === 402) {
+                setShowRicarica(true);
+            } else {
+                toast.error(formatApiError(err));
+            }
         } finally {
             setSending(false);
         }
     };
 
     const reset = () => {
-        setPhase("upload"); setProgress(0); setLead(null); setCharged(0); setSent(false);
+        setPhase("upload"); setProgress(0); setLead(null); setSent(false);
     };
 
     const dati = lead?.dati || {};
@@ -141,7 +150,7 @@ export default function AnalisiEnergetica() {
                     <div className="mx-auto h-16 w-16 rounded-full bg-brand/15 flex items-center justify-center">
                         <Loader2 className="h-8 w-8 text-brand animate-spin" />
                     </div>
-                    <p className="mt-6 font-display font-bold text-white text-lg">L'assistente AI sta analizzando la tua bolletta…</p>
+                    <p className="mt-6 font-display font-bold text-white text-lg">L'assistente AI di Casalavoro Pro sta analizzando i tuoi consumi energetici…</p>
                     <p className="mt-1 text-sm text-slate-400">Estrazione fornitore, consumi e calcolo del risparmio</p>
                     <div className="mt-7 h-3 w-full rounded-full bg-white/10 overflow-hidden" data-testid="analisi-progress-track">
                         <div
@@ -162,27 +171,23 @@ export default function AnalisiEnergetica() {
                         <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
                             <Gauge className="h-5 w-5 text-brand" /> Dati estratti dalla bolletta
                         </h2>
-                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" data-testid="analisi-dato-fornitore">
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold"><Building2 className="h-4 w-4" /> FORNITORE ATTUALE</div>
-                                <p className="mt-2 font-display font-bold text-white text-lg break-words">{dati.fornitore || "—"}</p>
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-5" data-testid="analisi-dato-fornitore">
+                                <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold"><Building2 className="h-4 w-4" /> FORNITORE RILEVATO</div>
+                                <p className="mt-2 font-display font-bold text-white text-xl break-words">{dati.fornitore || "—"}</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" data-testid="analisi-dato-consumo">
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold"><Zap className="h-4 w-4" /> CONSUMO ANNUO</div>
-                                <p className="mt-2 font-display font-bold text-white text-lg">{fmtNum(dati.consumo_annuo)} <span className="text-sm text-slate-400">{dati.unita_consumo || ""}</span></p>
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4" data-testid="analisi-dato-costo">
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold"><FileText className="h-4 w-4" /> COSTO MATERIA PRIMA</div>
-                                <p className="mt-2 font-display font-bold text-white text-lg">{dati.costo_materia_prima != null ? `${dati.costo_materia_prima} €/${dati.unita_consumo || "u"}` : "—"}</p>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-5" data-testid="analisi-dato-consumo">
+                                <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold"><Zap className="h-4 w-4" /> CONSUMO ANNUO STIMATO</div>
+                                <p className="mt-2 font-display font-bold text-white text-xl">{fmtNum(dati.consumo_annuo)} <span className="text-base text-slate-400">{dati.unita_consumo || ""}</span></p>
                             </div>
                         </div>
-                        {charged > 0 && (
-                            <p className="mt-4 text-xs text-slate-500">Analisi addebitata: {charged} credito dal wallet.</p>
-                        )}
                     </div>
 
                     {/* Box risparmio */}
-                    <div className="relative overflow-hidden rounded-3xl border-2 border-brand bg-gradient-to-br from-orange-600/30 via-orange-500/20 to-amber-500/15 p-8 sm:p-10 text-center" data-testid="analisi-box-risparmio">
+                    <div
+                        className="relative overflow-hidden rounded-3xl border-2 p-8 sm:p-10 text-center"
+                        style={{ backgroundColor: "rgba(255,122,0,0.10)", borderColor: "#FF7A00" }}
+                        data-testid="analisi-box-risparmio">
                         <div className="absolute -top-20 -right-16 h-56 w-56 rounded-full bg-brand/25 blur-3xl" aria-hidden="true" />
                         <div className="relative">
                             <div className="inline-flex items-center gap-2 text-amber-300 text-sm font-semibold">
@@ -216,6 +221,11 @@ export default function AnalisiEnergetica() {
                                 {sending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : null}
                                 Risparmia Ora <ArrowRight className="h-5 w-5 ml-2" />
                             </Button>
+                            <p className="mt-3 text-xs text-slate-400 flex items-center justify-center gap-1.5" data-testid="analisi-credit-hint">
+                                {isAzienda
+                                    ? <><Coins className="h-3.5 w-3.5 text-brand" /> Verrà scalato 1 credito dal tuo wallet (prima i bonus mensili)</>
+                                    : <><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Invio gratuito per i privati</>}
+                            </p>
                             <button onClick={reset} className="mt-4 block mx-auto text-sm text-slate-400 hover:text-white" data-testid="analisi-annulla">
                                 Analizza un'altra bolletta
                             </button>
@@ -223,6 +233,36 @@ export default function AnalisiEnergetica() {
                     )}
                 </div>
             )}
+
+            {/* Pop-up ricarica (saldo esaurito) */}
+            <Dialog open={showRicarica} onOpenChange={setShowRicarica}>
+                <DialogContent className="bg-navy-700 border-white/10 text-white" data-testid="analisi-ricarica-dialog">
+                    <DialogHeader>
+                        <div className="mx-auto h-14 w-14 rounded-full bg-brand/15 flex items-center justify-center mb-2">
+                            <Coins className="h-7 w-7 text-brand" />
+                        </div>
+                        <DialogTitle className="text-center font-display text-xl">Crediti esauriti</DialogTitle>
+                        <DialogDescription className="text-center text-slate-400">
+                            Per inviare la pratica al nostro broker partner serve 1 credito. Ricarica il tuo wallet per continuare.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center gap-2">
+                        <Button
+                            variant="outline"
+                            className="rounded-xl border-white/20 text-white hover:bg-white/10"
+                            onClick={() => setShowRicarica(false)}
+                            data-testid="analisi-ricarica-annulla">
+                            Più tardi
+                        </Button>
+                        <Button
+                            className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold"
+                            onClick={() => navigate("/dashboard/azienda?tab=wallet")}
+                            data-testid="analisi-ricarica-vai-wallet">
+                            <Wallet className="h-4 w-4 mr-2" /> Ricarica il Wallet
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

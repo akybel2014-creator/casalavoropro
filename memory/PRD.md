@@ -121,7 +121,8 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
 - Migrazione: scripts/migrate_ruoli_crediti.py (preview: 2 privato, 10 abbonata, 6 pay_as_you_go, 1 admin). Prod: cd /app/backend && set -a && source .env && set +a && python scripts/migrate_ruoli_crediti.py
 - .env: BROKER_WEBHOOK_URL (vuoto=simulazione), GEMINI_BOLLETTA_MODEL, GEMINI_MACCHINARIO_MODEL.
 - Test: tests/test_crediti.py + tests/test_ai_crediti.py (tutti passati, integrazioni reali).
-- DA FARE: UI frontend (wallet, ricarica pacchetti, upload bolletta/foto con suggerimenti AI, blocco gestionali con upsell). Ottimizzazione mobile ancora in sospeso.
+- UI Wallet (2026-07): components/WalletPanel.jsx + nuova tab "Wallet" in DashboardAzienda. Mostra saldo totale (icona Coins), sotto-pannello bonus (scadenza 30gg) + acquistati (senza scadenza), griglia 3 pacchetti Stripe (Growth consigliato) con "Acquista Ora" -> /api/stripe/create-checkout-session, tabella storico (GET /crediti/movimenti) con saldo residuo calcolato a ritroso. Tema scuro + arancione. Verificato con login azienda (saldo=5, 3 pacchetti).
+- DA FARE: UI upload bolletta/foto con suggerimenti AI; blocco gestionali con upsell; ottimizzazione mobile ancora in sospeso.
 
 
 ## Persone

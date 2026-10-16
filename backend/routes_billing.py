@@ -4,6 +4,8 @@ import stripe
 from fastapi import APIRouter, Request, HTTPException, Depends
 from pydantic import BaseModel, Field
 from core import db, now, require_roles
+from core import get_current_user
+from credits import PACKAGES, grant_purchased
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -60,6 +62,12 @@ async def _on_paid(record: dict):
     if record.get("kind") == "caparra":
         from routes_prenotazioni import segna_caparra_pagata
         await segna_caparra_pagata(record["prenotazione_id"], record.get("stripe_payment_intent_id"))
+    elif record.get("kind") == "crediti":
+        if not record.get("credits_granted"):
+            await grant_purchased(record.get("user_id"), int(record.get("crediti", 0)),
+                                  meta={"package_id": record.get("package_id"), "session_id": record.get("session_id")})
+            await payment_transactions.update_one({"session_id": record["session_id"]},
+                                                  {"$set": {"credits_granted": True}})
     else:
         await _activate_pro(record.get("user_id"), record.get("trial_days", 0))
 
@@ -125,6 +133,39 @@ async def create_caparra_session(prenotazione: dict, importo: float, user_id: st
 @router.get("/billing/plans")
 async def list_plans():
     return {"plans": PLANS}
+
+
+class CreditCheckoutIn(BaseModel):
+    package_id: str
+    origin_url: str
+
+
+@router.post("/stripe/create-checkout-session")
+async def create_credit_checkout(req: CreditCheckoutIn, user: dict = Depends(get_current_user)):
+    pkg = PACKAGES.get(req.package_id)
+    if not pkg:
+        raise HTTPException(status_code=400, detail="Pacchetto crediti non valido")
+    session = _create_session(
+        line_items=[{"quantity": 1, "price_data": {
+            "currency": "eur", "unit_amount": pkg["prezzo_cent"],
+            "product_data": {"name": f"Pacchetto {pkg['nome']}: {pkg['crediti']} crediti CasaLavoroPRO",
+                             "description": f"Ricarica wallet - {pkg['crediti']} crediti",
+                             "tax_code": "txcd_10000000"},
+        }}],
+        mode="payment",
+        success_url=f"{req.origin_url}/dashboard?crediti=ok&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{req.origin_url}/dashboard?crediti=annullato",
+        metadata={"user_id": user["id"], "kind": "crediti",
+                  "package_id": req.package_id, "crediti": str(pkg["crediti"])},
+    )
+    await payment_transactions.insert_one({
+        "session_id": session.id, "user_id": user["id"], "kind": "crediti",
+        "package_id": req.package_id, "crediti": pkg["crediti"],
+        "amount": pkg["prezzo_cent"], "currency": "eur",
+        "status": "initiated", "payment_status": "pending",
+        "credits_granted": False, "created_at": now(), "updated_at": now(),
+    })
+    return {"checkout_url": session.url, "session_id": session.id}
 
 
 class CheckoutRequest(BaseModel):

@@ -27,3 +27,10 @@ crons:
     method: POST
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
     enabled: true
+  - name: credits-refresh
+    description: "Ricarica mensile dei 5 crediti bonus alle aziende abbonate e riallineamento dei ruoli wallet"
+    cron: "0 3 1 * *"
+    endpoint: "{{BASE_URL}}/api/cron/credits-refresh"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

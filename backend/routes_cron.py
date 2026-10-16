@@ -9,6 +9,7 @@ from bson import ObjectId
 from core import db, now
 from routes_auth import LAUNCH_TRIAL_END
 from emailer import send_offer_reminder, send_reactivation_email, send_noleggio_event
+from credits import refresh_bonus_for_all
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -159,3 +160,11 @@ async def cron_noleggio_reminder(background: BackgroundTasks, authorization: str
     _check_auth(authorization)
     background.add_task(_run_noleggio_reminder)
     return {"ok": True, "queued": "noleggio-reminder"}
+
+
+@router.post("/cron/credits-refresh")
+async def cron_credits_refresh(background: BackgroundTasks, authorization: str | None = Header(default=None)):
+    # Ricarica mensile dei 5 crediti bonus alle aziende abbonate + riallineamento ruoli.
+    _check_auth(authorization)
+    background.add_task(refresh_bonus_for_all)
+    return {"ok": True, "queued": "credits-refresh"}

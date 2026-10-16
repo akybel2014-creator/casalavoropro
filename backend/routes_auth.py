@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from pydantic import BaseModel, Field, EmailStr
 from core import (db, now, clean_doc, hash_password, verify_password, set_auth_cookies,
                   get_current_user, JWT_SECRET, JWT_ALGORITHM, azienda_for_user, notify)
+from credits import init_user_credits
 from emailer import send_welcome, send_email, _wrap, FRONTEND_URL
 
 logger = logging.getLogger(__name__)
@@ -83,9 +84,12 @@ async def register(inp: RegisterIn, response: Response):
         azienda_out = clean_doc(azienda_doc)
         azienda_out["id"] = str(ares.inserted_id)
 
+    crediti = await init_user_credits(user_id, inp.ruolo, azienda_doc if inp.ruolo == "azienda" else None)
+
     set_auth_cookies(response, user_id, email)
     user_out = clean_doc(user_doc)
     user_out["id"] = user_id
+    user_out.update(crediti)
 
     await notify(user_id, "Benvenuto su CasaLavoroPRO",
                  "Il tuo account e attivo. Esplora la piattaforma e inizia subito.")

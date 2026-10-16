@@ -111,6 +111,19 @@ Landing vetrina "CasaLavoriPRO" per un marketplace del settore casa che unisce p
 - Effetto blur-up caricamento immagini (2026-07): nuovo componente components/BlurImage.jsx (placeholder animato/shimmer + dissolvenza blur->sharp su onLoad/onError, transizione solo opacity/filter/transform). Applicato a: Hero home, AnnuncioCard (lista noleggio/mercatino), AnnuncioDettaglio immagine principale (key per reset ad ogni cambio miniatura), galleria AziendaDettaglio. Verificato: frontend compila, effetto visibile su /noleggio.
 - Script conversione WebP foto esistenti (2026-07): backend/scripts/optimize_existing_photos.py. Converte in WebP (riusa optimize_image) le foto gia caricate (db.files content_type jpeg/png), riscrivendo i byte sullo STESSO path via _put_object e aggiornando content_type->image/webp nel record (serve_file usa il content_type del record, quindi nessun riferimento aziende.foto/annunci.foto da toccare). Idempotente (salta i gia-webp e quelli dove non riduce il peso), supporta --dry-run. Testato live su preview: 2 foto convertite, serving verificato image/webp, riesecuzione 0 candidate. Da eseguire in produzione: cd /app/backend && set -a && source .env && set +a && python scripts/optimize_existing_photos.py.
 
+### Sistema Wallet a Crediti + Pipeline AI Gemini 3.1 (2026-07)
+Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/Express/Postgres, NON compatibile con la piattaforma Emergent che containerizza FastAPI+Mongo; mantenuto lo stack pubblicabile).
+- credits.py (nuovo): campi utente `ruolo` (privato/azienda_abbonata/azienda_pay_as_you_go), `bonus_credits`, `purchased_credits`. Saldo = somma; in consumo si scalano prima i bonus poi gli acquistati. credit_policy per azione+ruolo; charge() solleva 402 ("Crediti esauriti. Ricarica il Wallet") o 403 upsell (gestionali per pay_as_you_go/privato). Costi: bolletta_extra=1, annuncio_standard=1 (gratis per abbonata), annuncio_urgente=5, sblocco_contatto=2. Endpoint: GET /api/crediti/wallet, /costi, /movimenti; POST /api/crediti/sblocca-contatto (idempotente). ruolo_from_azienda() (datetime naive-safe), init_user_credits(), refresh_bonus_for_all().
+- routes_ai.py (nuovo): POST /api/analizza-bolletta (PDF->gemini-3.1-pro-preview, JSON fornitore/consumo/costo/risparmio PUN-PSV, salva lead "lead_in_attesa"); POST /api/lead/{id}/risparmia (invia a BROKER_WEBHOOK_URL, simulato se vuoto); POST /api/analizza-macchinario (immagine->gemini-3-flash-preview, JSON titolo/categoria/usura/tag). Usa EMERGENT_LLM_KEY + emergentintegrations (send_message + FileContentWithMimeType). Modelli via env.
+- routes_billing.py: PACKAGES (prod_entry_15=€14.99/15, prod_growth_50=€39.99/50, prod_enterprise_120=€79.99/120). POST /api/stripe/create-checkout-session (tax_code txcd_10000000). Webhook /api/stripe/webhook: _on_paid gestisce kind="crediti" -> grant_purchased() incrementa purchased_credits (flag credits_granted idempotente).
+- routes_auth.py: registrazione imposta ruolo+crediti. routes_offerte_lavoro.py: campo in_evidenza + addebito.
+- Cron mensile credits-refresh (crons.yml "0 3 1 * *") ricarica 5 bonus agli abbonati e riallinea ruoli.
+- Migrazione: scripts/migrate_ruoli_crediti.py (preview: 2 privato, 10 abbonata, 6 pay_as_you_go, 1 admin). Prod: cd /app/backend && set -a && source .env && set +a && python scripts/migrate_ruoli_crediti.py
+- .env: BROKER_WEBHOOK_URL (vuoto=simulazione), GEMINI_BOLLETTA_MODEL, GEMINI_MACCHINARIO_MODEL.
+- Test: tests/test_crediti.py + tests/test_ai_crediti.py (tutti passati, integrazioni reali).
+- DA FARE: UI frontend (wallet, ricarica pacchetti, upload bolletta/foto con suggerimenti AI, blocco gestionali con upsell). Ottimizzazione mobile ancora in sospeso.
+
+
 ## Persone
 - Privato: cerca artigiani verificati, vuole preventivi rapidi e gratuiti.
 - Azienda: vuole lead qualificati, profilo verificato, piano PRO.

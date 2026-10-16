@@ -122,7 +122,8 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
 - .env: BROKER_WEBHOOK_URL (vuoto=simulazione), GEMINI_BOLLETTA_MODEL, GEMINI_MACCHINARIO_MODEL.
 - Test: tests/test_crediti.py + tests/test_ai_crediti.py (tutti passati, integrazioni reali).
 - UI Wallet (2026-07): components/WalletPanel.jsx + nuova tab "Wallet" in DashboardAzienda. Mostra saldo totale (icona Coins), sotto-pannello bonus (scadenza 30gg) + acquistati (senza scadenza), griglia 3 pacchetti Stripe (Growth consigliato) con "Acquista Ora" -> /api/stripe/create-checkout-session, tabella storico (GET /crediti/movimenti) con saldo residuo calcolato a ritroso. Tema scuro + arancione. Verificato con login azienda (saldo=5, 3 pacchetti).
-- DA FARE: UI upload bolletta/foto con suggerimenti AI; blocco gestionali con upsell; ottimizzazione mobile ancora in sospeso.
+- UI Analisi Energetica (2026-07): pages/AnalisiEnergetica.jsx + route protetta /analisi-energetica (privato+azienda) in App.js. Fase 1: dropzone drag&drop PDF (icona nuvola, pulsante "Seleziona File"), barra progresso animata + testo "L'assistente AI sta analizzando la tua bolletta...", POST /api/analizza-bolletta. Fase 2: dati estratti (fornitore/consumo/costo materia prima), box risparmio con gradient arancione opaco ("Risparmio Stimato: € XXX / anno" su indici PUN/PSV), CTA "Risparmia Ora" -> POST /api/lead/{id}/risparmia -> messaggio successo "Pratica inviata con successo! Un consulente dedicato ti contatterà entro 24 ore". Verificato end-to-end con Gemini reale (ENEL ENERGIA, 2700 kWh, risparmio stimato, invio broker simulato).
+- DA FARE: UI upload foto macchinario con suggerimenti AI (annunci); blocco gestionali con upsell; ottimizzazione mobile ancora in sospeso.
 
 
 ## Persone

@@ -15,6 +15,7 @@ import Registrati from "@/pages/Registrati";
 import NuovaRichiesta from "@/pages/NuovaRichiesta";
 import DashboardPrivato from "@/pages/DashboardPrivato";
 import DashboardAzienda from "@/pages/DashboardAzienda";
+import AnalisiEnergetica from "@/pages/AnalisiEnergetica";
 import DashboardAdmin from "@/pages/DashboardAdmin";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 import ResetPassword from "@/pages/ResetPassword";
@@ -166,6 +167,7 @@ function App() {
                         <Route path="/nuova-richiesta" element={<ProtectedRoute roles={["privato"]}><DashLayout><NuovaRichiesta /></DashLayout></ProtectedRoute>} />
                         <Route path="/dashboard" element={<ProtectedRoute roles={["privato"]}><DashLayout><DashboardPrivato /></DashLayout></ProtectedRoute>} />
                         <Route path="/dashboard/azienda" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
+                        <Route path="/analisi-energetica" element={<ProtectedRoute roles={["privato", "azienda"]}><DashLayout><AnalisiEnergetica /></DashLayout></ProtectedRoute>} />
                         <Route path="/dashboard/admin" element={<ProtectedRoute roles={["admin"]}><DashLayout><DashboardAdmin /></DashLayout></ProtectedRoute>} />
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancel" element={<PaymentCancel />} />

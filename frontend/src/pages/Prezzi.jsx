@@ -66,7 +66,32 @@ export default function Prezzi() {
                 </div>
 
                 {/* Piani */}
-                <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Pay-As-You-Go */}
+                    <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-8" data-testid="plan-payg">
+                        <h2 className="font-display font-bold text-white text-xl">Piano a Consumo (Pay-As-You-Go)</h2>
+                        <p className="mt-2 font-display font-black text-4xl text-white">0€ <span className="text-base font-semibold text-slate-400">/ mese per sempre</span></p>
+                        <p className="mt-1 text-sm text-slate-400">Nessun canone fisso: paghi solo i crediti quando usi i servizi speciali.</p>
+                        <ul className="mt-6 space-y-3">
+                            {["Bacheca lavoro e noleggio attrezzatura", "Crediti acquistabili solo quando servono", "Nessuna carta richiesta per iniziare"].map((f) => (
+                                <li key={f} className="flex items-start gap-3 text-sm text-slate-300">
+                                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-300">
+                                        <Check className="h-3.5 w-3.5" />
+                                    </span>
+                                    {f}
+                                </li>
+                            ))}
+                        </ul>
+                        <Button asChild data-testid="plan-payg-cta"
+                            className="mt-8 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                            <Link to="/registrati?ruolo=azienda">Crea Account Azienda Gratis</Link>
+                        </Button>
+                        <p className="mt-3 text-xs text-slate-400" data-testid="plan-payg-note">
+                            Le funzioni gestionali (fatture, cantieri) restano bloccate; puoi usare la bacheca lavoro e il
+                            noleggio attrezzatura acquistando i crediti solo quando servono.
+                        </p>
+                    </div>
+
                     {/* Base */}
                     <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-8" data-testid="plan-base">
                         <h2 className="font-display font-bold text-white text-xl">Profilo Base</h2>
@@ -111,6 +136,18 @@ export default function Prezzi() {
                             <Link to="/registrati?ruolo=azienda">Attiva Pro gratis ora <ArrowRight className="h-4 w-4 ml-1" /></Link>
                         </Button>
                     </div>
+                </div>
+
+                {/* Privati */}
+                <div className="mt-6 rounded-3xl border border-brand/30 bg-brand/5 p-7 flex flex-col sm:flex-row sm:items-center gap-4" data-testid="plan-privati">
+                    <div>
+                        <h2 className="font-display font-bold text-white text-xl">Sei un privato?</h2>
+                        <p className="mt-1 text-sm text-slate-300">Cercare professionisti e analizzare le bollette è sempre gratis, senza costi nascosti.</p>
+                    </div>
+                    <Button asChild data-testid="plan-privati-cta"
+                        className="sm:ml-auto rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                        <Link to="/registrati?ruolo=privato">Registrati Gratis come Privato (Nessun costo nascosto)</Link>
+                    </Button>
                 </div>
 
                 {/* Servizi opzionali */}

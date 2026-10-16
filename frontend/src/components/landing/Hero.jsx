@@ -1,12 +1,11 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, MapPin, ShieldCheck, Star, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BlurImage } from "@/components/BlurImage";
-
-const CATEGORIES_QUICK = ["Idraulica", "Elettricità", "Edilizia", "Imbiancatura"];
+import { useAuth } from "@/context/AuthContext";
+import { api, formatApiError } from "@/lib/api";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
 
@@ -27,21 +26,66 @@ function RevealLine({ children, delay = 0 }) {
 
 export default function Hero() {
     const navigate = useNavigate();
-    const imgRef = useRef(null);
+    const { user } = useAuth();
+    const [tab, setTab] = useState("bolletta");
+    const [dragOver, setDragOver] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const fileRef = useRef(null);
     const cosaRef = useRef(null);
     const doveRef = useRef(null);
+    const timer = useRef(null);
 
-    const submit = (e) => {
+    const submitSearch = (e) => {
         e.preventDefault();
         const cosa = (cosaRef.current?.value || "").trim();
         const dove = (doveRef.current?.value || "").trim();
         const params = new URLSearchParams();
-        const match = ["idraulica", "termoidraulica", "elettricita", "elettricità", "edilizia", "imbiancatura", "giardinaggio", "pavimenti"]
-            .find((c) => cosa.toLowerCase().includes(c));
-        if (match) params.set("categoria", match.charAt(0).toUpperCase() + match.slice(1).replace("elettricita", "elettricità"));
-        else if (cosa) params.set("q", cosa);
+        if (cosa) params.set("q", cosa);
         if (dove) params.set("zona", dove);
         navigate(`/aziende?${params.toString()}`);
+    };
+
+    const analizza = async (file) => {
+        if (!file) return;
+        if (file.type !== "application/pdf") {
+            toast.error("Carica la bolletta in formato PDF");
+            return;
+        }
+        setUploading(true);
+        setProgress(8);
+        timer.current = setInterval(() => setProgress((p) => (p >= 90 ? 90 : p + Math.random() * 12)), 500);
+
+        if (!user) {
+            setTimeout(() => {
+                clearInterval(timer.current);
+                setUploading(false);
+                setProgress(0);
+                toast.info("Crea un account gratuito per vedere subito il tuo risparmio stimato.");
+                navigate("/registrati");
+            }, 1200);
+            return;
+        }
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const { data } = await api.post("/analizza-bolletta", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            clearInterval(timer.current);
+            setProgress(100);
+            sessionStorage.setItem("analisi_lead", JSON.stringify(data.lead));
+            setTimeout(() => navigate("/analisi-energetica"), 300);
+        } catch (err) {
+            clearInterval(timer.current);
+            setUploading(false);
+            setProgress(0);
+            toast.error(formatApiError(err));
+        }
+    };
+
+    const onDrop = (e) => {
+        e.preventDefault();
+        setDragOver(false);
+        analizza(e.dataTransfer?.files?.[0]);
     };
 
     return (
@@ -52,6 +96,7 @@ export default function Hero() {
 
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 lg:pb-28">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+                    {/* Colonna sinistra */}
                     <div className="lg:col-span-7">
                         <motion.p
                             initial={{ opacity: 0, y: 12 }}
@@ -62,117 +107,171 @@ export default function Hero() {
                             Il marketplace dei lavori in casa
                         </motion.p>
 
-                        <h1 className="mt-4 font-display font-black tracking-tight leading-[1.02] text-4xl sm:text-5xl lg:text-6xl xl:text-7xl">
-                            <RevealLine delay={0.15}>Trova le migliori</RevealLine>
+                        <h1 className="mt-4 font-display font-black tracking-tight leading-[1.02] text-4xl sm:text-5xl lg:text-6xl">
+                            <RevealLine delay={0.15}>Analizza la bolletta</RevealLine>
                             <RevealLine delay={0.28}>
-                                <span className="text-brand">aziende</span>&nbsp;per i tuoi
+                                o trova la tua <span className="text-brand">azienda</span>
                             </RevealLine>
-                            <RevealLine delay={0.41}>lavori in casa.</RevealLine>
                         </h1>
 
                         <motion.p
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, delay: 0.65 }}
+                            transition={{ duration: 0.7, delay: 0.55 }}
                             className="mt-6 max-w-xl text-base sm:text-lg text-slate-300 leading-relaxed"
                         >
-                            Colleghiamo i migliori professionisti edili, idraulici, elettricisti e
-                            artigiani con i privati in tutta Italia. Preventivi gratuiti e aziende verificate.
+                            Scopri in pochi secondi quanto puoi risparmiare sulle utenze con l'assistente AI,
+                            oppure trova professionisti edili e artigiani verificati in tutta Italia.
                         </motion.p>
 
-                        <motion.form
+                        {/* Contenitore interattivo a schede */}
+                        <motion.div
                             initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, delay: 0.8 }}
-                            onSubmit={submit}
-                            data-testid="hero-search-form"
-                            className="mt-8 backdrop-blur-2xl bg-white/95 border border-white/60 shadow-2xl rounded-2xl p-3 sm:p-4 max-w-2xl"
+                            transition={{ duration: 0.7, delay: 0.75 }}
+                            className="mt-8 w-full max-w-[450px] rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-2 shadow-2xl"
+                            data-testid="hero-widget"
                         >
-                            <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
-                                <label className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-100/80 border border-slate-200">
-                                    <MapPin className="h-4 w-4 text-brand shrink-0" />
-                                    <Input
-                                        ref={doveRef}
-                                        data-testid="hero-search-location-input"
-                                        placeholder="Dove? Città o CAP"
-                                        className="border-0 bg-transparent h-auto p-0 focus-visible:ring-0 text-slate-900 placeholder:text-slate-500"
-                                    />
-                                </label>
-                                <label className="flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-100/80 border border-slate-200">
-                                    <Search className="h-4 w-4 text-brand shrink-0" />
-                                    <Input
-                                        ref={cosaRef}
-                                        data-testid="hero-search-category-input"
-                                        placeholder="Cosa ti serve? Lavoro o categoria"
-                                        className="border-0 bg-transparent h-auto p-0 focus-visible:ring-0 text-slate-900 placeholder:text-slate-500"
-                                    />
-                                </label>
-                                <Button
-                                    type="submit"
-                                    data-testid="hero-search-submit-button"
-                                    className="md:px-7 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/30 font-semibold"
+                            <div className="grid grid-cols-2 gap-1 rounded-xl bg-navy p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setTab("bolletta")}
+                                    data-testid="hero-tab-bolletta"
+                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${tab === "bolletta" ? "bg-brand text-white" : "text-slate-300 hover:text-white"}`}
                                 >
-                                    Cerca <ArrowRight className="h-4 w-4 ml-1.5" />
-                                </Button>
+                                    Analisi Bolletta Gratis
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTab("cerca")}
+                                    data-testid="hero-tab-cerca"
+                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${tab === "cerca" ? "bg-brand text-white" : "text-slate-300 hover:text-white"}`}
+                                >
+                                    Trova Professionista
+                                </button>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 mt-3 px-1">
-                                <span className="text-xs text-slate-500 font-medium">Popolari:</span>
-                                {CATEGORIES_QUICK.map((c) => (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => navigate(`/aziende?categoria=${encodeURIComponent(c)}`)}
-                                        className="text-xs font-medium px-3 py-1 rounded-full border border-slate-300 text-slate-700 hover:border-brand hover:text-brand transition-colors"
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
+
+                            <div className="p-3 sm:p-4">
+                                {tab === "bolletta" ? (
+                                    uploading ? (
+                                        <div className="py-6" data-testid="hero-bolletta-progress">
+                                            <p className="text-sm font-semibold text-white text-center">L'assistente AI sta analizzando i tuoi consumi...</p>
+                                            <div className="mt-4 h-3 w-full rounded-full bg-white/10 overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 transition-[width] duration-500 ease-out"
+                                                    style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                                                />
+                                            </div>
+                                            <p className="mt-2 text-xs text-slate-400 text-center">{Math.min(100, Math.round(progress))}%</p>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            onClick={() => fileRef.current?.click()}
+                                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                                            onDragLeave={() => setDragOver(false)}
+                                            onDrop={onDrop}
+                                            data-testid="hero-bolletta-dropzone"
+                                            className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${dragOver ? "border-brand bg-brand/10" : "border-white/20 hover:border-brand/50"}`}
+                                        >
+                                            <p className="text-sm font-semibold text-white">Trascina qui la tua Bolletta (PDF)</p>
+                                            <p className="mt-1 text-xs text-slate-400">oppure</p>
+                                            <Button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                                                data-testid="hero-carica-pdf-button"
+                                                className="mt-3 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
+                                            >
+                                                Carica PDF
+                                            </Button>
+                                            <p className="mt-3 text-[11px] text-slate-500">Analisi gratuita - PDF, max 15 MB</p>
+                                            <input
+                                                ref={fileRef}
+                                                type="file"
+                                                accept="application/pdf"
+                                                className="hidden"
+                                                data-testid="hero-bolletta-file-input"
+                                                onChange={(e) => analizza(e.target.files?.[0])}
+                                            />
+                                        </div>
+                                    )
+                                ) : (
+                                    <form onSubmit={submitSearch} className="space-y-3" data-testid="hero-search-form">
+                                        <div>
+                                            <label className="text-xs font-semibold text-slate-400">Trova categoria</label>
+                                            <Input
+                                                ref={cosaRef}
+                                                data-testid="hero-search-category-input"
+                                                placeholder="Es. Idraulico, Elettricista"
+                                                className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-slate-400">Locazione</label>
+                                            <Input
+                                                ref={doveRef}
+                                                data-testid="hero-search-location-input"
+                                                placeholder="Vicenza"
+                                                className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            data-testid="hero-search-submit-button"
+                                            className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
+                                        >
+                                            Avvia Ricerca
+                                        </Button>
+                                    </form>
+                                )}
                             </div>
-                        </motion.form>
+                        </motion.div>
                     </div>
 
+                    {/* Colonna destra: anteprima Dashboard Azienda + Wallet */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.94, y: 24 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ duration: 1, delay: 0.5, ease: LINE_EASE }}
                         className="lg:col-span-5 relative"
-                        ref={imgRef}
+                        data-testid="hero-wallet-preview"
                     >
-                        <div className="relative rounded-3xl overflow-hidden border border-white/15 shadow-2xl">
-                            <BlurImage
-                                src="https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=760&auto=format&fit=crop"
-                                srcSet="https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=520&auto=format&fit=crop 520w, https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=760&auto=format&fit=crop 760w, https://images.unsplash.com/photo-1722421492323-eaf9c401befe?q=75&w=1040&auto=format&fit=crop 1040w"
-                                sizes="(min-width: 1024px) 520px, (min-width: 640px) 50vw, 90vw"
-                                alt="Casa moderna ristrutturata"
-                                width="760"
-                                height="520"
-                                loading="eager"
-                                fetchPriority="high"
-                                imgClassName="w-full h-[320px] sm:h-[420px] lg:h-[520px] object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/20 to-transparent" />
-                        </div>
-
-                        <div className="floaty absolute -left-4 sm:-left-8 top-10 rounded-2xl bg-white/95 backdrop-blur px-4 py-3 shadow-2xl border border-white/60">
-                            <div className="flex items-center gap-3">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/15 text-brand font-bold">4.9</span>
+                        <div className="rounded-3xl border border-white/10 bg-navy-700/80 backdrop-blur-xl shadow-2xl p-6">
+                            <div className="flex items-center justify-between">
                                 <div>
-                                    <div className="flex items-center gap-0.5 text-brand-amber">
-                                        {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-current" />)}
+                                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Area Aziende</p>
+                                    <p className="mt-1 font-display font-bold text-white text-lg">Dashboard</p>
+                                </div>
+                                <span className="rounded-full bg-brand/15 px-3 py-1 text-xs font-bold text-brand">PRO</span>
+                            </div>
+
+                            <div className="mt-5 rounded-2xl border-2 border-brand bg-gradient-to-b from-brand/15 to-transparent p-5">
+                                <p className="text-xs uppercase tracking-wide text-brand font-semibold">Wallet: 42 crediti</p>
+                                <div className="mt-2 flex items-end gap-3">
+                                    <span className="font-display font-black text-4xl text-white">42</span>
+                                    <span className="font-display font-bold text-slate-300 mb-1">Crediti</span>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
+                                        <p className="text-slate-400">Bonus mensili</p>
+                                        <p className="font-bold text-white mt-0.5">5</p>
                                     </div>
-                                    <p className="text-xs text-slate-700 font-medium mt-0.5">Media recensioni privati</p>
+                                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
+                                        <p className="text-slate-400">Acquistati</p>
+                                        <p className="font-bold text-white mt-0.5">37</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="floaty absolute -right-3 sm:-right-6 bottom-12 rounded-2xl bg-navy-700/95 backdrop-blur px-4 py-3 shadow-2xl border border-white/15" style={{ animationDelay: "1.4s" }}>
-                            <div className="flex items-center gap-2.5">
-                                <ShieldCheck className="h-8 w-8 text-brand" />
-                                <div>
-                                    <p className="text-sm font-bold text-white">Aziende verificate</p>
-                                    <p className="text-xs text-slate-400">P.IVA e DURC controllati</p>
-                                </div>
+                            <div className="mt-4 space-y-2">
+                                {[["Richieste in arrivo", "3 nuove"], ["Annunci attivi", "5"], ["Offerte di lavoro", "2"]].map(([k, v]) => (
+                                    <div key={k} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                                        <span className="text-sm text-slate-300">{k}</span>
+                                        <span className="text-sm font-semibold text-white">{v}</span>
+                                    </div>
+                                ))}
                             </div>
+
+                            <p className="mt-4 text-center text-xs text-slate-500">Anteprima: cosi appare la tua area azienda.</p>
                         </div>
                     </motion.div>
                 </div>

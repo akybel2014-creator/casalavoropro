@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -26,6 +26,18 @@ export default function AnalisiEnergetica() {
     const fileRef = useRef(null);
     const progressTimer = useRef(null);
     const isAzienda = user?.role === "azienda";
+
+    // Se arriviamo dalla Hero con un lead gia analizzato, mostra subito i risultati.
+    useEffect(() => {
+        const cached = sessionStorage.getItem("analisi_lead");
+        if (cached) {
+            sessionStorage.removeItem("analisi_lead");
+            try {
+                setLead(JSON.parse(cached));
+                setPhase("result");
+            } catch { /* ignore */ }
+        }
+    }, []);
 
     const startFakeProgress = () => {
         setProgress(8);

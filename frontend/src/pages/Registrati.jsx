@@ -99,6 +99,11 @@ export default function Registrati() {
 
                         {ruolo === "azienda" && (
                             <>
+                                <div className="rounded-xl border border-brand/30 bg-brand/5 p-4" data-testid="register-payg-card">
+                                    <p className="text-xs uppercase tracking-wide text-brand font-bold">Piano a Consumo (Pay-As-You-Go)</p>
+                                    <p className="mt-1 font-display font-black text-white text-2xl">0€ <span className="text-base font-semibold text-slate-300">/ mese per sempre</span></p>
+                                    <p className="mt-1 text-xs text-slate-400">Nessun canone fisso: paghi solo i crediti per i servizi speciali quando ti servono.</p>
+                                </div>
                                 <div className="space-y-2">
                                     <Label className="text-slate-300">Nome dell'azienda</Label>
                                     <Input required data-testid="register-company-name-input" value={form.nome} onChange={set("nome")} placeholder="EdilNuova Srl" className={inputCls} />
@@ -151,8 +156,14 @@ export default function Registrati() {
 
                         <Button type="submit" disabled={busy} data-testid="register-submit-button"
                             className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            {busy ? "Creazione…" : ruolo === "azienda" ? "Registra la tua azienda" : "Crea account gratuito"}
+                            {busy ? "Creazione…" : ruolo === "azienda" ? "Crea Account Azienda Gratis" : "Registrati Gratis come Privato (Nessun costo nascosto)"}
                         </Button>
+                        {ruolo === "azienda" && (
+                            <p className="text-xs text-slate-400 text-center" data-testid="register-payg-note">
+                                Le funzioni gestionali (fatture, cantieri) resteranno bloccate, ma potrai usare la bacheca lavoro
+                                e il noleggio attrezzatura acquistando i crediti solo quando ti servono.
+                            </p>
+                        )}
                     </form>
                 </div>
 

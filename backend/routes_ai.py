@@ -5,6 +5,7 @@
 - /api/analizza-macchinario: foto attrezzo -> Gemini Flash (JSON pre-compilato per l'annuncio).
 """
 import os
+import io
 import json
 import uuid
 import base64
@@ -12,14 +13,16 @@ import logging
 import tempfile
 
 import httpx
+import qrcode
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Response
 from dotenv import load_dotenv
 from fpdf import FPDF
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
-from core import db, now, get_current_user, clean_doc
+from core import db, now, get_current_user, clean_doc, notify_admins
 from credits import charge, effective_ruolo, refund_charge
 from emailer import send_email, FRONTEND_URL, _wrap
 from html import escape
@@ -245,6 +248,7 @@ async def analizza_bolletta(background: BackgroundTasks, file: UploadFile = File
     lead_doc = {
         "user_id": user["id"], "tipo": "bolletta", "stato": "lead_in_attesa",
         "filename": file.filename, "dati": estratto,
+        "share_token": uuid.uuid4().hex,
         "created_at": now(), "inviato_broker": False,
     }
     res = await db.leads.insert_one(lead_doc)
@@ -312,6 +316,85 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
         "stato": "inviato_broker", "inviato_broker": True, "charged": charge_res["charged"],
         "broker_simulato": not real, "inviato_at": now()}})
     return {"ok": True, "inviato": True, "simulato": not real, "charged": charge_res["charged"]}
+
+
+class RichiestaPubblica(BaseModel):
+    nome: str
+    telefono: str
+    email: str | None = None
+
+
+def _public_summary(lead: dict) -> dict:
+    d = lead.get("dati", {}) or {}
+    return {
+        "fornitore": d.get("fornitore"),
+        "tipo_fornitura": d.get("tipo_fornitura"),
+        "consumo_annuo": d.get("consumo_annuo"),
+        "unita_consumo": d.get("unita_consumo"),
+        "spesa_annua_stimata": d.get("spesa_annua_stimata"),
+        "risparmio_stimato_annuo": d.get("risparmio_stimato_annuo"),
+        "note": d.get("note"),
+        "created_at": lead["created_at"].isoformat() if lead.get("created_at") else None,
+    }
+
+
+@router.get("/report/pubblico/{token}")
+async def report_pubblico(token: str):
+    """Riepilogo pubblico (senza dati sensibili) del risparmio stimato, condivisibile via link/QR."""
+    lead = await db.leads.find_one({"share_token": token})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Report non trovato o scaduto")
+    nome = ""
+    try:
+        u = await db.users.find_one({"_id": ObjectId(lead["user_id"])}, {"name": 1})
+        nome = ((u or {}).get("name") or "").strip().split(" ")[0]
+    except Exception:
+        pass
+    out = _public_summary(lead)
+    out["cliente_nome"] = nome
+    return out
+
+
+@router.get("/report/pubblico/{token}/qr.png")
+async def report_pubblico_qr(token: str):
+    """QR code PNG che punta alla pagina pubblica del report."""
+    lead = await db.leads.find_one({"share_token": token}, {"_id": 1})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Report non trovato")
+    img = qrcode.make(f"{FRONTEND_URL}/r/{token}")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return Response(content=buf.getvalue(), media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.post("/report/pubblico/{token}/richiedi")
+async def richiedi_offerta_pubblica(token: str, body: RichiestaPubblica):
+    """Cattura un nuovo lead da un visitatore che apre un report condiviso."""
+    lead = await db.leads.find_one({"share_token": token})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Report non trovato o scaduto")
+    nome = (body.nome or "").strip()
+    tel = (body.telefono or "").strip()
+    if not nome or not tel:
+        raise HTTPException(status_code=400, detail="Nome e telefono sono obbligatori")
+    doc = {
+        "user_id": lead["user_id"],
+        "tipo": "richiesta_pubblica",
+        "stato": "lead_in_attesa",
+        "origine_share_token": token,
+        "contatto": {"nome": nome, "telefono": tel,
+                     "email": ((body.email or "").strip() or None)},
+        "dati": lead.get("dati", {}),
+        "created_at": now(),
+        "inviato_broker": False,
+    }
+    await db.leads.insert_one(doc)
+    await notify_admins(
+        "Nuovo lead da report condiviso",
+        f"{nome} ({tel}) ha richiesto un'offerta aprendo un report di risparmio condiviso.",
+    )
+    return {"ok": True}
 
 
 @router.post("/analizza-macchinario")

@@ -19,6 +19,7 @@ import AnalisiEnergetica from "@/pages/AnalisiEnergetica";
 import DashboardAdmin from "@/pages/DashboardAdmin";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 import ResetPassword from "@/pages/ResetPassword";
+import ReportPubblico from "@/pages/ReportPubblico";
 import "@/App.css";
 
 class ErrorBoundary extends Component {
@@ -159,6 +160,7 @@ function App() {
                             <Route path="/mercatino" element={<Annunci tipo="usato" />} />
                             <Route path="/prezzi" element={<Prezzi />} />
                             <Route path="/annunci/:id" element={<AnnuncioDettaglio />} />
+                            <Route path="/r/:token" element={<ReportPubblico />} />
                             <Route path="*" element={<NotFound />} />
                         </Route>
                         <Route path="/login" element={<Login />} />

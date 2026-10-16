@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
     UploadCloud, FileText, Loader2, Sparkles, TrendingDown, Zap, Gauge,
     Building2, CheckCircle2, ArrowRight, RefreshCw, Coins, Wallet,
+    Share2, Copy, Check, QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -23,6 +24,7 @@ export default function AnalisiEnergetica() {
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
     const [showRicarica, setShowRicarica] = useState(false);
+    const [copied, setCopied] = useState(false);
     const fileRef = useRef(null);
     const progressTimer = useRef(null);
     const isAzienda = user?.role === "azienda";
@@ -106,6 +108,20 @@ export default function AnalisiEnergetica() {
     };
 
     const dati = lead?.dati || {};
+    const shareToken = lead?.share_token;
+    const shareUrl = shareToken ? `${window.location.origin}/r/${shareToken}` : "";
+    const qrSrc = shareToken ? `${process.env.REACT_APP_BACKEND_URL}/api/report/pubblico/${shareToken}/qr.png` : "";
+
+    const copyLink = async () => {
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setCopied(true);
+            toast.success("Link copiato!");
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error("Impossibile copiare il link");
+        }
+    };
 
     return (
         <div className="min-h-[70vh] max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14" data-testid="analisi-energetica-page">
@@ -212,6 +228,60 @@ export default function AnalisiEnergetica() {
                             {dati.note && <p className="mt-4 text-sm text-slate-300 max-w-xl mx-auto">{dati.note}</p>}
                         </div>
                     </div>
+
+                    {/* Condividi report */}
+                    {shareToken && (
+                        <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8" data-testid="analisi-condividi-card">
+                            <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                <Share2 className="h-5 w-5 text-brand" /> Condividi questo report
+                            </h2>
+                            <p className="mt-1 text-sm text-slate-400">
+                                Invia il link (o fai scansionare il QR) a chi vuoi: vedranno il risparmio stimato e potranno richiedere un'offerta.
+                            </p>
+                            <div className="mt-5 flex flex-col sm:flex-row gap-5 items-center">
+                                <img
+                                    src={qrSrc}
+                                    alt="QR code del report"
+                                    width={128}
+                                    height={128}
+                                    className="h-32 w-32 rounded-xl bg-white p-2 shrink-0"
+                                    data-testid="analisi-condividi-qr"
+                                />
+                                <div className="w-full">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 truncate rounded-xl border border-white/15 bg-navy px-4 py-3 text-sm text-slate-300" data-testid="analisi-condividi-link">
+                                            {shareUrl}
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            onClick={copyLink}
+                                            data-testid="analisi-condividi-copia"
+                                            className="rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15">
+                                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <a
+                                            href={`https://wa.me/?text=${encodeURIComponent(`Guarda quanto puoi risparmiare in bolletta con CasaLavoroPRO: ${shareUrl}`)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            data-testid="analisi-condividi-whatsapp"
+                                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors">
+                                            <Share2 className="h-4 w-4" /> Condividi su WhatsApp
+                                        </a>
+                                        <a
+                                            href={shareUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            data-testid="analisi-condividi-apri"
+                                            className="inline-flex items-center gap-2 rounded-xl border border-white/15 hover:bg-white/10 px-4 py-2.5 text-sm font-semibold text-slate-200 transition-colors">
+                                            <QrCode className="h-4 w-4" /> Anteprima pagina
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Call to action */}
                     {sent ? (

@@ -189,12 +189,28 @@ export default function Header() {
                     </nav>
                     <div className="mt-4 flex gap-3">
                         {user ? (
-                            <Button
-                                className="flex-1 rounded-full bg-brand hover:bg-brand-dark text-white"
-                                onClick={() => navigate(dashboardPathFor(user.role))}
-                            >
-                                {user.role === "azienda" ? "Area Aziende" : user.role === "admin" ? "Admin" : "Area Privati"}
-                            </Button>
+                            <>
+                                <Button
+                                    className="flex-1 rounded-full bg-brand hover:bg-brand-dark text-white"
+                                    data-testid="header-dashboard-button-mobile"
+                                    onClick={() => navigate(dashboardPathFor(user.role))}
+                                >
+                                    {user.role === "azienda" ? "Area Aziende" : user.role === "admin" ? "Admin" : "Area Privati"}
+                                    {unread > 0 && (
+                                        <span data-testid="unread-badge-header-mobile" className="ml-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-white/20 text-white text-[11px] font-bold">
+                                            {unread}
+                                        </span>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    data-testid="header-logout-button-mobile"
+                                    className="rounded-full border-white/20 text-white hover:bg-white/10 px-5"
+                                    onClick={() => logout()}
+                                >
+                                    <LogOut className="h-4 w-4 mr-2" /> Esci
+                                </Button>
+                            </>
                         ) : (
                             <>
                                 <Button variant="outline" className="flex-1 rounded-full border-white/20 text-white hover:bg-white/10" onClick={() => navigate("/login")}>

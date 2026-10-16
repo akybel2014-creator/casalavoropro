@@ -194,32 +194,55 @@ export function WalletPanel() {
                         <p className="mt-3 text-sm text-slate-400">Nessuna transazione ancora. Le tue attività con i crediti compariranno qui.</p>
                     </div>
                 ) : (
-                    <div className="mt-5 overflow-x-auto">
-                        <table className="w-full text-sm" data-testid="wallet-history-table">
-                            <thead>
-                                <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-white/10">
-                                    <th className="py-3 pr-4 font-semibold">Data</th>
-                                    <th className="py-3 pr-4 font-semibold">Tipo Azione</th>
-                                    <th className="py-3 pr-4 font-semibold text-right">Crediti</th>
-                                    <th className="py-3 font-semibold text-right">Saldo Residuo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {righe.map((m, i) => (
-                                    <tr key={i} className="border-b border-white/5 last:border-0" data-testid={`wallet-history-row-${i}`}>
-                                        <td className="py-3 pr-4 text-slate-400 whitespace-nowrap">{fmtDate(m.created_at)}</td>
-                                        <td className="py-3 pr-4 text-slate-200">{actionLabel(m)}</td>
-                                        <td className={`py-3 pr-4 text-right font-bold ${m.delta >= 0 ? "text-emerald-400" : "text-orange-400"}`}>
+                    <>
+                        {/* Mobile: schede impilate */}
+                        <div className="mt-5 space-y-3 sm:hidden" data-testid="wallet-history-mobile">
+                            {righe.map((m, i) => (
+                                <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4" data-testid={`wallet-history-card-${i}`}>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-200 font-semibold text-sm">{actionLabel(m)}</span>
+                                        <span className={`font-bold ${m.delta >= 0 ? "text-emerald-400" : "text-orange-400"}`}>
                                             {m.delta >= 0 ? `+${m.delta}` : m.delta}
-                                        </td>
-                                        <td className="py-3 text-right font-semibold text-white">
-                                            <span className="inline-flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-brand" />{m.residuo}</span>
-                                        </td>
+                                        </span>
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between text-xs">
+                                        <span className="text-slate-400">{fmtDate(m.created_at)}</span>
+                                        <span className="inline-flex items-center gap-1 text-white font-semibold">
+                                            <Coins className="h-3.5 w-3.5 text-brand" />{m.residuo} residui
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop: tabella */}
+                        <div className="mt-5 overflow-x-auto hidden sm:block">
+                            <table className="w-full text-sm" data-testid="wallet-history-table">
+                                <thead>
+                                    <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-white/10">
+                                        <th className="py-3 pr-4 font-semibold">Data</th>
+                                        <th className="py-3 pr-4 font-semibold">Tipo Azione</th>
+                                        <th className="py-3 pr-4 font-semibold text-right">Crediti</th>
+                                        <th className="py-3 font-semibold text-right">Saldo Residuo</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {righe.map((m, i) => (
+                                        <tr key={i} className="border-b border-white/5 last:border-0" data-testid={`wallet-history-row-${i}`}>
+                                            <td className="py-3 pr-4 text-slate-400 whitespace-nowrap">{fmtDate(m.created_at)}</td>
+                                            <td className="py-3 pr-4 text-slate-200">{actionLabel(m)}</td>
+                                            <td className={`py-3 pr-4 text-right font-bold ${m.delta >= 0 ? "text-emerald-400" : "text-orange-400"}`}>
+                                                {m.delta >= 0 ? `+${m.delta}` : m.delta}
+                                            </td>
+                                            <td className="py-3 text-right font-semibold text-white">
+                                                <span className="inline-flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-brand" />{m.residuo}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

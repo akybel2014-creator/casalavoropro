@@ -9,10 +9,6 @@ import { api, formatApiError } from "@/lib/api";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
 
-// Immagine della casa (modificabile): cambia questo URL per usare un'altra foto.
-const HOUSE_IMG =
-    "https://images.unsplash.com/photo-1633354747567-e0682586f082?crop=entropy&cs=srgb&fm=jpg&ixlib=rb-4.1.0&q=85&w=1000";
-
 function RevealLine({ children, delay = 0 }) {
     return (
         <span className="mask-line">
@@ -31,7 +27,6 @@ function RevealLine({ children, delay = 0 }) {
 export default function Hero() {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [tab, setTab] = useState("bolletta");
     const [dragOver, setDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -129,129 +124,102 @@ export default function Hero() {
                         </motion.p>
                     </div>
 
-                    {/* Colonna destra: immagine casa (piccola) + widget a schede sotto */}
-                    <div className="lg:col-span-6">
-                        {/* Immagine casa */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.94, y: 24 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ duration: 1, delay: 0.4, ease: LINE_EASE }}
-                            className="relative mx-auto w-full max-w-[520px]"
-                            data-testid="hero-house-image"
+                    {/* Colonna destra: i due blocchi, entrambi visibili */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.7, delay: 0.6 }}
+                        className="lg:col-span-6 mx-auto w-full max-w-[520px] space-y-5"
+                        data-testid="hero-widget"
+                    >
+                        {/* Blocco 1 — Analisi Bolletta */}
+                        <div
+                            className="rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-4 sm:p-5 shadow-2xl"
+                            data-testid="hero-block-bolletta"
                         >
-                            <img
-                                src={HOUSE_IMG}
-                                alt="Casa moderna"
-                                loading="eager"
-                                className="w-full h-44 sm:h-52 object-cover rounded-2xl border border-white/10 shadow-2xl"
-                            />
-                            <span className="absolute left-3 top-3 rounded-full bg-navy/80 backdrop-blur px-3 py-1 text-[11px] font-bold text-brand">
-                                CasaLavoroPRO
-                            </span>
-                        </motion.div>
+                            <p className="text-sm font-display font-bold text-white">Analisi Bolletta Gratis</p>
+                            <p className="mt-0.5 text-xs text-slate-400">Carica la bolletta e scopri subito quanto puoi risparmiare.</p>
 
-                        {/* Widget a schede */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 24 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, delay: 0.6 }}
-                            className="mt-6 mx-auto w-full max-w-[520px] rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-2 shadow-2xl"
-                            data-testid="hero-widget"
-                        >
-                            <div className="grid grid-cols-2 gap-1 rounded-xl bg-navy p-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setTab("bolletta")}
-                                    data-testid="hero-tab-bolletta"
-                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${tab === "bolletta" ? "bg-brand text-white" : "text-slate-300 hover:text-white"}`}
-                                >
-                                    Analisi Bolletta Gratis
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setTab("cerca")}
-                                    data-testid="hero-tab-cerca"
-                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${tab === "cerca" ? "bg-brand text-white" : "text-slate-300 hover:text-white"}`}
-                                >
-                                    Trova Professionista
-                                </button>
-                            </div>
-
-                            <div className="p-3 sm:p-4">
-                                {tab === "bolletta" ? (
-                                    uploading ? (
-                                        <div className="py-6" data-testid="hero-bolletta-progress">
-                                            <p className="text-sm font-semibold text-white text-center">L'assistente AI sta analizzando i tuoi consumi...</p>
-                                            <div className="mt-4 h-3 w-full rounded-full bg-white/10 overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 transition-[width] duration-500 ease-out"
-                                                    style={{ width: `${Math.min(100, Math.round(progress))}%` }}
-                                                />
-                                            </div>
-                                            <p className="mt-2 text-xs text-slate-400 text-center">{Math.min(100, Math.round(progress))}%</p>
-                                        </div>
-                                    ) : (
+                            {uploading ? (
+                                <div className="py-6 mt-3" data-testid="hero-bolletta-progress">
+                                    <p className="text-sm font-semibold text-white text-center">L'assistente AI sta analizzando i tuoi consumi...</p>
+                                    <div className="mt-4 h-3 w-full rounded-full bg-white/10 overflow-hidden">
                                         <div
-                                            onClick={() => fileRef.current?.click()}
-                                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                                            onDragLeave={() => setDragOver(false)}
-                                            onDrop={onDrop}
-                                            data-testid="hero-bolletta-dropzone"
-                                            className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${dragOver ? "border-brand bg-brand/10" : "border-white/20 hover:border-brand/50"}`}
-                                        >
-                                            <p className="text-sm font-semibold text-white">Trascina qui la tua Bolletta (PDF)</p>
-                                            <p className="mt-1 text-xs text-slate-400">oppure</p>
-                                            <Button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                                                data-testid="hero-carica-pdf-button"
-                                                className="mt-3 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
-                                            >
-                                                Carica PDF
-                                            </Button>
-                                            <p className="mt-3 text-[11px] text-slate-500">Analisi gratuita - PDF, max 15 MB</p>
-                                            <input
-                                                ref={fileRef}
-                                                type="file"
-                                                accept="application/pdf"
-                                                className="hidden"
-                                                data-testid="hero-bolletta-file-input"
-                                                onChange={(e) => analizza(e.target.files?.[0])}
-                                            />
-                                        </div>
-                                    )
-                                ) : (
-                                    <form onSubmit={submitSearch} className="space-y-3" data-testid="hero-search-form">
-                                        <div>
-                                            <label className="text-xs font-semibold text-slate-400">Trova categoria</label>
-                                            <Input
-                                                ref={cosaRef}
-                                                data-testid="hero-search-category-input"
-                                                placeholder="Es. Idraulico, Elettricista"
-                                                className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-semibold text-slate-400">Locazione</label>
-                                            <Input
-                                                ref={doveRef}
-                                                data-testid="hero-search-location-input"
-                                                placeholder="Vicenza"
-                                                className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
-                                            />
-                                        </div>
-                                        <Button
-                                            type="submit"
-                                            data-testid="hero-search-submit-button"
-                                            className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
-                                        >
-                                            Avvia Ricerca
-                                        </Button>
-                                    </form>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
+                                            className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 transition-[width] duration-500 ease-out"
+                                            style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                                        />
+                                    </div>
+                                    <p className="mt-2 text-xs text-slate-400 text-center">{Math.min(100, Math.round(progress))}%</p>
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={() => fileRef.current?.click()}
+                                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                                    onDragLeave={() => setDragOver(false)}
+                                    onDrop={onDrop}
+                                    data-testid="hero-bolletta-dropzone"
+                                    className={`mt-3 cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${dragOver ? "border-brand bg-brand/10" : "border-white/20 hover:border-brand/50"}`}
+                                >
+                                    <p className="text-sm font-semibold text-white">Trascina qui la tua Bolletta (PDF)</p>
+                                    <p className="mt-1 text-xs text-slate-400">oppure</p>
+                                    <Button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                                        data-testid="hero-carica-pdf-button"
+                                        className="mt-3 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
+                                    >
+                                        Carica PDF
+                                    </Button>
+                                    <p className="mt-3 text-[11px] text-slate-500">Analisi gratuita - PDF, max 15 MB</p>
+                                    <input
+                                        ref={fileRef}
+                                        type="file"
+                                        accept="application/pdf"
+                                        className="hidden"
+                                        data-testid="hero-bolletta-file-input"
+                                        onChange={(e) => analizza(e.target.files?.[0])}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Blocco 2 — Trova Professionista */}
+                        <div
+                            className="rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-4 sm:p-5 shadow-2xl"
+                            data-testid="hero-block-cerca"
+                        >
+                            <p className="text-sm font-display font-bold text-white">Trova Professionista</p>
+                            <p className="mt-0.5 text-xs text-slate-400">Cerca aziende e artigiani verificati nella tua zona.</p>
+
+                            <form onSubmit={submitSearch} className="mt-3 space-y-3" data-testid="hero-search-form">
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-400">Trova categoria</label>
+                                    <Input
+                                        ref={cosaRef}
+                                        data-testid="hero-search-category-input"
+                                        placeholder="Es. Idraulico, Elettricista"
+                                        className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-400">Locazione</label>
+                                    <Input
+                                        ref={doveRef}
+                                        data-testid="hero-search-location-input"
+                                        placeholder="Vicenza"
+                                        className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
+                                    />
+                                </div>
+                                <Button
+                                    type="submit"
+                                    data-testid="hero-search-submit-button"
+                                    className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
+                                >
+                                    Avvia Ricerca
+                                </Button>
+                            </form>
+                        </div>
+                    </motion.div>
                 </div>
             </div>
         </section>

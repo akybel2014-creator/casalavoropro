@@ -9,6 +9,10 @@ import { api, formatApiError } from "@/lib/api";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
 
+// Immagine della casa (modificabile): cambia questo URL per usare un'altra foto.
+const HOUSE_IMG =
+    "https://images.unsplash.com/photo-1633354747567-e0682586f082?crop=entropy&cs=srgb&fm=jpg&ixlib=rb-4.1.0&q=85&w=1000";
+
 function RevealLine({ children, delay = 0 }) {
     return (
         <span className="mask-line">
@@ -96,8 +100,8 @@ export default function Hero() {
 
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 lg:pb-28">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-                    {/* Colonna sinistra */}
-                    <div className="lg:col-span-7">
+                    {/* Colonna sinistra: testo */}
+                    <div className="lg:col-span-6">
                         <motion.p
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -123,13 +127,35 @@ export default function Hero() {
                             Scopri in pochi secondi quanto puoi risparmiare sulle utenze con l'assistente AI,
                             oppure trova professionisti edili e artigiani verificati in tutta Italia.
                         </motion.p>
+                    </div>
 
-                        {/* Contenitore interattivo a schede */}
+                    {/* Colonna destra: immagine casa (piccola) + widget a schede sotto */}
+                    <div className="lg:col-span-6">
+                        {/* Immagine casa */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.94, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ duration: 1, delay: 0.4, ease: LINE_EASE }}
+                            className="relative mx-auto w-full max-w-[520px]"
+                            data-testid="hero-house-image"
+                        >
+                            <img
+                                src={HOUSE_IMG}
+                                alt="Casa moderna"
+                                loading="eager"
+                                className="w-full h-44 sm:h-52 object-cover rounded-2xl border border-white/10 shadow-2xl"
+                            />
+                            <span className="absolute left-3 top-3 rounded-full bg-navy/80 backdrop-blur px-3 py-1 text-[11px] font-bold text-brand">
+                                CasaLavoroPRO
+                            </span>
+                        </motion.div>
+
+                        {/* Widget a schede */}
                         <motion.div
                             initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, delay: 0.75 }}
-                            className="mt-8 w-full max-w-[450px] rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-2 shadow-2xl"
+                            transition={{ duration: 0.7, delay: 0.6 }}
+                            className="mt-6 mx-auto w-full max-w-[520px] rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-2 shadow-2xl"
                             data-testid="hero-widget"
                         >
                             <div className="grid grid-cols-2 gap-1 rounded-xl bg-navy p-1">
@@ -226,54 +252,6 @@ export default function Hero() {
                             </div>
                         </motion.div>
                     </div>
-
-                    {/* Colonna destra: anteprima Dashboard Azienda + Wallet */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.94, y: 24 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.5, ease: LINE_EASE }}
-                        className="lg:col-span-5 relative"
-                        data-testid="hero-wallet-preview"
-                    >
-                        <div className="rounded-3xl border border-white/10 bg-navy-700/80 backdrop-blur-xl shadow-2xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Area Aziende</p>
-                                    <p className="mt-1 font-display font-bold text-white text-lg">Dashboard</p>
-                                </div>
-                                <span className="rounded-full bg-brand/15 px-3 py-1 text-xs font-bold text-brand">PRO</span>
-                            </div>
-
-                            <div className="mt-5 rounded-2xl border-2 border-brand bg-gradient-to-b from-brand/15 to-transparent p-5">
-                                <p className="text-xs uppercase tracking-wide text-brand font-semibold">Wallet: 42 crediti</p>
-                                <div className="mt-2 flex items-end gap-3">
-                                    <span className="font-display font-black text-4xl text-white">42</span>
-                                    <span className="font-display font-bold text-slate-300 mb-1">Crediti</span>
-                                </div>
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                                        <p className="text-slate-400">Bonus mensili</p>
-                                        <p className="font-bold text-white mt-0.5">5</p>
-                                    </div>
-                                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                                        <p className="text-slate-400">Acquistati</p>
-                                        <p className="font-bold text-white mt-0.5">37</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 space-y-2">
-                                {[["Richieste in arrivo", "3 nuove"], ["Annunci attivi", "5"], ["Offerte di lavoro", "2"]].map(([k, v]) => (
-                                    <div key={k} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                                        <span className="text-sm text-slate-300">{k}</span>
-                                        <span className="text-sm font-semibold text-white">{v}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <p className="mt-4 text-center text-xs text-slate-500">Anteprima: cosi appare la tua area azienda.</p>
-                        </div>
-                    </motion.div>
                 </div>
             </div>
         </section>

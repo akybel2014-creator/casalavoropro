@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only testing of the 8 flows requested (Hero tabs/widget, Hero search, Wallet preview, bolletta upload logged-out & logged-in, Registrati Privato/Azienda copy & PAYG card, Prezzi PAYG + privati CTA). All 8 flows pass end-to-end against the public preview URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AnalisiEnergetica result page", "issues": ["With a minimal non-real PDF, extracted consumo kWh and risparmio values render as empty/dashes which looks broken; consider showing a placeholder like 'Dato non disponibile' instead of a blank bold value (visible as '— kWh' and empty '/ anno'). Not a blocker for the current review scope."]}
+    ]
+  },
+  "test_results": {
+    "test1_hero_tabs": "PASS - both tabs render with exact labels; default dropzone with 'Trascina qui la tua Bolletta (PDF)' and orange 'Carica PDF' button visible",
+    "test2_hero_search": "PASS - location placeholder is 'Vicenza'; submitting Idraulico+Vicenza navigates to /aziende?q=Idraulico&zona=Vicenza",
+    "test3_wallet_preview": "PASS - 'Wallet: 42 crediti' and '42' both present inside data-testid=hero-wallet-preview",
+    "test4_upload_logged_out": "PASS - loading bar with 'L'assistente AI sta analizzando i tuoi consumi...' appears, then redirects to /registrati",
+    "test5_upload_logged_in_privato": "PASS - after login with mario.rossi@example.com, uploading PDF shows loading text, navigates to /analisi-energetica, analisi-result and analisi-box-risparmio render",
+    "test6_registrati_privato_button": "PASS - exact text 'Registrati Gratis come Privato (Nessun costo nascosto)'",
+    "test7_registrati_azienda": "PASS - PAYG card with 'Piano a Consumo (Pay-As-You-Go)' and '0€ / mese per sempre'; submit button 'Crea Account Azienda Gratis'; payg-note mentions fatture, cantieri, bacheca lavoro, noleggio",
+    "test8_prezzi": "PASS - plan-payg card with heading + 0€/mese per sempre, plan-payg-cta 'Crea Account Azienda Gratis', plan-payg-note visible, plan-privati-cta text exact and href=/registrati?ruolo=privato"
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Hero.jsx: file input uses display:none; wait_for_selector(..., state='attached') is needed. Not a bug, just a note for future tests.",
+    "AnalisiEnergetica result UI should guard against null/undefined kWh and risparmio values (render placeholder instead of blank bold text) to improve UX when AI returns partial data."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (8/8)"},
+  "test_credentials": "Privato: mario.rossi@example.com / Demo2026! - working. Login page uses data-testid login-email-input, login-password-input, login-submit-button.",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 8 frontend flows for the Hero redesign + Registrati + Prezzi changes verified against the public HTTPS preview URL. Note the hidden file input requires state='attached' with wait_for_selector. The bolletta analysis path requires an authenticated session (httpOnly cookies); demo privato login via data-testid=login-* worked and backend /api/analizza-bolletta returned a result in <10s even for a minimal PDF."
+}

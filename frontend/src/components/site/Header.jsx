@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
     { label: "Categorie", to: "/#categorie", id: "header-nav-categorie" },
     { label: "Noleggio Attrezzi", to: "/noleggio", id: "header-nav-noleggio" },
     { label: "Mercatino Usato", to: "/mercatino", id: "header-nav-mercatino" },
+    { label: "Analisi Energetica", to: "/analisi-energetica", id: "header-nav-analisi" },
     { label: "Aziende", to: "/aziende", id: "header-nav-aziende" },
     { label: "Per le aziende", to: "/#per-le-aziende", id: "header-nav-per-aziende" },
     { label: "Prezzi", to: "/prezzi", id: "header-nav-prezzi" },

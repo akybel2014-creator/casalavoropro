@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Truck, Recycle, Trash2, ImagePlus, Loader2, Lock, Eye, EyeOff, MapPin, Pencil, CalendarDays } from "lucide-react";
+import { Plus, Truck, Recycle, Trash2, ImagePlus, Loader2, Lock, Eye, EyeOff, MapPin, Pencil, CalendarDays, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +25,48 @@ function AnnuncioDialog({ meta, zoneDefault, annuncio, onCreated, onUpdated }) {
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState(() => toForm(annuncio, zoneDefault));
     const [busy, setBusy] = useState(false);
+    const [aiBusy, setAiBusy] = useState(false);
+    const aiFileRef = useRef(null);
+    const prezzoRef = useRef(null);
     const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
     const usato = form.tipo === "usato";
+
+    const matchCategoria = (aiCat) => {
+        if (!aiCat) return "";
+        const norm = (s) => String(s).toLowerCase().trim();
+        const exact = meta.categorie.find((c) => norm(c) === norm(aiCat));
+        if (exact) return exact;
+        return meta.categorie.find((c) => norm(c).includes(norm(aiCat)) || norm(aiCat).includes(norm(c))) || "";
+    };
+
+    const aiFill = async (file) => {
+        if (!file) return;
+        setAiBusy(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const { data } = await api.post("/analizza-macchinario", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            const s = data.suggerimenti || {};
+            const cat = matchCategoria(s.categoria);
+            const tags = Array.isArray(s.tag_ricerca) ? s.tag_ricerca.join(", ") : "";
+            const desc = [s.descrizione_breve, s.stato_usura ? `Stato: ${s.stato_usura}.` : "", tags ? `Tag: ${tags}` : ""].filter(Boolean).join(" ");
+            setForm((f) => ({
+                ...f,
+                titolo: s.titolo_suggerito || f.titolo,
+                categoria: cat || f.categoria,
+                sottocategoria: cat ? "" : f.sottocategoria,
+                descrizione: desc || f.descrizione,
+                stato: (usato && meta.stati_usato?.includes(s.stato_usura)) ? s.stato_usura : f.stato,
+            }));
+            toast.success("Campi compilati dall'AI! Inserisci solo il prezzo.");
+            setTimeout(() => prezzoRef.current?.focus(), 200);
+        } catch (err) {
+            toast.error(formatApiError(err));
+        } finally {
+            setAiBusy(false);
+            if (aiFileRef.current) aiFileRef.current.value = "";
+        }
+    };
 
     const openChange = (v) => {
         setOpen(v);
@@ -74,6 +114,17 @@ function AnnuncioDialog({ meta, zoneDefault, annuncio, onCreated, onUpdated }) {
             <DialogContent className="bg-navy-700 border-white/10 text-white max-h-[90vh] overflow-y-auto" data-testid={editing ? `annuncio-edit-dialog-${annuncio.id}` : "annuncio-dialog"}>
                 <DialogHeader><DialogTitle className="font-display">{editing ? "Modifica annuncio" : "Pubblica un annuncio"}</DialogTitle></DialogHeader>
                 <form onSubmit={submit} className="space-y-4" data-testid="annuncio-form">
+                    {!editing && (
+                        <div className="rounded-xl border border-brand/30 bg-brand/5 p-3" data-testid="annuncio-ai-assist">
+                            <input ref={aiFileRef} type="file" accept="image/*" capture="environment" className="hidden" data-testid="annuncio-ai-photo-input" onChange={(e) => aiFill(e.target.files?.[0])} />
+                            <Button type="button" onClick={() => aiFileRef.current?.click()} disabled={aiBusy} data-testid="annuncio-ai-photo-button"
+                                className="w-full rounded-lg bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold">
+                                {aiBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                                {aiBusy ? "Analisi foto in corso…" : "Compila con una foto (AI)"}
+                            </Button>
+                            <p className="mt-2 text-xs text-slate-400 text-center">Scatta o carica una foto dell'attrezzo: l'AI compila titolo, categoria e descrizione. A te resta solo il prezzo.</p>
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2" data-testid="annuncio-tipo-toggle">
                         {[{ v: "noleggio", l: "Noleggio", I: Truck }, { v: "usato", l: "Vendita usato", I: Recycle }].map((o) => (
                             <button key={o.v} type="button" disabled={editing} onClick={() => set("tipo")(o.v)} data-testid={`annuncio-tipo-${o.v}`}
@@ -113,7 +164,7 @@ function AnnuncioDialog({ meta, zoneDefault, annuncio, onCreated, onUpdated }) {
                         </div>
                         <div className="space-y-2">
                             <Label className="text-slate-300">Prezzo (EUR)</Label>
-                            <Input required type="number" step="0.01" min="1" value={form.prezzo} onChange={(e) => set("prezzo")(e.target.value)} data-testid="annuncio-prezzo-input" className={inputCls} />
+                            <Input required type="number" step="0.01" min="1" ref={prezzoRef} value={form.prezzo} onChange={(e) => set("prezzo")(e.target.value)} data-testid="annuncio-prezzo-input" className={inputCls} />
                         </div>
                         {usato ? (
                             <div className="space-y-2">

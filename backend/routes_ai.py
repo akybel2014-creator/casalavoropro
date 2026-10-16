@@ -7,18 +7,22 @@
 import os
 import json
 import uuid
+import base64
 import logging
 import tempfile
 
 import httpx
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from dotenv import load_dotenv
+from fpdf import FPDF
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
 from core import db, now, get_current_user, clean_doc
 from credits import charge, effective_ruolo, refund_charge
+from emailer import send_email, FRONTEND_URL, _wrap
+from html import escape
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
@@ -29,6 +33,7 @@ EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 GEMINI_BOLLETTA_MODEL = os.environ.get("GEMINI_BOLLETTA_MODEL", "gemini-3.1-pro-preview")
 GEMINI_MACCHINARIO_MODEL = os.environ.get("GEMINI_MACCHINARIO_MODEL", "gemini-3-flash-preview")
 BROKER_WEBHOOK_URL = os.environ.get("BROKER_WEBHOOK_URL", "")
+BROKER_API_TOKEN = os.environ.get("BROKER_API_TOKEN", "")
 
 MAX_UPLOAD = 15 * 1024 * 1024
 IMG_MIME = {"image/jpeg", "image/png", "image/webp"}
@@ -91,6 +96,8 @@ BOLLETTA_PROMPT = (
     '  "unita_consumo": "kWh" | "Smc",\n'
     '  "costo_materia_prima": number,       // EUR/kWh o EUR/Smc attuale in bolletta\n'
     '  "spesa_annua_stimata": number,       // EUR totali stimati all\'anno\n'
+    '  "codice_pod": string,                // codice POD (luce), formato IT...; null se assente\n'
+    '  "codice_pdr": string,                // codice PDR (gas); null se assente\n'
     '  "risparmio_stimato_annuo": number,   // EUR risparmiabili stimati vs indici PUN (luce) / PSV (gas) correnti\n'
     '  "note": string\n'
     "}\n"
@@ -114,8 +121,117 @@ MACCHINARIO_PROMPT = (
 )
 
 
+def _lat(s) -> str:
+    return str("" if s is None else s).encode("latin-1", "replace").decode("latin-1")
+
+
+def _s(v) -> str:
+    return "" if v is None else str(v)
+
+
+def _genera_pdf_report(dati: dict, cliente_nome: str, azienda_nome: str | None) -> bytes:
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_margins(18, 18, 18)
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.set_text_color(255, 90, 31)
+    pdf.cell(0, 12, "CasaLavoroPRO", ln=1)
+    pdf.set_text_color(40, 40, 40)
+    pdf.set_font("Helvetica", "B", 15)
+    pdf.cell(0, 10, "Report di Risparmio Energetico", ln=1)
+    pdf.set_draw_color(255, 90, 31)
+    pdf.set_line_width(0.8)
+    pdf.line(18, pdf.get_y() + 1, 192, pdf.get_y() + 1)
+    pdf.ln(8)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(60, 60, 60)
+    if azienda_nome:
+        pdf.cell(0, 7, _lat(f"Preparato da: {azienda_nome} con CasaLavoroPRO"), ln=1)
+    pdf.cell(0, 7, _lat(f"Cliente: {cliente_nome}"), ln=1)
+    pdf.cell(0, 7, _lat(f"Data: {now().strftime('%d/%m/%Y')}"), ln=1)
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(11, 19, 43)
+    pdf.cell(0, 9, "Dati rilevati dalla bolletta", ln=1)
+    unita = _s(dati.get("unita_consumo"))
+    costo = dati.get("costo_materia_prima")
+    spesa = dati.get("spesa_annua_stimata")
+    rows = [
+        ("Fornitore attuale", _s(dati.get("fornitore"))),
+        ("Tipo fornitura", _s(dati.get("tipo_fornitura"))),
+        ("Consumo annuo stimato", f"{_s(dati.get('consumo_annuo'))} {unita}".strip()),
+        ("Costo materia prima", f"{costo} EUR/{unita or 'u'}" if costo is not None else "-"),
+        ("Spesa annua stimata", f"{spesa} EUR" if spesa is not None else "-"),
+    ]
+    for k, v in rows:
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(60, 8, _lat(k + ":"))
+        pdf.set_font("Helvetica", "", 11)
+        pdf.cell(0, 8, _lat(v), ln=1)
+    pdf.ln(6)
+    risp = dati.get("risparmio_stimato_annuo")
+    pdf.set_fill_color(255, 240, 225)
+    pdf.set_draw_color(255, 90, 31)
+    y = pdf.get_y()
+    pdf.rect(18, y, 174, 26, style="DF")
+    pdf.set_xy(18, y + 5)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(255, 90, 31)
+    pdf.cell(174, 8, "RISPARMIO STIMATO", align="C", ln=1)
+    pdf.set_x(18)
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(11, 19, 43)
+    pdf.cell(174, 10, _lat(f"EUR {risp} / anno" if risp is not None else "da valutare"), align="C", ln=1)
+    pdf.ln(12)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(11, 19, 43)
+    pdf.cell(0, 9, "Come attivare il risparmio", ln=1)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(60, 60, 60)
+    pdf.multi_cell(0, 6, _lat(
+        "La stima e calcolata confrontando il costo della materia prima in bolletta con gli indici "
+        "all'ingrosso PUN (luce) e PSV (gas) correnti. Per attivare l'offerta piu conveniente, conferma "
+        "la pratica dall'app CasaLavoroPRO: un consulente dedicato ti ricontattera entro 24 ore per "
+        "completare il passaggio al nuovo fornitore, senza interruzioni di fornitura."))
+    pdf.ln(6)
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(130, 130, 130)
+    pdf.multi_cell(0, 5, _lat(
+        "Documento informativo generato automaticamente da CasaLavoroPRO. I valori sono stime non vincolanti."))
+    return bytes(pdf.output())
+
+
+async def _invia_report_risparmio(user_id: str, dati: dict):
+    """Genera il PDF co-brandizzato e lo invia via email all'utente che ha caricato la bolletta."""
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"email": 1, "name": 1, "role": 1})
+        if not u or not u.get("email"):
+            return
+        azienda_nome = None
+        if u.get("role") == "azienda":
+            az = await db.aziende.find_one({"owner_id": user_id}, {"nome": 1})
+            azienda_nome = (az or {}).get("nome")
+        pdf_bytes = _genera_pdf_report(dati, u.get("name") or "Cliente", azienda_nome)
+        att = [{"filename": "Report_Risparmio_CasaLavoroPRO.pdf",
+                "content": base64.b64encode(pdf_bytes).decode()}]
+        risp = dati.get("risparmio_stimato_annuo")
+        risp_txt = f"EUR {risp} / anno" if risp is not None else "indicato nel report allegato"
+        nome = escape(u.get("name") or "")
+        body = (f'<p>Ciao {nome},</p>'
+                f'<p>abbiamo analizzato la tua bolletta con l\'assistente AI di CasaLavoroPRO. '
+                f'In allegato trovi il <strong>Report di Risparmio Energetico</strong> in PDF con il dettaglio della stima.</p>'
+                f'<p>Risparmio stimato: <strong>{escape(str(risp_txt))}</strong>, calcolato sugli indici PUN/PSV correnti.</p>'
+                f'<p>Per attivare il risparmio apri CasaLavoroPRO e conferma la pratica: un consulente dedicato ti ricontattera entro 24 ore.</p>')
+        html = _wrap("Il tuo Report di Risparmio Energetico", body, "Vai a CasaLavoroPRO", FRONTEND_URL)
+        await send_email(to=u["email"],
+                         subject="Il tuo Report di Risparmio Energetico — Casalavoro Pro",
+                         html=html, attachments=att)
+    except Exception:
+        logger.exception("Invio report risparmio via email fallito")
+
+
 @router.post("/analizza-bolletta")
-async def analizza_bolletta(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+async def analizza_bolletta(background: BackgroundTasks, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Carica la bolletta in formato PDF")
     data = await file.read()
@@ -133,6 +249,8 @@ async def analizza_bolletta(file: UploadFile = File(...), user: dict = Depends(g
     }
     res = await db.leads.insert_one(lead_doc)
     lead_doc["_id"] = res.inserted_id
+    # Pipeline automatica: PDF report + email all'utente (in background, non blocca la risposta).
+    background.add_task(_invia_report_risparmio, user["id"], estratto)
     return {"lead": clean_doc(lead_doc, drop=("user_id",))}
 
 
@@ -157,34 +275,43 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
     # Addebito: privato gratis; azienda (abbonata o pay-as-you-go) 1 credito, bonus prima (402 se saldo 0).
     charge_res = await charge(user, "analisi_bolletta", meta={"lead_id": str(oid)})
 
-    u = await db.users.find_one({"_id": ObjectId(user["id"])}, {"email": 1, "name": 1})
+    u = await db.users.find_one({"_id": ObjectId(user["id"])}, {"email": 1, "name": 1, "telefono": 1})
+    d = lead.get("dati", {})
     payload = {
-        "lead_id": str(oid), "cliente": {"nome": (u or {}).get("name"), "email": (u or {}).get("email")},
-        "dati_bolletta": lead.get("dati", {}), "origine": "CasaLavoroPRO",
+        "lead_id": str(oid),
+        "anagrafica": {"nome": (u or {}).get("name"), "email": (u or {}).get("email"),
+                       "telefono": (u or {}).get("telefono")},
+        "fornitore_attuale": d.get("fornitore"),
+        "tipo_fornitura": d.get("tipo_fornitura"),
+        "codice_pod": d.get("codice_pod"),
+        "codice_pdr": d.get("codice_pdr"),
+        "consumo_annuo_stimato": d.get("consumo_annuo"),
+        "unita_consumo": d.get("unita_consumo"),
+        "risparmio_stimato_annuo": d.get("risparmio_stimato_annuo"),
+        "origine": "CasaLavoroPRO",
         "timestamp": now().isoformat(),
     }
 
-    inviato = False
-    if BROKER_WEBHOOK_URL:
+    # Invio reale solo se URL + Bearer token configurati; altrimenti simulazione (demo).
+    real = bool(BROKER_WEBHOOK_URL and BROKER_API_TOKEN)
+    if real:
         try:
-            async with httpx.AsyncClient(timeout=15) as cx:
-                r = await cx.post(BROKER_WEBHOOK_URL, json=payload)
+            async with httpx.AsyncClient(timeout=20) as cx:
+                r = await cx.post(BROKER_WEBHOOK_URL, json=payload,
+                                  headers={"Authorization": f"Bearer {BROKER_API_TOKEN}",
+                                           "Content-Type": "application/json"})
                 r.raise_for_status()
-            inviato = True
         except Exception:
             logger.exception("Invio lead al broker fallito")
             await refund_charge(user["id"], charge_res, "analisi_bolletta")
-            raise HTTPException(status_code=502, detail="Invio al broker non riuscito, riprova")
+            raise HTTPException(status_code=502, detail="Invio al broker non riuscito, riprova piu tardi")
     else:
-        # Nessun broker configurato: invio simulato (lead marcato come inviato).
-        logger.info("[SIMULAZIONE BROKER] lead %s -> payload=%s", oid, json.dumps(payload)[:500])
-        inviato = True
+        logger.info("[SIMULAZIONE BROKER] lead %s -> %s", oid, json.dumps(payload)[:500])
 
     await db.leads.update_one({"_id": oid}, {"$set": {
         "stato": "inviato_broker", "inviato_broker": True, "charged": charge_res["charged"],
-        "broker_simulato": not bool(BROKER_WEBHOOK_URL), "inviato_at": now()}})
-    return {"ok": True, "inviato": inviato, "simulato": not bool(BROKER_WEBHOOK_URL),
-            "charged": charge_res["charged"]}
+        "broker_simulato": not real, "inviato_at": now()}})
+    return {"ok": True, "inviato": True, "simulato": not real, "charged": charge_res["charged"]}
 
 
 @router.post("/analizza-macchinario")

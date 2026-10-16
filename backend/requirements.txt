@@ -29,3 +29,4 @@ emergentintegrations==0.2.2
 httpx==0.28.1
 stripe==14.4.1
 pillow==12.3.0
+fpdf2==2.8.9

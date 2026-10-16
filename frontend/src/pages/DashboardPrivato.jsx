@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart, CalendarDays } from "lucide-react";
+import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart, CalendarDays, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -148,10 +148,16 @@ export default function DashboardPrivato() {
                         <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Area privati</p>
                         <h1 className="mt-1 font-display font-black text-3xl text-white tracking-tight">Ciao {user?.name}</h1>
                     </div>
-                    <Button asChild data-testid="dashboard-new-request-button"
-                        className="rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                        <Link to="/nuova-richiesta"><Plus className="h-4 w-4 mr-1.5" /> Nuova richiesta</Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <Button asChild data-testid="dashboard-privato-analisi-button"
+                            className="rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                            <Link to="/analisi-energetica"><Zap className="h-4 w-4 mr-1.5" /> Analisi Energetica AI</Link>
+                        </Button>
+                        <Button asChild data-testid="dashboard-new-request-button" variant="outline"
+                            className="rounded-full border-white/20 text-white hover:bg-white/10 font-semibold">
+                            <Link to="/nuova-richiesta"><Plus className="h-4 w-4 mr-1.5" /> Nuova richiesta</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <Tabs defaultValue="richieste" className="mt-8">

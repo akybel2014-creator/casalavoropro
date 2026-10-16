@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Wallet } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Wallet, Zap } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,6 +242,10 @@ export default function DashboardAzienda() {
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${VER_STYLES[mine?.verification_status]?.[0]}`}>
                             {VER_STYLES[mine?.verification_status]?.[1]}
                         </span>
+                        <Button asChild data-testid="dashboard-azienda-analisi-button"
+                            className="rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                            <Link to="/analisi-energetica"><Zap className="h-4 w-4 mr-1.5" /> Analisi Energetica AI</Link>
+                        </Button>
                     </div>
                 </div>
 

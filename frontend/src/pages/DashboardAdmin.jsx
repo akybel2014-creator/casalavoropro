@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { AziendaAvatar } from "@/pages/Aziende";
@@ -81,6 +81,7 @@ function UserManageDialog({ u, onDone }) {
             <DialogContent className="bg-navy-700 border-white/10 text-white max-h-[90vh] overflow-y-auto" data-testid={`manage-dialog-${u.id}`}>
                 <DialogHeader>
                     <DialogTitle className="font-display">{u.name} · {u.email}</DialogTitle>
+                    <DialogDescription className="text-slate-400 text-xs">Gestisci crediti, ruolo e stato dell'account.</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6">

@@ -1,0 +1,51 @@
+{
+  "summary": "Full E2E testing of routing restructure + new Owner Admin panel. Backend: 9/9 pytest cases on admin endpoints PASS (metrics, users list/search, PATCH credits/role/suspend; 403 for non-admin). Frontend: all 13 flows requested PASS - routing guards for logged-out users, azienda login lands on /dashboard, /dashboard/azienda redirects to /dashboard, 4 quick actions (nuovo intervento, cerca operai, wallet, scansione AI) all route correctly, quick-wallet shows real credits (5), privato lands on /area-privato and /dashboard redirects back, admin lands on /admin with dashboard-admin + admin-metrics visible, /dashboard/admin -> /admin redirect works, non-admin /admin -> homepage, user search filters table, Gestisci dialog save credits/role/suspend all show toasts and update table (Sospeso badge visible, credits 9=7 bonus+2 acq rendered). Hero CTA button present and navigates to /registrati. Metrics show MRR €15,96, Incasso crediti €0, 27 utenti totali (4 privati, 16 abbonate, 6 pay-as-you-go).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "UserManageDialog", "issues": ["Radix DialogContent is missing an aria-describedby/Description (console warning, a11y nit, not a blocker)"]}
+    ]
+  },
+  "test_results": {
+    "guard_logout_dashboard": "PASS (redirects to /login)",
+    "guard_logout_area_privato": "PASS",
+    "guard_logout_admin": "PASS",
+    "hero_cta_gestionale": "PASS -> /registrati",
+    "azienda_login_dashboard": "PASS - lands on /dashboard, dashboard-azienda + azienda-quick-actions visible",
+    "dashboard_azienda_redirect": "PASS -> /dashboard",
+    "quick_wallet_credits_number": "PASS (shows 'Wallet: 5 crediti')",
+    "quick_nuovo_intervento": "PASS (Richieste tab)",
+    "quick_cerca_operai": "PASS (Offerte di lavoro tab)",
+    "quick_wallet_tab": "PASS",
+    "quick_scansione_ai": "PASS -> /analisi-energetica",
+    "privato_login": "PASS - lands on /area-privato",
+    "privato_dashboard_redirect": "PASS -> /area-privato",
+    "privato_admin_blocked": "PASS -> / (homepage)",
+    "azienda_admin_blocked": "PASS -> / (homepage, no admin-panel rendered)",
+    "admin_login": "PASS - lands on /admin, dashboard-admin + admin-metrics visible",
+    "dashboard_admin_redirect": "PASS -> /admin",
+    "admin_user_search": "PASS (filters admin-users-table to trial@test.it)",
+    "admin_manage_save_credits": "PASS (toast + table reflects new credits)",
+    "admin_manage_save_role": "PASS",
+    "admin_manage_suspend_toggle": "PASS (toast 'Account sospeso' + 'Sospeso' badge in table)",
+    "backend_admin_pytest": "9/9 PASS (metrics, users list/search, patch credits/role/suspend, 403 for azienda+privato)"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_admin_panel.py",
+    "/app/test_reports/pytest/admin_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "UserManageDialog should pass a DialogDescription or aria-describedby to DialogContent to silence Radix a11y warning",
+    "No other issues: ProtectedRoute, dashboardPathFor, DashboardAzienda quick actions and DashboardAdmin all behave per spec"
+  ],
+  "updated_files": ["/app/backend/tests/test_admin_panel.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100% (21/21 assertions)"},
+  "test_credentials": "Verified working: admin@casalavoripro.it/Admin2026!, info@caloreeclima.it/Demo2026!, mario.rossi@example.com/Demo2026!, trial@test.it/Demo2026!",
+  "seed_data_creation": "None. Reverted trial@test.it to bonus_credits=5, purchased_credits=0, ruolo=azienda_abbonata, suspended=false as instructed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Routing restructure + new Owner Admin panel fully validated end-to-end on preview URL. All data-testids documented in review (dashboard-azienda, azienda-quick-actions, quick-nuovo-intervento, quick-scansione-ai, quick-cerca-operai, quick-wallet, dashboard-admin, admin-metrics, admin-user-search-input/button, admin-users-table, manage-button-{id}, manage-bonus-{id}, manage-purchased-{id}, manage-save-credits-{id}, manage-ruolo-{id}, manage-save-role-{id}, manage-suspend-{id}, hero-gestionale-cta-button) are present and functional. Dialog in UserManageDialog closes after save-credits/save-role; must reopen before toggling suspend if testing all three sequentially."
+}

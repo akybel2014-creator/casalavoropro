@@ -338,7 +338,7 @@ export default function AnalisiEnergetica() {
                         </Button>
                         <Button
                             className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold"
-                            onClick={() => navigate("/dashboard/azienda?tab=wallet")}
+                            onClick={() => navigate("/dashboard?tab=wallet")}
                             data-testid="analisi-ricarica-vai-wallet">
                             <Wallet className="h-4 w-4 mr-2" /> Ricarica il Wallet
                         </Button>

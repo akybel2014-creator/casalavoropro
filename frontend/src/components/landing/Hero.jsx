@@ -2,12 +2,17 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
+
+// Mockup del gestionale (modificabile): cambia questo URL per usare un'altra immagine.
+const MOCKUP_IMG =
+    "https://static.prod-images.emergentagent.com/jobs/e57fe9aa-18be-4843-83d5-91ca460e3cf5/images/06e0e715f40c7cf36953011f3a87916f2540dd799b0dc5fb9d4a9cf6c055de81.jpeg";
 
 function RevealLine({ children, delay = 0 }) {
     return (
@@ -227,52 +232,39 @@ export default function Hero() {
                         </motion.div>
                     </div>
 
-                    {/* Colonna destra: anteprima Dashboard Azienda + Wallet */}
+                    {/* Colonna destra: mockup gestionale + CTA artigiani */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.94, y: 24 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ duration: 1, delay: 0.5, ease: LINE_EASE }}
                         className="lg:col-span-5 relative"
-                        data-testid="hero-wallet-preview"
+                        data-testid="hero-gestionale-cta"
                     >
-                        <div className="rounded-3xl border border-white/10 bg-navy-700/80 backdrop-blur-xl shadow-2xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Area Aziende</p>
-                                    <p className="mt-1 font-display font-bold text-white text-lg">Dashboard</p>
-                                </div>
-                                <span className="rounded-full bg-brand/15 px-3 py-1 text-xs font-bold text-brand">PRO</span>
-                            </div>
-
-                            <div className="mt-5 rounded-2xl border-2 border-brand bg-gradient-to-b from-brand/15 to-transparent p-5">
-                                <p className="text-xs uppercase tracking-wide text-brand font-semibold">Wallet: 42 crediti</p>
-                                <div className="mt-2 flex items-end gap-3">
-                                    <span className="font-display font-black text-4xl text-white">42</span>
-                                    <span className="font-display font-bold text-slate-300 mb-1">Crediti</span>
-                                </div>
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                                        <p className="text-slate-400">Bonus mensili</p>
-                                        <p className="font-bold text-white mt-0.5">5</p>
-                                    </div>
-                                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                                        <p className="text-slate-400">Acquistati</p>
-                                        <p className="font-bold text-white mt-0.5">37</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 space-y-2">
-                                {[["Richieste in arrivo", "3 nuove"], ["Annunci attivi", "5"], ["Offerte di lavoro", "2"]].map(([k, v]) => (
-                                    <div key={k} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                                        <span className="text-sm text-slate-300">{k}</span>
-                                        <span className="text-sm font-semibold text-white">{v}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <p className="mt-4 text-center text-xs text-slate-500">Anteprima: cosi appare la tua area azienda.</p>
+                        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-navy-700/60 backdrop-blur-xl shadow-2xl p-4">
+                            <span className="absolute left-5 top-5 z-10 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+                                Gestionale PRO
+                            </span>
+                            <img
+                                src={MOCKUP_IMG}
+                                alt="Gestionale CasaLavoroPRO per artigiani"
+                                loading="eager"
+                                className="w-full rounded-2xl"
+                            />
                         </div>
+                        <p className="mt-6 text-center text-base sm:text-lg font-semibold text-white">
+                            Il gestionale completo per la tua impresa
+                        </p>
+                        <p className="mt-1 text-center text-sm text-slate-400">
+                            Interventi, preventivi, wallet crediti e analisi AI in un'unica app.
+                        </p>
+                        <Button
+                            type="button"
+                            onClick={() => navigate("/registrati")}
+                            data-testid="hero-gestionale-cta-button"
+                            className="mt-5 w-full py-6 text-base sm:text-lg rounded-2xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold shadow-xl shadow-orange-500/30"
+                        >
+                            Scopri il Gestionale per Artigiani <ArrowRight className="h-5 w-5 ml-2" />
+                        </Button>
                     </motion.div>
                 </div>
             </div>

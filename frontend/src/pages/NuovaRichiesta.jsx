@@ -38,7 +38,7 @@ export default function NuovaRichiesta() {
             toast.success(form.urgente
                 ? "Richiesta urgente inviata! Le aziende con Emergenze 24/7 sono state avvisate subito."
                 : "Richiesta inviata! Le aziende della tua zona sono state avvisate.");
-            navigate("/dashboard");
+            navigate("/area-privato");
         } catch (err) {
             setError(formatApiError(err));
         } finally {

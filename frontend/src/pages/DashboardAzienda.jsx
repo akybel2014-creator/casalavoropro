@@ -94,6 +94,7 @@ export default function DashboardAzienda() {
     const [geoBusy, setGeoBusy] = useState(false);
     const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [saldo, setSaldo] = useState(null);
     const fileRef = useRef(null);
     const [searchParams] = useSearchParams();
     const [tab, setTab] = useState(() => {
@@ -103,12 +104,13 @@ export default function DashboardAzienda() {
 
     const load = useCallback(async () => {
         try {
-            const [m, f, u] = await Promise.all([
-                api.get("/aziende/mine"), api.get("/richieste/feed"), api.get("/chat/unread-count"),
+            const [m, f, u, w] = await Promise.all([
+                api.get("/aziende/mine"), api.get("/richieste/feed"), api.get("/chat/unread-count"), api.get("/crediti/wallet"),
             ]);
             setMine(m.data);
             setFeed(f.data);
             setUnreadChat(u.data.per_risposta || {});
+            setSaldo(w.data.saldo_crediti);
         } catch (e) {
             toast.error(formatApiError(e));
         }
@@ -247,6 +249,35 @@ export default function DashboardAzienda() {
                             <Link to="/analisi-energetica"><Zap className="h-4 w-4 mr-1.5" /> Analisi Energetica AI</Link>
                         </Button>
                     </div>
+                </div>
+
+                <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" data-testid="azienda-quick-actions">
+                    <button type="button" onClick={() => setTab("leads")} data-testid="quick-nuovo-intervento"
+                        className="group rounded-2xl border border-white/10 bg-navy-700/70 p-5 sm:p-6 text-left transition-colors hover:border-brand hover:bg-brand/10">
+                        <Briefcase className="h-7 w-7 text-brand" />
+                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">Nuovo Intervento</p>
+                        <p className="mt-0.5 text-xs text-slate-400">Richieste dei clienti</p>
+                    </button>
+                    <Link to="/analisi-energetica" data-testid="quick-scansione-ai"
+                        className="group rounded-2xl border border-white/10 bg-navy-700/70 p-5 sm:p-6 text-left transition-colors hover:border-brand hover:bg-brand/10">
+                        <Zap className="h-7 w-7 text-brand" />
+                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">Scansione Energetica AI</p>
+                        <p className="mt-0.5 text-xs text-slate-400">Analizza una bolletta</p>
+                    </Link>
+                    <button type="button" onClick={() => setTab("lavoro")} data-testid="quick-cerca-operai"
+                        className="group rounded-2xl border border-white/10 bg-navy-700/70 p-5 sm:p-6 text-left transition-colors hover:border-brand hover:bg-brand/10">
+                        <Megaphone className="h-7 w-7 text-brand" />
+                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">Cerca Operai</p>
+                        <p className="mt-0.5 text-xs text-slate-400">Pubblica offerte di lavoro</p>
+                    </button>
+                    <button type="button" onClick={() => setTab("wallet")} data-testid="quick-wallet"
+                        className="group rounded-2xl border-2 border-brand bg-brand/10 p-5 sm:p-6 text-left transition-colors hover:bg-brand/20">
+                        <Wallet className="h-7 w-7 text-brand" />
+                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">
+                            Wallet: {saldo ?? "…"} crediti
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-400">Ricarica e movimenti</p>
+                    </button>
                 </div>
 
                 <Tabs value={tab} onValueChange={setTab} className="mt-8">

@@ -10,7 +10,7 @@ export function PaymentSuccess() {
     const [paid, setPaid] = useState(null);
     const { refreshMe } = useAuth();
     const caparra = new URLSearchParams(window.location.search).get("tipo") === "caparra";
-    const dashHref = caparra ? "/dashboard" : "/dashboard/azienda";
+    const dashHref = caparra ? "/area-privato" : "/dashboard";
 
     useEffect(() => {
         const sessionId = new URLSearchParams(window.location.search).get("session_id");
@@ -77,7 +77,7 @@ export function PaymentCancel() {
                 <h1 className="mt-5 font-display font-black text-2xl text-white">Pagamento annullato</h1>
                 <p className="mt-2 text-sm text-slate-400">Nessun addebito effettuato. Puoi riprovare quando vuoi dal pannello azienda.</p>
                 <Button asChild className="mt-6 w-full rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold">
-                    <Link to="/dashboard/azienda">Torna al pannello azienda</Link>
+                    <Link to="/dashboard">Torna al pannello azienda</Link>
                 </Button>
             </div>
         </div>

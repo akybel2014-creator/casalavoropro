@@ -68,4 +68,4 @@ export function AuthProvider({ children }) {
 }
 
 export const dashboardPathFor = (role) =>
-    role === "azienda" ? "/dashboard/azienda" : role === "admin" ? "/dashboard/admin" : "/dashboard";
+    role === "azienda" ? "/dashboard" : role === "admin" ? "/admin" : "/area-privato";

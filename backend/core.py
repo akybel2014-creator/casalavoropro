@@ -86,6 +86,8 @@ async def get_current_user(request: Request) -> dict:
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
         if not user:
             raise HTTPException(status_code=401, detail="Utente non trovato")
+        if user.get("suspended") and user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Account sospeso. Contatta l'assistenza CasaLavoroPRO.")
         return clean_doc(user)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Sessione scaduta")

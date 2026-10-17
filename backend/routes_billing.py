@@ -119,7 +119,7 @@ async def create_caparra_session(prenotazione: dict, importo: float, user_id: st
         }}],
         mode="payment",
         success_url=f"{origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}&tipo=caparra",
-        cancel_url=f"{origin_url}/dashboard",
+        cancel_url=f"{origin_url}/area-privato",
         metadata={"user_id": user_id, "kind": "caparra", "prenotazione_id": pid},
     )
     await payment_transactions.insert_one({

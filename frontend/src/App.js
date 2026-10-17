@@ -1,7 +1,8 @@
 import { Component, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth, dashboardPathFor } from "@/context/AuthContext";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
 import Home from "@/pages/Home";
@@ -90,16 +91,16 @@ function PublicLayout() {
     );
 }
 
+function RedirectWithMessage({ to, message }) {
+    useEffect(() => {
+        if (message) toast.error(message);
+    }, [message]);
+    return <Navigate to={to} replace />;
+}
+
 function ProtectedRoute({ roles, children }) {
     const { user, loading } = useAuth();
-    const navigate = useNavigate();
     const location = useLocation();
-
-    useEffect(() => {
-        if (!loading && !user) {
-            navigate("/login", { state: { from: location.pathname }, replace: true });
-        }
-    }, [loading, user, navigate, location.pathname]);
 
     if (loading) {
         return (
@@ -108,17 +109,14 @@ function ProtectedRoute({ roles, children }) {
             </div>
         );
     }
-    if (!user) return null;
+    if (!user) {
+        return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    }
     if (roles && !roles.includes(user.role)) {
-        const path = user.role === "azienda" ? "/dashboard/azienda" : user.role === "admin" ? "/dashboard/admin" : "/dashboard";
-        return (
-            <div className="min-h-screen bg-navy flex items-center justify-center p-8 text-center">
-                <div>
-                    <p className="text-white font-semibold">Questa area è riservata a un altro tipo di account.</p>
-                    <button onClick={() => navigate(path)} className="mt-4 text-brand font-semibold hover:underline">Vai alla tua area</button>
-                </div>
-            </div>
-        );
+        if (roles.includes("admin")) {
+            return <RedirectWithMessage to="/" message="Accesso negato: area riservata all'amministratore." />;
+        }
+        return <Navigate to={dashboardPathFor(user.role)} replace />;
     }
     return children;
 }
@@ -167,10 +165,12 @@ function App() {
                         <Route path="/registrati" element={<Registrati />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/nuova-richiesta" element={<ProtectedRoute roles={["privato"]}><DashLayout><NuovaRichiesta /></DashLayout></ProtectedRoute>} />
-                        <Route path="/dashboard" element={<ProtectedRoute roles={["privato"]}><DashLayout><DashboardPrivato /></DashLayout></ProtectedRoute>} />
-                        <Route path="/dashboard/azienda" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
+                        <Route path="/area-privato" element={<ProtectedRoute roles={["privato"]}><DashLayout><DashboardPrivato /></DashLayout></ProtectedRoute>} />
+                        <Route path="/dashboard" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
+                        <Route path="/dashboard/azienda" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/analisi-energetica" element={<ProtectedRoute roles={["privato", "azienda"]}><DashLayout><AnalisiEnergetica /></DashLayout></ProtectedRoute>} />
-                        <Route path="/dashboard/admin" element={<ProtectedRoute roles={["admin"]}><DashLayout><DashboardAdmin /></DashLayout></ProtectedRoute>} />
+                        <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><DashLayout><DashboardAdmin /></DashLayout></ProtectedRoute>} />
+                        <Route path="/dashboard/admin" element={<Navigate to="/admin" replace />} />
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancel" element={<PaymentCancel />} />
                     </Routes>

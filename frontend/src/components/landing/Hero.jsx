@@ -81,7 +81,8 @@ export default function Hero() {
             const { data } = await api.post("/analizza-bolletta", fd, { headers: { "Content-Type": "multipart/form-data" } });
             clearInterval(timer.current);
             setProgress(100);
-            sessionStorage.setItem("analisi_lead", JSON.stringify(data.lead));
+            // L'analisi gira in background: passiamo l'id del lead alla pagina, che fa il polling del risultato.
+            sessionStorage.setItem("analisi_lead_id", data.lead.id);
             setTimeout(() => navigate("/analisi-energetica"), 300);
         } catch (err) {
             clearInterval(timer.current);

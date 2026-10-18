@@ -24,29 +24,61 @@ export default function AnalisiEnergetica() {
     const fileRef = useRef(null);
     const cameraRef = useRef(null);
     const progressTimer = useRef(null);
+    const pollTimer = useRef(null);
+    const pollDeadline = useRef(0);
 
-    // Se arriviamo dalla Hero con un lead gia analizzato, mostra subito i risultati.
-    useEffect(() => {
-        const cached = sessionStorage.getItem("analisi_lead");
-        if (cached) {
-            sessionStorage.removeItem("analisi_lead");
-            try {
-                setLead(JSON.parse(cached));
-                setPhase("result");
-            } catch { /* ignore */ }
-        }
-    }, []);
-
-    const startFakeProgress = () => {
-        setProgress(8);
-        progressTimer.current = setInterval(() => {
-            setProgress((p) => (p >= 90 ? 90 : p + Math.random() * 12));
-        }, 600);
-    };
     const stopFakeProgress = () => {
         if (progressTimer.current) clearInterval(progressTimer.current);
         progressTimer.current = null;
     };
+    const stopPolling = () => {
+        if (pollTimer.current) clearInterval(pollTimer.current);
+        pollTimer.current = null;
+    };
+    const startFakeProgress = () => {
+        setProgress(8);
+        progressTimer.current = setInterval(() => {
+            setProgress((p) => (p >= 90 ? 90 : p + Math.random() * 8));
+        }, 700);
+    };
+
+    // Polling dello stato del lead: l'analisi gira in background sul server,
+    // cosi l'upload non supera mai il timeout del gateway (niente errori 520/504).
+    const pollLead = useCallback((id) => {
+        setPhase("analyzing");
+        startFakeProgress();
+        pollDeadline.current = Date.now() + 150000; // max ~2,5 min
+        stopPolling();
+        pollTimer.current = setInterval(async () => {
+            try {
+                const { data } = await api.get(`/lead/${id}`);
+                const l = data.lead || data;
+                if (l.stato === "errore") {
+                    stopPolling(); stopFakeProgress(); setProgress(0); setPhase("upload");
+                    toast.error(l.errore || "Analisi non riuscita, riprova.");
+                } else if (l.stato && l.stato !== "in_elaborazione") {
+                    stopPolling(); stopFakeProgress(); setProgress(100);
+                    setLead(l); setTimeout(() => setPhase("result"), 400);
+                } else if (Date.now() > pollDeadline.current) {
+                    stopPolling(); stopFakeProgress(); setProgress(0); setPhase("upload");
+                    toast.error("L'analisi sta impiegando troppo tempo. Riprova con meno pagine o un file piu leggero.");
+                }
+            } catch (err) {
+                stopPolling(); stopFakeProgress(); setProgress(0); setPhase("upload");
+                toast.error(formatApiError(err));
+            }
+        }, 2500);
+    }, []);
+
+    // Se arriviamo dalla Hero, riprendiamo il polling del lead in elaborazione.
+    useEffect(() => {
+        const leadId = sessionStorage.getItem("analisi_lead_id");
+        if (leadId) {
+            sessionStorage.removeItem("analisi_lead_id");
+            pollLead(leadId);
+        }
+        return () => { stopFakeProgress(); stopPolling(); };
+    }, [pollLead]);
 
     const analizza = useCallback(async (fileList) => {
         const arr = Array.from(fileList || []).filter(Boolean);
@@ -64,17 +96,15 @@ export default function AnalisiEnergetica() {
             const { data } = await api.post("/analizza-bolletta", fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            stopFakeProgress();
-            setProgress(100);
-            setLead(data.lead);
-            setTimeout(() => setPhase("result"), 400);
+            // La risposta e immediata (lead "in_elaborazione"): avviamo il polling del risultato.
+            pollLead(data.lead.id);
         } catch (err) {
             stopFakeProgress();
             setProgress(0);
             setPhase("upload");
             toast.error(formatApiError(err));
         }
-    }, []);
+    }, [pollLead]);
 
     const onDrop = (e) => {
         e.preventDefault();

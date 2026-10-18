@@ -9,6 +9,7 @@ import io
 import json
 import uuid
 import base64
+import asyncio
 import logging
 import tempfile
 
@@ -39,6 +40,9 @@ BROKER_API_TOKEN = os.environ.get("BROKER_API_TOKEN", "")
 
 MAX_UPLOAD = 15 * 1024 * 1024
 IMG_MIME = {"image/jpeg", "image/png", "image/webp"}
+# Timeout dell'analisi AI. L'analisi gira in BACKGROUND (non blocca la risposta HTTP),
+# quindi puo essere piu generoso del limite del gateway: evita comunque task appesi all'infinito.
+AI_TIMEOUT = int(os.environ.get("AI_ANALYSIS_TIMEOUT", "120"))
 
 
 def _parse_json(text: str) -> dict:
@@ -77,7 +81,15 @@ async def _gemini_json_multi(model: str, system_message: str, prompt: str, items
             contents.append(FileContentWithMimeType(file_path=tmp_paths[-1], mime_type=mime_type))
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=str(uuid.uuid4()),
                        system_message=system_message).with_model("gemini", model)
-        resp = await chat.send_message(UserMessage(text=prompt, file_contents=contents))
+        try:
+            resp = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=prompt, file_contents=contents)),
+                timeout=AI_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            logger.error("Gemini call TIMEOUT dopo %ss (model=%s, %d file)", AI_TIMEOUT, model, len(items))
+            raise HTTPException(status_code=504,
+                                detail="L'analisi ha impiegato troppo tempo. Prova con meno pagine o un file piu leggero.")
         return _parse_json(resp)
     except HTTPException:
         raise
@@ -240,6 +252,29 @@ async def _invia_report_risparmio(user_id: str, dati: dict):
         logger.exception("Invio report risparmio via email fallito")
 
 
+async def _analizza_bolletta_bg(lead_id: str, user_id: str, items: list):
+    """Esegue l'analisi AI in background e aggiorna il lead. Non blocca la risposta HTTP
+    (cosi l'upload non supera mai il timeout del gateway -> niente errori 520/504)."""
+    try:
+        estratto = await _gemini_json_multi(GEMINI_BOLLETTA_MODEL, BOLLETTA_SYSTEM, BOLLETTA_PROMPT, items)
+        await db.leads.update_one(
+            {"_id": ObjectId(lead_id)},
+            {"$set": {"dati": estratto, "stato": "lead_in_attesa", "analizzato_at": now()}})
+        # Report PDF + email all'utente (best-effort, non blocca nulla).
+        await _invia_report_risparmio(user_id, estratto)
+    except HTTPException as e:
+        logger.error("Analisi bolletta fallita (lead=%s): %s", lead_id, e.detail)
+        await db.leads.update_one(
+            {"_id": ObjectId(lead_id)},
+            {"$set": {"stato": "errore", "errore": e.detail, "analizzato_at": now()}})
+    except Exception:
+        logger.exception("Errore inatteso nell'analisi in background (lead=%s)", lead_id)
+        await db.leads.update_one(
+            {"_id": ObjectId(lead_id)},
+            {"$set": {"stato": "errore", "errore": "Analisi non riuscita, riprova piu tardi.",
+                      "analizzato_at": now()}})
+
+
 @router.post("/analizza-bolletta")
 async def analizza_bolletta(background: BackgroundTasks, files: list[UploadFile] = File(...), user: dict = Depends(get_current_user)):
     if not files:
@@ -254,25 +289,27 @@ async def analizza_bolletta(background: BackgroundTasks, files: list[UploadFile]
             suffix = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[f.content_type]
         else:
             raise HTTPException(status_code=400, detail="Carica la bolletta in PDF oppure scatta una foto (JPG/PNG/WEBP)")
-        data = await f.read()
+        try:
+            data = await f.read()
+        except Exception:
+            logger.exception("Lettura del file di upload fallita")
+            raise HTTPException(status_code=400, detail="Impossibile leggere il file caricato. Riprova.")
         total += len(data)
         if total > MAX_UPLOAD:
             raise HTTPException(status_code=400, detail="File troppo grandi (max 15 MB in totale)")
         items.append((data, mime, suffix))
 
-    # L'analisi e gratuita per tutti: l'eventuale credito viene scalato al momento dell'invio al broker ("Risparmia Ora").
-    estratto = await _gemini_json_multi(GEMINI_BOLLETTA_MODEL, BOLLETTA_SYSTEM, BOLLETTA_PROMPT, items)
-
+    # Creiamo subito il lead "in elaborazione" e lanciamo l'analisi in background:
+    # la risposta torna in meno di un secondo, il frontend fa polling su GET /lead/{id}.
     lead_doc = {
-        "user_id": user["id"], "tipo": "bolletta", "stato": "lead_in_attesa",
-        "filename": files[0].filename, "pagine": len(items), "dati": estratto,
+        "user_id": user["id"], "tipo": "bolletta", "stato": "in_elaborazione",
+        "filename": files[0].filename, "pagine": len(items), "dati": None,
         "share_token": uuid.uuid4().hex,
         "created_at": now(), "inviato_broker": False,
     }
     res = await db.leads.insert_one(lead_doc)
     lead_doc["_id"] = res.inserted_id
-    # Pipeline automatica: PDF report + email all'utente (in background, non blocca la risposta).
-    background.add_task(_invia_report_risparmio, user["id"], estratto)
+    background.add_task(_analizza_bolletta_bg, str(res.inserted_id), user["id"], items)
     return {"lead": clean_doc(lead_doc, drop=("user_id",))}
 
 
@@ -280,6 +317,19 @@ async def analizza_bolletta(background: BackgroundTasks, files: list[UploadFile]
 async def miei_lead(user: dict = Depends(get_current_user)):
     docs = await db.leads.find({"user_id": user["id"]}).sort("created_at", -1).to_list(100)
     return [clean_doc(d, drop=("user_id",)) for d in docs]
+
+
+@router.get("/lead/{lead_id}")
+async def stato_lead(lead_id: str, user: dict = Depends(get_current_user)):
+    """Stato/risultato di un lead per il polling del frontend (solo il proprietario)."""
+    try:
+        oid = ObjectId(lead_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Identificativo non valido")
+    lead = await db.leads.find_one({"_id": oid})
+    if not lead or lead.get("user_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="Analisi non trovata")
+    return {"lead": clean_doc(lead, drop=("user_id",))}
 
 
 @router.post("/lead/{lead_id}/risparmia")
@@ -323,8 +373,20 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
                                            "Content-Type": "application/json"})
                 r.raise_for_status()
         except Exception:
-            logger.exception("Invio lead al broker fallito")
-            raise HTTPException(status_code=502, detail="Invio al broker non riuscito, riprova piu tardi")
+            # Il broker non risponde: NON restituiamo un errore 502 (brutta UX). Mettiamo il lead
+            # in coda, avvisiamo gli admin per l'inoltro manuale e confermiamo all'utente.
+            logger.exception("Invio lead al broker fallito (lead=%s) - lead messo in coda", oid)
+            await db.leads.update_one({"_id": oid}, {"$set": {
+                "stato": "in_coda_broker", "inviato_broker": False,
+                "broker_errore": True, "updated_at": now()}})
+            try:
+                await notify_admins(
+                    "Lead da inoltrare manualmente al broker",
+                    f"L'invio automatico al broker non e riuscito per il lead {oid}. Inoltralo manualmente.")
+            except Exception:
+                logger.exception("notify_admins fallito")
+            return {"ok": True, "inviato": False, "in_coda": True,
+                    "messaggio": "Abbiamo ricevuto la tua richiesta: un nostro consulente ti ricontattera a breve."}
     else:
         logger.info("[SIMULAZIONE BROKER] lead %s -> %s", oid, json.dumps(payload)[:500])
 
@@ -423,6 +485,12 @@ async def analizza_macchinario(file: UploadFile = File(...), user: dict = Depend
     if len(data) > MAX_UPLOAD:
         raise HTTPException(status_code=400, detail="Immagine troppo grande (max 15 MB)")
     ext = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[file.content_type]
-    estratto = await _gemini_json(GEMINI_MACCHINARIO_MODEL, MACCHINARIO_SYSTEM, MACCHINARIO_PROMPT,
-                                  data, file.content_type, ext)
+    try:
+        estratto = await _gemini_json(GEMINI_MACCHINARIO_MODEL, MACCHINARIO_SYSTEM, MACCHINARIO_PROMPT,
+                                      data, file.content_type, ext)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Errore inatteso durante l'analisi del macchinario")
+        raise HTTPException(status_code=500, detail="Errore durante l'analisi dell'immagine. Riprova piu tardi.")
     return {"suggerimenti": estratto}

@@ -150,6 +150,16 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
   * Pannello Admin (/admin, DashboardAdmin.jsx): metriche business (MRR stimato, incasso pacchetti crediti Stripe, utenti per ruolo), ricerca utenti per email/nome, dialog Gestisci (modifica bonus_credits/purchased_credits, modifica role/ruolo, sospendi/riattiva). Mantiene tabella verifiche aziende.
   * Backend routes_admin.py: GET /admin/metrics, GET /admin/users?q=, PATCH /admin/users/{id}/credits|role|suspend (tutti require_roles('admin')). core.get_current_user: utenti `suspended` non-admin -> 403.
   * Testato E2E (iteration_10): backend 9/9, frontend 21/21 PASS. Credenziali invariate.
+- DASHBOARD AZIENDA A HUB + SOTTO-ROTTE (2026-07): /dashboard ora è un HUB con 6 box arancioni (sfondo scuro profondo #0A0F1C, testo bianco, bordo arancione pieno), ognuno linka a una sotto-rotta protetta:
+  * box-nuovo-intervento -> /dashboard/nuovo-intervento (FUNZIONE NUOVA: registra lavoro/cantiere; backend routes_interventi.py con POST/GET/PATCH stato/DELETE su collezione `interventi`, require_roles('azienda'); UI InterventiPanel.jsx)
+  * box-scansione-ai -> /analisi-energetica (pagina esistente)
+  * box-cerca-operai -> /dashboard/cerca-operai (Offerte di lavoro)
+  * box-wallet -> /dashboard/wallet (saldo reale nel titolo)
+  * box-profilo -> /dashboard/profilo (profilo + galleria + verifica + emergenze + abbonamento impilati = "tutto in un box")
+  * box-annunci -> /dashboard/annunci
+  Rimossi: menu tab inferiore, bottone "Analisi Energetica AI" in alto a destra. Route App.js: /dashboard/:section (azienda); /dashboard/azienda->redirect; sezione sconosciuta o /dashboard/analisi-energetica -> redirect. Credits checkout success/cancel -> /dashboard/wallet.
+  * LaunchBanner.jsx: nuovo testo promo "Abbonamento PRO €4,99/mese o €49,99/anno · Registrazione gratis", nascosto sulle rotte private (/dashboard, /area-privato, /admin). NOTA: i prezzi reali Stripe (lookup_key pro_monthly/pro_yearly) restano €3,99/€39,99 nel pannello Abbonamento/Prezzi finché non si aggiornano i Price su Stripe -> incongruenza nota da allineare.
+  * Testato E2E (iteration_11): backend 10/10, frontend 22/22 PASS.
 
 
 ## Persone

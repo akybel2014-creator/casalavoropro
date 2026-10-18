@@ -1,0 +1,46 @@
+{
+  "summary": "Full E2E testing of 6-box Hub dashboard + Nuovo Intervento CRUD + new launch banner. Backend: 10/10 pytest cases on /api/interventi PASS (create/list/update stato/delete, 403 for anon+privato, 400 for empty title, 404 for invalid id, DB persistence verified). Frontend: all requested flows PASS - public homepage launch-banner shows '\u20ac4,99/mese o \u20ac49,99/anno \u00b7 Registrazione gratis' and is HIDDEN on /dashboard. Azienda login lands on /dashboard with azienda-quick-actions containing exactly 6 orange HubBox children (box-nuovo-intervento, box-scansione-ai, box-cerca-operai, box-wallet, box-profilo, box-annunci). box-wallet title shows real 'Wallet: 5 crediti'. No bottom tab menu, no 'Analisi Energetica AI' top button (count=0 in page HTML). box-nuovo-intervento -> /dashboard/nuovo-intervento shows interventi-panel; create+list+change stato+delete flow fully works; dashboard-back returns to /dashboard. box-cerca-operai, box-wallet, box-annunci route to their sub-paths. box-profilo -> /dashboard/profilo renders azienda-profile-form + gallery-panel + verification-panel + emergency-panel + subscription-panel stacked. box-scansione-ai navigates to /analisi-energetica. Redirects verified: /dashboard/azienda->/dashboard, /dashboard/foobar->/dashboard (unknown slug), /dashboard/analisi-energetica->/analisi-energetica. Role guards: privato lands on /area-privato and both /dashboard and /dashboard/wallet redirect privato back to /area-privato. Admin lands on /admin.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_results": {
+    "banner_public_text_499_registrazione_gratis": "PASS (text: 'Abbonamento PRO \u20ac4,99/mese o \u20ac49,99/anno \u00b7 Registrazione gratis. Registrati gratis')",
+    "banner_hidden_on_dashboard": "PASS (not rendered)",
+    "azienda_lands_on_dashboard": "PASS",
+    "hub_has_6_boxes_correct_testids": "PASS",
+    "wallet_box_shows_credit_count": "PASS ('Wallet: 5 crediti')",
+    "no_analisi_energetica_ai_top_button": "PASS (count=0)",
+    "box_nuovo_intervento_route": "PASS -> /dashboard/nuovo-intervento, interventi-panel visible",
+    "intervento_create_list_stato_delete": "PASS (full CRUD via UI)",
+    "dashboard_back_button": "PASS -> /dashboard",
+    "box_cerca_operai_route": "PASS",
+    "box_wallet_route": "PASS",
+    "box_annunci_route": "PASS",
+    "box_profilo_stacked_sections": "PASS (profile-form + gallery + verification + emergency + subscription all present)",
+    "box_scansione_ai_navigates_to_analisi": "PASS -> /analisi-energetica",
+    "redirect_dashboard_azienda": "PASS -> /dashboard",
+    "redirect_unknown_section_foobar": "PASS -> /dashboard",
+    "redirect_dashboard_analisi_energetica": "PASS -> /analisi-energetica",
+    "privato_lands_on_area_privato": "PASS",
+    "privato_dashboard_guard": "PASS -> /area-privato",
+    "privato_wallet_subroute_guard": "PASS -> /area-privato",
+    "admin_lands_on_admin": "PASS",
+    "backend_interventi_pytest": "10/10 PASS (create, list, update stato, delete, 400/404/403 edge cases)"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_interventi.py",
+    "/app/test_reports/pytest/interventi_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DashboardAzienda.jsx KNOWN_SECTIONS still includes 'richieste' as a valid slug (renders azienda-leads-list). It's not part of the 6-box hub but is still routable via /dashboard/richieste. Not necessarily a bug (dead-end but harmless), may be intentional. Consider removing or exposing it as a 7th hub box for clarity.",
+    "InterventiPanel delete action has no confirmation dialog - a single click permanently deletes an intervento. Minor UX risk for destructive action; consider AlertDialog.",
+    "Pricing inconsistency noted in review (banner \u20ac4,99 vs subscription panel \u20ac3,99) is intentional per instructions, not flagged as a bug."
+  ],
+  "updated_files": ["/app/backend/tests/test_interventi.py"],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100% (22/22 assertions)"},
+  "test_credentials": "Verified: info@caloreeclima.it/Demo2026!, mario.rossi@example.com/Demo2026!, admin@casalavoripro.it/Admin2026!",
+  "seed_data_creation": "None. Created and deleted TEST_UI_Int1 (UI) and TEST_Intervento_API (backend) interventi during test; both removed via DELETE endpoint. No lingering test data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Hub + sub-routes + Nuovo Intervento CRUD + new launch banner fully validated on preview URL. All data-testids present: azienda-quick-actions (6 children: box-nuovo-intervento, box-scansione-ai, box-cerca-operai, box-wallet, box-profilo, box-annunci), interventi-panel, intervento-form fields (titolo/cliente/indirizzo/data/importo/stato/note/submit), interventi-list, intervento-card-{id}, intervento-stato-{id}, intervento-delete-{id}, dashboard-back, launch-banner, launch-banner-cta. Role guards intact (azienda->/dashboard, privato->/area-privato, admin->/admin). Known note: /dashboard/richieste still renders old leads list (azienda-leads-list) - not in hub but routable."
+}

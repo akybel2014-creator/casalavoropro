@@ -168,6 +168,7 @@ function App() {
                         <Route path="/area-privato" element={<ProtectedRoute roles={["privato"]}><DashLayout><DashboardPrivato /></DashLayout></ProtectedRoute>} />
                         <Route path="/dashboard" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
                         <Route path="/dashboard/azienda" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/dashboard/:section" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
                         <Route path="/analisi-energetica" element={<ProtectedRoute roles={["privato", "azienda"]}><DashLayout><AnalisiEnergetica /></DashLayout></ProtectedRoute>} />
                         <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><DashLayout><DashboardAdmin /></DashLayout></ProtectedRoute>} />
                         <Route path="/dashboard/admin" element={<Navigate to="/admin" replace />} />

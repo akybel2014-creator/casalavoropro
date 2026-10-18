@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Wallet, Zap } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Wallet, Zap, ArrowLeft, Plus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearchParams } from "react-router-dom";
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
@@ -18,9 +16,26 @@ import ChatDialog from "@/components/ChatDialog";
 import { AnnunciPanel } from "@/components/AnnunciPanel";
 import { OfferteLavoroPanel } from "@/components/OfferteLavoroPanel";
 import { WalletPanel } from "@/components/WalletPanel";
+import { InterventiPanel } from "@/components/InterventiPanel";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
+
+// Box arancione d'azione rapida: sfondo scuro profondo, testo bianco, bordo arancione pieno.
+function HubBox({ to, testid, Icon, title, desc }) {
+    return (
+        <Link
+            to={to}
+            data-testid={testid}
+            style={{ backgroundColor: "#0A0F1C" }}
+            className="group rounded-2xl border-2 border-brand p-6 sm:p-7 text-left shadow-lg shadow-brand/5 transition-colors hover:bg-brand/10"
+        >
+            <Icon className="h-8 w-8 text-brand" />
+            <p className="mt-4 font-display font-bold text-white text-lg sm:text-xl leading-tight">{title}</p>
+            <p className="mt-1 text-sm text-slate-300">{desc}</p>
+        </Link>
+    );
+}
 
 function RispondiDialog({ richiesta, onDone }) {
     const [open, setOpen] = useState(false);
@@ -96,11 +111,8 @@ export default function DashboardAzienda() {
     const [uploading, setUploading] = useState(false);
     const [saldo, setSaldo] = useState(null);
     const fileRef = useRef(null);
-    const [searchParams] = useSearchParams();
-    const [tab, setTab] = useState(() => {
-        const t = searchParams.get("tab");
-        return ["leads", "profilo", "galleria", "annunci", "lavoro", "wallet", "verifica", "emergenze", "abbonamento"].includes(t) ? t : "leads";
-    });
+    const { section } = useParams();
+    const navigate = useNavigate();
 
     const load = useCallback(async () => {
         try {
@@ -230,6 +242,10 @@ export default function DashboardAzienda() {
     };
 
     const foto = mine?.foto || [];
+    const walletTotal = saldo ?? "…";
+    const KNOWN_SECTIONS = ["nuovo-intervento", "cerca-operai", "wallet", "profilo", "annunci", "richieste"];
+    if (section === "analisi-energetica") return <Navigate to="/analisi-energetica" replace />;
+    if (section && !KNOWN_SECTIONS.includes(section)) return <Navigate to="/dashboard" replace />;
 
     return (
         <div className="min-h-screen bg-navy grid-pattern px-4 pt-32 pb-24" data-testid="dashboard-azienda">
@@ -244,74 +260,35 @@ export default function DashboardAzienda() {
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${VER_STYLES[mine?.verification_status]?.[0]}`}>
                             {VER_STYLES[mine?.verification_status]?.[1]}
                         </span>
-                        <Button asChild data-testid="dashboard-azienda-analisi-button"
-                            className="rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            <Link to="/analisi-energetica"><Zap className="h-4 w-4 mr-1.5" /> Analisi Energetica AI</Link>
-                        </Button>
                     </div>
                 </div>
 
-                <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" data-testid="azienda-quick-actions">
-                    <button type="button" onClick={() => setTab("leads")} data-testid="quick-nuovo-intervento"
-                        className="group rounded-2xl border border-white/10 bg-navy-700/70 p-5 sm:p-6 text-left transition-colors hover:border-brand hover:bg-brand/10">
-                        <Briefcase className="h-7 w-7 text-brand" />
-                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">Nuovo Intervento</p>
-                        <p className="mt-0.5 text-xs text-slate-400">Richieste dei clienti</p>
-                    </button>
-                    <Link to="/analisi-energetica" data-testid="quick-scansione-ai"
-                        className="group rounded-2xl border border-white/10 bg-navy-700/70 p-5 sm:p-6 text-left transition-colors hover:border-brand hover:bg-brand/10">
-                        <Zap className="h-7 w-7 text-brand" />
-                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">Scansione Energetica AI</p>
-                        <p className="mt-0.5 text-xs text-slate-400">Analizza una bolletta</p>
-                    </Link>
-                    <button type="button" onClick={() => setTab("lavoro")} data-testid="quick-cerca-operai"
-                        className="group rounded-2xl border border-white/10 bg-navy-700/70 p-5 sm:p-6 text-left transition-colors hover:border-brand hover:bg-brand/10">
-                        <Megaphone className="h-7 w-7 text-brand" />
-                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">Cerca Operai</p>
-                        <p className="mt-0.5 text-xs text-slate-400">Pubblica offerte di lavoro</p>
-                    </button>
-                    <button type="button" onClick={() => setTab("wallet")} data-testid="quick-wallet"
-                        className="group rounded-2xl border-2 border-brand bg-brand/10 p-5 sm:p-6 text-left transition-colors hover:bg-brand/20">
-                        <Wallet className="h-7 w-7 text-brand" />
-                        <p className="mt-3 font-display font-bold text-white text-base sm:text-lg leading-tight">
-                            Wallet: {saldo ?? "…"} crediti
-                        </p>
-                        <p className="mt-0.5 text-xs text-slate-400">Ricarica e movimenti</p>
-                    </button>
-                </div>
+                {!section && (
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="azienda-quick-actions">
+                        <HubBox to="/dashboard/nuovo-intervento" testid="box-nuovo-intervento" Icon={Plus} title="Nuovo Intervento" desc="Registra un nuovo lavoro o cantiere" />
+                        <HubBox to="/analisi-energetica" testid="box-scansione-ai" Icon={Zap} title="Scansione Energetica AI" desc="Analizza una bolletta" />
+                        <HubBox to="/dashboard/cerca-operai" testid="box-cerca-operai" Icon={Megaphone} title="Cerca Operai" desc="Trova personale qualificato per la tua ditta" />
+                        <HubBox to="/dashboard/wallet" testid="box-wallet" Icon={Wallet} title={`Wallet: ${walletTotal} crediti`} desc="Gestisci crediti e ricariche" />
+                        <HubBox to="/dashboard/profilo" testid="box-profilo" Icon={Building2} title="Profilo Aziendale" desc="Dati ditta, galleria foto, verifica, abbonamento ed emergenze" />
+                        <HubBox to="/dashboard/annunci" testid="box-annunci" Icon={Truck} title="I Miei Annunci" desc="Gestisci le tue inserzioni di lavoro, usato e noleggio" />
+                    </div>
+                )}
 
-                <Tabs value={tab} onValueChange={setTab} className="mt-8">
-                    <TabsList className="bg-navy-700 border border-white/10 flex-wrap h-auto">
-                        <TabsTrigger value="leads" data-testid="dashboard-azienda-tab-leads" className="data-[state=active]:text-white">
-                            <Briefcase className="h-4 w-4 mr-1.5" /> Richieste in arrivo
-                        </TabsTrigger>
-                        <TabsTrigger value="profilo" className="data-[state=active]:text-white">
-                            <Building2 className="h-4 w-4 mr-1.5" /> Profilo
-                        </TabsTrigger>
-                        <TabsTrigger value="galleria" data-testid="dashboard-azienda-tab-galleria" className="data-[state=active]:text-white">
-                            <Camera className="h-4 w-4 mr-1.5" /> Galleria
-                        </TabsTrigger>
-                        <TabsTrigger value="annunci" data-testid="dashboard-azienda-tab-annunci" className="data-[state=active]:text-white">
-                            <Truck className="h-4 w-4 mr-1.5" /> Annunci
-                        </TabsTrigger>
-                        <TabsTrigger value="lavoro" data-testid="dashboard-azienda-tab-lavoro" className="data-[state=active]:text-white">
-                            <Megaphone className="h-4 w-4 mr-1.5" /> Offerte di lavoro
-                        </TabsTrigger>
-                        <TabsTrigger value="wallet" data-testid="dashboard-azienda-tab-wallet" className="data-[state=active]:text-white">
-                            <Wallet className="h-4 w-4 mr-1.5" /> Wallet
-                        </TabsTrigger>
-                        <TabsTrigger value="verifica" className="data-[state=active]:text-white">
-                            <ShieldCheck className="h-4 w-4 mr-1.5" /> Verifica
-                        </TabsTrigger>
-                        <TabsTrigger value="emergenze" data-testid="dashboard-azienda-tab-emergenze" className="data-[state=active]:text-white">
-                            <Siren className="h-4 w-4 mr-1.5" /> Emergenze
-                        </TabsTrigger>
-                        <TabsTrigger value="abbonamento" data-testid="dashboard-azienda-tab-abbonamento" className="data-[state=active]:text-white">
-                            <CreditCard className="h-4 w-4 mr-1.5" /> Abbonamento
-                        </TabsTrigger>
-                    </TabsList>
+                {section && (
+                    <button type="button" onClick={() => navigate("/dashboard")} data-testid="dashboard-back"
+                        className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                        <ArrowLeft className="h-4 w-4" /> Torna alla dashboard
+                    </button>
+                )}
 
-                    <TabsContent value="leads" className="mt-6 space-y-4" data-testid="azienda-leads-list">
+                <div className="pb-2">
+                    {section === "nuovo-intervento" && (
+                        <div className="mt-6" data-testid="nuovo-intervento-panel">
+                            <InterventiPanel />
+                        </div>
+                    )}
+
+                    {section === "richieste" && (<div className="mt-6 space-y-4" data-testid="azienda-leads-list">
                         {feed && feed.length === 0 && (
                             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-10 text-center">
                                 <Briefcase className="h-10 w-10 text-slate-500 mx-auto" />
@@ -357,9 +334,9 @@ export default function DashboardAzienda() {
                                 <p className="mt-3 text-sm text-slate-300 leading-relaxed">{r.descrizione}</p>
                             </div>
                         ))}
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="profilo" className="mt-6 space-y-6">
+                    {section === "profilo" && (<div className="mt-6 space-y-6">
                         {mine && (
                             <>
                                 <form onSubmit={saveProfile} data-testid="azienda-profile-form" className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8 space-y-5">
@@ -425,9 +402,9 @@ export default function DashboardAzienda() {
                                 </div>
                             </>
                         )}
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="galleria" className="mt-6" data-testid="gallery-panel">
+                    {section === "profilo" && (<div className="mt-6" data-testid="gallery-panel">
                         <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div>
@@ -481,21 +458,21 @@ export default function DashboardAzienda() {
                                 </div>
                             )}
                         </div>
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="annunci" className="mt-6">
-                        <AnnunciPanel azienda={mine} onGoToAbbonamento={() => setTab("abbonamento")} />
-                    </TabsContent>
+                    {section === "annunci" && (<div className="mt-6">
+                        <AnnunciPanel azienda={mine} onGoToAbbonamento={() => navigate("/dashboard/profilo")} />
+                    </div>)}
 
-                    <TabsContent value="lavoro" className="mt-6">
+                    {section === "cerca-operai" && (<div className="mt-6">
                         <OfferteLavoroPanel azienda={mine} />
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="wallet" className="mt-6">
+                    {section === "wallet" && (<div className="mt-6">
                         <WalletPanel />
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="verifica" className="mt-6">
+                    {section === "profilo" && (<div className="mt-6">
                         {mine && (
                             <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8" data-testid="verification-panel">
                                 <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
@@ -525,9 +502,9 @@ export default function DashboardAzienda() {
                                 </div>
                             </div>
                         )}
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="emergenze" className="mt-6" data-testid="emergency-panel">
+                    {section === "profilo" && (<div className="mt-6" data-testid="emergency-panel">
                         {mine && (
                             <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8">
                                 <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
@@ -583,9 +560,9 @@ export default function DashboardAzienda() {
                                 </div>
                             </div>
                         )}
-                    </TabsContent>
+                    </div>)}
 
-                    <TabsContent value="abbonamento" className="mt-6" data-testid="subscription-panel">
+                    {section === "profilo" && (<div className="mt-6" data-testid="subscription-panel">
                         {mine?.subscription_status === "active_trial" ? (
                             <div className="relative overflow-hidden rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10 shadow-2xl shadow-brand/10">
                                 <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-brand/20 blur-3xl" aria-hidden="true" />
@@ -672,8 +649,8 @@ export default function DashboardAzienda() {
                                 </div>
                             </div>
                         )}
-                    </TabsContent>
-                </Tabs>
+                    </div>)}
+                </div>
             </div>
         </div>
     );

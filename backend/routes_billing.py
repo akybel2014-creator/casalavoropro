@@ -153,8 +153,8 @@ async def create_credit_checkout(req: CreditCheckoutIn, user: dict = Depends(get
                              "tax_code": "txcd_10000000"},
         }}],
         mode="payment",
-        success_url=f"{req.origin_url}/dashboard?crediti=ok&session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{req.origin_url}/dashboard?crediti=annullato",
+        success_url=f"{req.origin_url}/dashboard/wallet?crediti=ok&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{req.origin_url}/dashboard/wallet?crediti=annullato",
         metadata={"user_id": user["id"], "kind": "crediti",
                   "package_id": req.package_id, "crediti": str(pkg["crediti"])},
     )

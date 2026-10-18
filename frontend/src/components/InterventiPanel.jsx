@@ -21,6 +21,7 @@ export function InterventiPanel() {
     const [list, setList] = useState(null);
     const [form, setForm] = useState(EMPTY);
     const [busy, setBusy] = useState(false);
+    const [filter, setFilter] = useState("tutti");
 
     const load = useCallback(async () => {
         try {
@@ -65,6 +66,21 @@ export function InterventiPanel() {
             load();
         } catch (err) { toast.error(formatApiError(err)); }
     };
+
+    const items = list || [];
+    const counts = {
+        tutti: items.length,
+        pianificato: items.filter((i) => i.stato === "pianificato").length,
+        in_corso: items.filter((i) => i.stato === "in_corso").length,
+        completato: items.filter((i) => i.stato === "completato").length,
+    };
+    const filtered = filter === "tutti" ? items : items.filter((i) => i.stato === filter);
+    const FILTERS = [
+        { key: "tutti", label: "Tutti" },
+        { key: "pianificato", label: "Pianificati" },
+        { key: "in_corso", label: "In corso" },
+        { key: "completato", label: "Completati" },
+    ];
 
     return (
         <div className="space-y-6" data-testid="interventi-panel">
@@ -120,14 +136,34 @@ export function InterventiPanel() {
                 </Button>
             </form>
 
+            <div className="flex flex-wrap gap-2" data-testid="interventi-filtri">
+                {FILTERS.map((f) => (
+                    <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setFilter(f.key)}
+                        data-testid={`filtro-${f.key}`}
+                        className={`rounded-full px-4 py-1.5 text-sm font-semibold border transition-colors ${
+                            filter === f.key
+                                ? "border-brand bg-brand text-white"
+                                : "border-white/15 text-slate-300 hover:text-white hover:border-white/30"
+                        }`}
+                    >
+                        {f.label} <span className="ml-1 opacity-80">{counts[f.key]}</span>
+                    </button>
+                ))}
+            </div>
+
             <div className="space-y-3" data-testid="interventi-list">
-                {list && list.length === 0 && (
+                {list && filtered.length === 0 && (
                     <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-10 text-center">
                         <Hammer className="h-10 w-10 text-slate-500 mx-auto" />
-                        <p className="mt-3 text-sm text-slate-400">Nessun intervento registrato. Aggiungi il tuo primo lavoro qui sopra.</p>
+                        <p className="mt-3 text-sm text-slate-400">
+                            {items.length === 0 ? "Nessun intervento registrato. Aggiungi il tuo primo lavoro qui sopra." : "Nessun intervento in questo stato."}
+                        </p>
                     </div>
                 )}
-                {list && list.map((it) => {
+                {filtered.map((it) => {
                     const st = STATO_STYLES[it.stato] || STATO_STYLES.pianificato;
                     return (
                         <div key={it.id} className="rounded-2xl border border-white/10 bg-navy-700/60 p-5 sm:p-6" data-testid={`intervento-card-${it.id}`}>

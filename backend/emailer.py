@@ -341,3 +341,19 @@ async def send_noleggio_event(to: str, ruolo: str, evento: str, p: dict):
     body = (f"<p>Ciao {saluto},</p><p>{intro.format(azienda=escape(p.get('azienda_nome', '')), cliente=escape(p.get('client_name', '')))}</p>"
             f"{_noleggio_box(p)}")
     await send_email(to=to, subject=subject, html=_wrap(title, body, cta, f"{FRONTEND_URL}{path}"))
+
+
+async def send_intervento_reminder(to: str, nome: str, it: dict):
+    """Promemoria il giorno prima della data di un intervento pianificato."""
+    if not to:
+        return
+    titolo = escape(it.get("titolo") or "Intervento")
+    righe = "".join(
+        f"<p style='margin:4px 0;color:#334155'><strong>{escape(k)}:</strong> {escape(str(v))}</p>"
+        for k, v in [("Cliente", it.get("cliente")), ("Indirizzo", it.get("indirizzo")), ("Data", it.get("data"))]
+        if v
+    )
+    body = (f"<p>Ciao {escape(nome or '')},</p>"
+            f"<p>Ti ricordiamo che <strong>domani</strong> è previsto l'intervento <strong>{titolo}</strong>.</p>{righe}")
+    await send_email(to=to, subject=f'Promemoria: domani "{titolo}"',
+                     html=_wrap("Promemoria intervento di domani", body, "Apri il gestionale", f"{FRONTEND_URL}/dashboard/nuovo-intervento"))

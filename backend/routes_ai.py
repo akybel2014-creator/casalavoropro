@@ -235,15 +235,20 @@ async def _invia_report_risparmio(user_id: str, dati: dict):
 
 @router.post("/analizza-bolletta")
 async def analizza_bolletta(background: BackgroundTasks, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Carica la bolletta in formato PDF")
+    if file.content_type == "application/pdf":
+        mime, suffix = "application/pdf", ".pdf"
+    elif file.content_type in IMG_MIME:
+        mime = file.content_type
+        suffix = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[file.content_type]
+    else:
+        raise HTTPException(status_code=400, detail="Carica la bolletta in PDF oppure scatta una foto (JPG/PNG/WEBP)")
     data = await file.read()
     if len(data) > MAX_UPLOAD:
         raise HTTPException(status_code=400, detail="File troppo grande (max 15 MB)")
 
     # L'analisi e gratuita per tutti: l'eventuale credito viene scalato al momento dell'invio al broker ("Risparmia Ora").
     estratto = await _gemini_json(GEMINI_BOLLETTA_MODEL, BOLLETTA_SYSTEM, BOLLETTA_PROMPT,
-                                  data, "application/pdf", ".pdf")
+                                  data, mime, suffix)
 
     lead_doc = {
         "user_id": user["id"], "tipo": "bolletta", "stato": "lead_in_attesa",

@@ -30,6 +30,8 @@ const AZIENDA = {
     cta: "Registrati Gratis Ora (Senza Carta)",
     to: "/registrati?ruolo=azienda",
     testid: "cta-azienda-button",
+    gestionaleCta: "Scopri il Gestionale per Artigiani",
+    gestionaleTo: "/registrati?ruolo=azienda",
 };
 
 function CtaCard({ data, variant }) {
@@ -72,6 +74,15 @@ function CtaCard({ data, variant }) {
             >
                 {data.cta} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
+            {data.gestionaleCta && (
+                <Button
+                    data-testid="gestionale-cta-button"
+                    onClick={() => navigate(data.gestionaleTo)}
+                    className="mt-3 w-full rounded-full px-6 font-semibold bg-navy/80 text-white hover:bg-navy-600 border border-white/20"
+                >
+                    {data.gestionaleCta} <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+            )}
         </motion.div>
     );
 }

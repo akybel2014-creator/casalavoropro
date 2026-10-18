@@ -2,27 +2,20 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { UploadCloud, Camera, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
-
-// Mockup del gestionale (modificabile): cambia questo URL per usare un'altra immagine.
-const MOCKUP_IMG =
-    "https://static.prod-images.emergentagent.com/jobs/e57fe9aa-18be-4843-83d5-91ca460e3cf5/images/06e0e715f40c7cf36953011f3a87916f2540dd799b0dc5fb9d4a9cf6c055de81.jpeg";
+const ALLOWED = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
 function RevealLine({ children, delay = 0 }) {
     return (
         <span className="mask-line">
-            <motion.span
-                className="block"
-                initial={{ y: "112%" }}
-                animate={{ y: 0 }}
-                transition={{ duration: 1, delay, ease: LINE_EASE }}
-            >
+            <motion.span className="block" initial={{ y: "112%" }} animate={{ y: 0 }}
+                transition={{ duration: 1, delay, ease: LINE_EASE }}>
                 {children}
             </motion.span>
         </span>
@@ -32,11 +25,11 @@ function RevealLine({ children, delay = 0 }) {
 export default function Hero() {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [tab, setTab] = useState("bolletta");
     const [dragOver, setDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const fileRef = useRef(null);
+    const cameraRef = useRef(null);
     const cosaRef = useRef(null);
     const doveRef = useRef(null);
     const timer = useRef(null);
@@ -53,8 +46,8 @@ export default function Hero() {
 
     const analizza = async (file) => {
         if (!file) return;
-        if (file.type !== "application/pdf") {
-            toast.error("Carica la bolletta in formato PDF");
+        if (!ALLOWED.includes(file.type)) {
+            toast.error("Carica la bolletta in PDF oppure scatta una foto (JPG/PNG)");
             return;
         }
         setUploading(true);
@@ -99,172 +92,94 @@ export default function Hero() {
             <div className="absolute -top-40 -right-40 h-[560px] w-[560px] rounded-full bg-brand/25 blur-[160px] glow-orange" aria-hidden="true" />
             <div className="absolute bottom-0 left-0 h-72 w-72 rounded-full bg-brand-amber/10 blur-[120px]" aria-hidden="true" />
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 lg:pb-28">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-                    {/* Colonna sinistra */}
-                    <div className="lg:col-span-7">
-                        <motion.p
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.05 }}
-                            className="text-xs uppercase tracking-[0.24em] font-semibold text-brand"
-                        >
-                            Il marketplace dei lavori in casa
-                        </motion.p>
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 lg:pt-36 pb-16 sm:pb-24">
+                {/* Intestazione */}
+                <div className="max-w-3xl">
+                    <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.05 }}
+                        className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">
+                        Il marketplace dei lavori in casa
+                    </motion.p>
+                    <h1 className="mt-4 font-display font-black tracking-tight leading-[1.02] text-4xl sm:text-5xl lg:text-6xl">
+                        <RevealLine delay={0.15}>Analizza la bolletta</RevealLine>
+                        <RevealLine delay={0.28}>o trova la tua <span className="text-brand">azienda</span></RevealLine>
+                    </h1>
+                    <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5 }}
+                        className="mt-5 text-base sm:text-lg text-slate-300 leading-relaxed">
+                        Due strumenti, un unico posto: scopri quanto risparmi sulle utenze e trova professionisti verificati in tutta Italia.
+                    </motion.p>
+                </div>
 
-                        <h1 className="mt-4 font-display font-black tracking-tight leading-[1.02] text-4xl sm:text-5xl lg:text-6xl">
-                            <RevealLine delay={0.15}>Analizza la bolletta</RevealLine>
-                            <RevealLine delay={0.28}>
-                                o trova la tua <span className="text-brand">azienda</span>
-                            </RevealLine>
-                        </h1>
+                {/* Due ricerche separate */}
+                <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Ricerca 1: Analisi Bolletta */}
+                    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.55 }}
+                        className="rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-5 sm:p-6 shadow-2xl" data-testid="hero-block-bolletta">
+                        <p className="font-display font-bold text-white text-lg">Analisi Bolletta Gratis</p>
+                        <p className="mt-1 text-sm text-slate-400">Carica o fotografa la tua bolletta: l'assistente AI ti dice subito quanto puoi risparmiare.</p>
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, delay: 0.55 }}
-                            className="mt-6 max-w-xl text-base sm:text-lg text-slate-300 leading-relaxed"
-                        >
-                            Scopri in pochi secondi quanto puoi risparmiare sulle utenze con l'assistente AI,
-                            oppure trova professionisti edili e artigiani verificati in tutta Italia.
-                        </motion.p>
-
-                        {/* Contenitore interattivo a schede */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 24 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, delay: 0.75 }}
-                            className="mt-8 w-full max-w-[450px] rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-2 shadow-2xl"
-                            data-testid="hero-widget"
-                        >
-                            <div className="grid grid-cols-2 gap-1 rounded-xl bg-navy p-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setTab("bolletta")}
-                                    data-testid="hero-tab-bolletta"
-                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${tab === "bolletta" ? "bg-brand text-white" : "text-slate-300 hover:text-white"}`}
-                                >
-                                    Analisi Bolletta Gratis
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setTab("cerca")}
-                                    data-testid="hero-tab-cerca"
-                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${tab === "cerca" ? "bg-brand text-white" : "text-slate-300 hover:text-white"}`}
-                                >
-                                    Trova Professionista
-                                </button>
+                        {uploading ? (
+                            <div className="py-6 mt-4" data-testid="hero-bolletta-progress">
+                                <p className="text-sm font-semibold text-white text-center">Analisi dei consumi in corso…</p>
+                                <div className="mt-4 h-3 w-full rounded-full bg-white/10 overflow-hidden">
+                                    <div className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 transition-[width] duration-500 ease-out"
+                                        style={{ width: `${Math.min(100, Math.round(progress))}%` }} />
+                                </div>
+                                <p className="mt-2 text-xs text-slate-400 text-center">{Math.min(100, Math.round(progress))}%</p>
                             </div>
+                        ) : (
+                            <>
+                                <div
+                                    onClick={() => fileRef.current?.click()}
+                                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                                    onDragLeave={() => setDragOver(false)}
+                                    onDrop={onDrop}
+                                    data-testid="hero-bolletta-dropzone"
+                                    className={`mt-4 cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${dragOver ? "border-brand bg-brand/10" : "border-white/20 hover:border-brand/50"}`}
+                                >
+                                    <UploadCloud className="h-7 w-7 text-brand mx-auto" />
+                                    <p className="mt-2 text-sm font-semibold text-white">Trascina qui la bolletta (PDF o foto)</p>
+                                    <p className="mt-1 text-xs text-slate-500">PDF, JPG o PNG · max 15 MB</p>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <Button type="button" onClick={() => fileRef.current?.click()} data-testid="hero-carica-pdf-button"
+                                        className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                        <UploadCloud className="h-4 w-4 mr-1.5" /> Carica PDF
+                                    </Button>
+                                    <Button type="button" onClick={() => cameraRef.current?.click()} data-testid="hero-scatta-foto-button"
+                                        variant="outline" className="rounded-xl border-brand text-brand hover:bg-brand hover:text-white font-semibold">
+                                        <Camera className="h-4 w-4 mr-1.5" /> Scatta foto
+                                    </Button>
+                                </div>
+                                <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden"
+                                    data-testid="hero-bolletta-file-input" onChange={(e) => analizza(e.target.files?.[0])} />
+                                <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+                                    data-testid="hero-bolletta-camera-input" onChange={(e) => analizza(e.target.files?.[0])} />
+                            </>
+                        )}
+                    </motion.div>
 
-                            <div className="p-3 sm:p-4">
-                                {tab === "bolletta" ? (
-                                    uploading ? (
-                                        <div className="py-6" data-testid="hero-bolletta-progress">
-                                            <p className="text-sm font-semibold text-white text-center">L'assistente AI sta analizzando i tuoi consumi...</p>
-                                            <div className="mt-4 h-3 w-full rounded-full bg-white/10 overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 transition-[width] duration-500 ease-out"
-                                                    style={{ width: `${Math.min(100, Math.round(progress))}%` }}
-                                                />
-                                            </div>
-                                            <p className="mt-2 text-xs text-slate-400 text-center">{Math.min(100, Math.round(progress))}%</p>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            onClick={() => fileRef.current?.click()}
-                                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                                            onDragLeave={() => setDragOver(false)}
-                                            onDrop={onDrop}
-                                            data-testid="hero-bolletta-dropzone"
-                                            className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${dragOver ? "border-brand bg-brand/10" : "border-white/20 hover:border-brand/50"}`}
-                                        >
-                                            <p className="text-sm font-semibold text-white">Trascina qui la tua Bolletta (PDF)</p>
-                                            <p className="mt-1 text-xs text-slate-400">oppure</p>
-                                            <Button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                                                data-testid="hero-carica-pdf-button"
-                                                className="mt-3 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
-                                            >
-                                                Carica PDF
-                                            </Button>
-                                            <p className="mt-3 text-[11px] text-slate-500">Analisi gratuita - PDF, max 15 MB</p>
-                                            <input
-                                                ref={fileRef}
-                                                type="file"
-                                                accept="application/pdf"
-                                                className="hidden"
-                                                data-testid="hero-bolletta-file-input"
-                                                onChange={(e) => analizza(e.target.files?.[0])}
-                                            />
-                                        </div>
-                                    )
-                                ) : (
-                                    <form onSubmit={submitSearch} className="space-y-3" data-testid="hero-search-form">
-                                        <div>
-                                            <label className="text-xs font-semibold text-slate-400">Trova categoria</label>
-                                            <Input
-                                                ref={cosaRef}
-                                                data-testid="hero-search-category-input"
-                                                placeholder="Es. Idraulico, Elettricista"
-                                                className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-semibold text-slate-400">Locazione</label>
-                                            <Input
-                                                ref={doveRef}
-                                                data-testid="hero-search-location-input"
-                                                placeholder="Vicenza"
-                                                className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500"
-                                            />
-                                        </div>
-                                        <Button
-                                            type="submit"
-                                            data-testid="hero-search-submit-button"
-                                            className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25"
-                                        >
-                                            Avvia Ricerca
-                                        </Button>
-                                    </form>
-                                )}
+                    {/* Ricerca 2: Trova Professionista */}
+                    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.65 }}
+                        className="rounded-2xl border border-white/10 bg-navy-700/70 backdrop-blur-xl p-5 sm:p-6 shadow-2xl" data-testid="hero-block-cerca">
+                        <p className="font-display font-bold text-white text-lg">Trova Professionista</p>
+                        <p className="mt-1 text-sm text-slate-400">Cerca aziende e artigiani verificati nella tua zona e richiedi un preventivo gratuito.</p>
+
+                        <form onSubmit={submitSearch} className="mt-4 space-y-3" data-testid="hero-search-form">
+                            <div>
+                                <label className="text-xs font-semibold text-slate-400">Cosa cerchi</label>
+                                <Input ref={cosaRef} data-testid="hero-search-category-input" placeholder="Es. Idraulico, Elettricista"
+                                    className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500" />
                             </div>
-                        </motion.div>
-                    </div>
-
-                    {/* Colonna destra: mockup gestionale + CTA artigiani */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.94, y: 24 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.5, ease: LINE_EASE }}
-                        className="lg:col-span-5 relative"
-                        data-testid="hero-gestionale-cta"
-                    >
-                        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-navy-700/60 backdrop-blur-xl shadow-2xl p-4">
-                            <span className="absolute left-5 top-5 z-10 rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
-                                Gestionale PRO
-                            </span>
-                            <img
-                                src={MOCKUP_IMG}
-                                alt="Gestionale CasaLavoroPRO per artigiani"
-                                loading="eager"
-                                className="w-full rounded-2xl"
-                            />
-                        </div>
-                        <p className="mt-6 text-center text-base sm:text-lg font-semibold text-white">
-                            Il gestionale completo per la tua impresa
-                        </p>
-                        <p className="mt-1 text-center text-sm text-slate-400">
-                            Interventi, preventivi, wallet crediti e analisi AI in un'unica app.
-                        </p>
-                        <Button
-                            type="button"
-                            onClick={() => navigate("/registrati")}
-                            data-testid="hero-gestionale-cta-button"
-                            className="mt-5 w-full py-6 text-base sm:text-lg rounded-2xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold shadow-xl shadow-orange-500/30"
-                        >
-                            Scopri il Gestionale per Artigiani <ArrowRight className="h-5 w-5 ml-2" />
-                        </Button>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-400">Dove</label>
+                                <Input ref={doveRef} data-testid="hero-search-location-input" placeholder="Vicenza"
+                                    className="mt-1 bg-navy border-white/15 text-white placeholder:text-slate-500" />
+                            </div>
+                            <Button type="submit" data-testid="hero-search-submit-button"
+                                className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                <Search className="h-4 w-4 mr-1.5" /> Avvia Ricerca
+                            </Button>
+                        </form>
                     </motion.div>
                 </div>
             </div>

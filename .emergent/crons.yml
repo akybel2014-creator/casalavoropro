@@ -21,7 +21,7 @@ crons:
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
     enabled: true
   - name: noleggio-reminder
-    description: "Promemoria email 1 giorno prima della consegna per le prenotazioni di noleggio confermate (cliente + azienda)"
+    description: "Promemoria email 1 giorno prima: consegne noleggio confermate e interventi/cantieri pianificati"
     cron: "0 9 * * *"
     endpoint: "{{BASE_URL}}/api/cron/noleggio-reminder"
     method: POST

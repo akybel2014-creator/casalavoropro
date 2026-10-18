@@ -160,6 +160,13 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
   Rimossi: menu tab inferiore, bottone "Analisi Energetica AI" in alto a destra. Route App.js: /dashboard/:section (azienda); /dashboard/azienda->redirect; sezione sconosciuta o /dashboard/analisi-energetica -> redirect. Credits checkout success/cancel -> /dashboard/wallet.
   * LaunchBanner.jsx: nuovo testo promo "Abbonamento PRO €4,99/mese o €49,99/anno · Registrazione gratis", nascosto sulle rotte private (/dashboard, /area-privato, /admin). NOTA: i prezzi reali Stripe (lookup_key pro_monthly/pro_yearly) restano €3,99/€39,99 nel pannello Abbonamento/Prezzi finché non si aggiornano i Price su Stripe -> incongruenza nota da allineare.
   * Testato E2E (iteration_11): backend 10/10, frontend 22/22 PASS.
+- PROMEMORIA CANTIERE + FILTRI + HERO 2-CARD + CAMERA (2026-07):
+  * Promemoria intervento: email il giorno prima della `data` di un intervento `pianificato` (emailer.send_intervento_reminder + routes_cron._run_intervento_reminder). Piggyback sul cron giornaliero `noleggio-reminder` (limite 5 cron) + endpoint di test /api/cron/intervento-reminder. Flag `reminder_sent`. Testato (reminder_sent=True).
+  * InterventiPanel: filtri + conteggi per stato (Tutti/Pianificati/In corso/Completati).
+  * Hero riprogettato: DUE ricerche separate affiancate, ciascuna col suo messaggio sopra -> sinistra "Analisi Bolletta Gratis" (dropzone PDF + "Carica PDF" + "Scatta foto" fotocamera), destra "Trova Professionista" (categoria/zona). Rimosso mockup/anteprima dall'Hero.
+  * Camera bolletta: /api/analizza-bolletta ora accetta anche immagini (JPG/PNG/WEBP) oltre al PDF; input `capture="environment"` nel frontend.
+  * CTA "Scopri il Gestionale per Artigiani" spostata nella sezione pubblica #per-le-aziende (CtaBoxes, card azienda, data-testid gestionale-cta-button).
+  * DEFERITO (prossima fase, pagamenti+auth): rimozione sistema crediti/wallet e gating via abbonamento PRO; scelta piano in registrazione azienda (Base gratis / PRO €4,99-49,99 con checkout post-registrazione); aggiornamento prezzi €4,99/€49,99 ovunque + creazione nuovi Price su Stripe (transfer_lookup_key).
 
 
 ## Persone

@@ -8,7 +8,7 @@ from bson import ObjectId
 
 from core import db, now
 from routes_auth import LAUNCH_TRIAL_END
-from emailer import send_offer_reminder, send_reactivation_email, send_noleggio_event
+from emailer import send_offer_reminder, send_reactivation_email, send_noleggio_event, send_intervento_reminder
 from credits import refresh_bonus_for_all
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,27 @@ async def _run_noleggio_reminder():
     logger.info("noleggio-reminder: inviati %s promemoria di consegna", sent_count)
 
 
+async def _run_intervento_reminder():
+    """Promemoria email il giorno prima della data di un intervento pianificato (all'azienda)."""
+    domani = (now().date() + timedelta(days=1)).isoformat()
+    sent_count = 0
+    cursor = db.interventi.find({
+        "data": domani,
+        "stato": "pianificato",
+        "reminder_sent": {"$ne": True},
+    })
+    async for it in cursor:
+        try:
+            owner = await db.users.find_one({"_id": ObjectId(it["user_id"])}, {"email": 1, "name": 1})
+            if owner and owner.get("email"):
+                await send_intervento_reminder(owner["email"], owner.get("name", ""), it)
+            await db.interventi.update_one({"_id": it["_id"]}, {"$set": {"reminder_sent": True}})
+            sent_count += 1
+        except Exception:
+            logger.exception("intervento reminder email failed for %s", it.get("_id"))
+    logger.info("intervento-reminder: inviati %s promemoria cantiere", sent_count)
+
+
 @router.post("/cron/offer-reminder")
 async def cron_offer_reminder(background: BackgroundTasks, authorization: str | None = Header(default=None)):
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
@@ -159,7 +180,17 @@ async def cron_noleggio_reminder(background: BackgroundTasks, authorization: str
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
     _check_auth(authorization)
     background.add_task(_run_noleggio_reminder)
-    return {"ok": True, "queued": "noleggio-reminder"}
+    # Promemoria interventi/cantieri: piggyback sullo stesso cron giornaliero (limite di 5 cron).
+    background.add_task(_run_intervento_reminder)
+    return {"ok": True, "queued": ["noleggio-reminder", "intervento-reminder"]}
+
+
+@router.post("/cron/intervento-reminder")
+async def cron_intervento_reminder(background: BackgroundTasks, authorization: str | None = Header(default=None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    _check_auth(authorization)
+    background.add_task(_run_intervento_reminder)
+    return {"ok": True, "queued": "intervento-reminder"}
 
 
 @router.post("/cron/credits-refresh")

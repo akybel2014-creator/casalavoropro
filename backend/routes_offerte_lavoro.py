@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
 from core import db, now, clean_doc, require_roles, azienda_for_user
-from credits import charge
+from subscription import azienda_pro_active, PRO_UPSELL
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -70,10 +70,9 @@ async def mie_offerte(user: dict = Depends(require_roles("azienda"))):
 @router.post("/offerte-lavoro")
 async def crea_offerta(inp: OffertaLavoroIn, user: dict = Depends(require_roles("azienda"))):
     azienda = await _azienda(user)
+    if not azienda_pro_active(azienda):
+        raise HTTPException(status_code=402, detail=PRO_UPSELL)
     _validate_contratto(inp.tipo_contratto)
-    # Addebito crediti: standard (gratis per abbonata, 1 per pay-as-you-go) o in evidenza/urgente (5).
-    azione = "annuncio_urgente" if inp.in_evidenza else "annuncio_standard"
-    charge_res = await charge(user, azione, meta={"tipo": "offerta_lavoro", "titolo": inp.titolo.strip()})
     doc = {
         **inp.model_dump(),
         "titolo": inp.titolo.strip(), "descrizione": inp.descrizione.strip(), "zona": inp.zona.strip(),
@@ -84,7 +83,6 @@ async def crea_offerta(inp: OffertaLavoroIn, user: dict = Depends(require_roles(
     res = await db.offerte_lavoro.insert_one(doc)
     doc["_id"] = res.inserted_id
     out = clean_doc(doc, drop=("owner_id",))
-    out["crediti_addebitati"] = charge_res["charged"]
     return out
 
 

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-    ShieldCheck, Check, X, Users, Building2, FileText, MessageSquare, Crown, BadgeCheck,
-    Search, Wallet, Ban, TrendingUp, CreditCard, UserCog, Loader2,
+    ShieldCheck, Check, X, Users, Building2, Crown,
+    Search, Ban, TrendingUp, UserCog, Loader2, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,36 +23,28 @@ const STATUS_LABELS = { none: "Non richiesta", in_attesa: "In attesa", verificat
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 const selectCls = "w-full rounded-xl bg-navy/70 border border-white/10 text-white px-3 py-2.5 text-sm outline-none focus:border-brand";
 
-const RUOLO_LABELS = {
-    privato: "Privato",
-    azienda_abbonata: "Azienda abbonata",
-    azienda_pay_as_you_go: "Azienda pay-as-you-go",
+const SUB_LABELS = {
+    active: ["bg-emerald-500/15 text-emerald-400", "PRO attivo"],
+    trialing: ["bg-brand/15 text-brand", "In prova"],
+    active_trial: ["bg-brand/15 text-brand", "In prova"],
+    trial_expired: ["bg-amber-500/15 text-amber-400", "Prova scaduta"],
+    none: ["bg-white/5 text-slate-400", "Base / Gratis"],
 };
+
+function subInfo(u) {
+    if (u.role !== "azienda") return ["bg-white/5 text-slate-400", u.role === "admin" ? "Admin" : "Privato"];
+    return SUB_LABELS[u.subscription_status] || SUB_LABELS.none;
+}
 
 function UserManageDialog({ u, onDone }) {
     const [open, setOpen] = useState(false);
-    const [bonus, setBonus] = useState(u.bonus_credits ?? 0);
-    const [purch, setPurch] = useState(u.purchased_credits ?? 0);
     const [role, setRole] = useState(u.role || "privato");
-    const [ruolo, setRuolo] = useState(u.ruolo || "privato");
     const [busy, setBusy] = useState("");
-
-    const saveCredits = async () => {
-        setBusy("credits");
-        try {
-            await api.patch(`/admin/users/${u.id}/credits`, {
-                bonus_credits: Number(bonus), purchased_credits: Number(purch),
-            });
-            toast.success("Saldo crediti aggiornato.");
-            onDone();
-        } catch (e) { toast.error(formatApiError(e)); }
-        finally { setBusy(""); }
-    };
 
     const saveRole = async () => {
         setBusy("role");
         try {
-            await api.patch(`/admin/users/${u.id}/role`, { role, ruolo });
+            await api.patch(`/admin/users/${u.id}/role`, { role });
             toast.success("Ruolo aggiornato.");
             onDone();
         } catch (e) { toast.error(formatApiError(e)); }
@@ -70,6 +62,8 @@ function UserManageDialog({ u, onDone }) {
         finally { setBusy(""); }
     };
 
+    const [sStyle, sLabel] = subInfo(u);
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -81,49 +75,26 @@ function UserManageDialog({ u, onDone }) {
             <DialogContent className="bg-navy-700 border-white/10 text-white max-h-[90vh] overflow-y-auto" data-testid={`manage-dialog-${u.id}`}>
                 <DialogHeader>
                     <DialogTitle className="font-display">{u.name} · {u.email}</DialogTitle>
-                    <DialogDescription className="text-slate-400 text-xs">Gestisci crediti, ruolo e stato dell'account.</DialogDescription>
+                    <DialogDescription className="text-slate-400 text-xs">Gestisci ruolo e stato dell'account.</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6">
-                    {/* Crediti */}
+                    {/* Abbonamento (sola lettura) */}
                     <div className="rounded-2xl border border-white/10 bg-navy/50 p-4">
-                        <p className="text-sm font-semibold text-white flex items-center gap-2"><Wallet className="h-4 w-4 text-brand" /> Saldo crediti</p>
-                        <div className="mt-3 grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-slate-300 text-xs">Bonus crediti</Label>
-                                <Input type="number" min="0" value={bonus} onChange={(e) => setBonus(e.target.value)} data-testid={`manage-bonus-${u.id}`} className={inputCls} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-slate-300 text-xs">Crediti acquistati</Label>
-                                <Input type="number" min="0" value={purch} onChange={(e) => setPurch(e.target.value)} data-testid={`manage-purchased-${u.id}`} className={inputCls} />
-                            </div>
-                        </div>
-                        <Button onClick={saveCredits} disabled={busy === "credits"} data-testid={`manage-save-credits-${u.id}`}
-                            className="mt-3 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold">
-                            {busy === "credits" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null} Salva crediti
-                        </Button>
+                        <p className="text-sm font-semibold text-white flex items-center gap-2"><Crown className="h-4 w-4 text-brand" /> Abbonamento</p>
+                        <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${sStyle}`} data-testid={`manage-sub-${u.id}`}>{sLabel}</span>
                     </div>
 
                     {/* Ruolo */}
                     <div className="rounded-2xl border border-white/10 bg-navy/50 p-4">
-                        <p className="text-sm font-semibold text-white flex items-center gap-2"><UserCog className="h-4 w-4 text-brand" /> Ruolo</p>
-                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-slate-300 text-xs">Tipo account (role)</Label>
-                                <select value={role} onChange={(e) => setRole(e.target.value)} data-testid={`manage-role-${u.id}`} className={selectCls}>
-                                    <option value="privato">Privato</option>
-                                    <option value="azienda">Azienda</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-slate-300 text-xs">Ruolo crediti (ruolo)</Label>
-                                <select value={ruolo} onChange={(e) => setRuolo(e.target.value)} data-testid={`manage-ruolo-${u.id}`} className={selectCls}>
-                                    <option value="privato">Privato</option>
-                                    <option value="azienda_abbonata">Azienda abbonata</option>
-                                    <option value="azienda_pay_as_you_go">Azienda pay-as-you-go</option>
-                                </select>
-                            </div>
+                        <p className="text-sm font-semibold text-white flex items-center gap-2"><UserCog className="h-4 w-4 text-brand" /> Tipo account</p>
+                        <div className="mt-3 space-y-1.5">
+                            <Label className="text-slate-300 text-xs">Role</Label>
+                            <select value={role} onChange={(e) => setRole(e.target.value)} data-testid={`manage-role-${u.id}`} className={selectCls}>
+                                <option value="privato">Privato</option>
+                                <option value="azienda">Azienda</option>
+                                <option value="admin">Admin</option>
+                            </select>
                         </div>
                         <Button onClick={saveRole} disabled={busy === "role"} data-testid={`manage-save-role-${u.id}`}
                             className="mt-3 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold">
@@ -193,13 +164,13 @@ export default function DashboardAdmin() {
     const c = metrics?.counts || {};
     const METRIC_CARDS = [
         { label: "MRR (abbonamenti)", value: metrics ? `€${metrics.mrr_eur.toLocaleString("it-IT")}` : "—", sub: metrics ? `${metrics.active_subscriptions} abbonamenti attivi` : "", icon: TrendingUp },
-        { label: "Incasso crediti (Stripe)", value: metrics ? `€${metrics.credit_revenue_eur.toLocaleString("it-IT")}` : "—", sub: "Ricariche pacchetti", icon: CreditCard },
+        { label: "Prove PRO in corso", value: metrics ? metrics.trial_subscriptions : "—", sub: "Aziende nei 14 giorni di prova", icon: Sparkles },
         { label: "Utenti totali", value: c.totale ?? "—", sub: `${c.privati ?? 0} privati · ${c.aziende_totali ?? 0} aziende`, icon: Users },
     ];
     const COUNT_CARDS = [
         { label: "Privati", value: c.privati, icon: Users },
-        { label: "Aziende abbonate", value: c.aziende_abbonate, icon: Crown },
-        { label: "Aziende pay-as-you-go", value: c.aziende_pay_as_you_go, icon: Building2 },
+        { label: "Aziende PRO", value: c.aziende_pro, icon: Crown },
+        { label: "Aziende Base", value: c.aziende_free, icon: Building2 },
     ];
 
     return (
@@ -230,9 +201,9 @@ export default function DashboardAdmin() {
                     ))}
                 </div>
 
-                {/* Gestione utenti e crediti */}
+                {/* Gestione utenti */}
                 <h2 className="mt-12 font-display font-bold text-xl text-white flex items-center gap-2">
-                    <UserCog className="h-5 w-5 text-brand" /> Gestione utenti e crediti
+                    <UserCog className="h-5 w-5 text-brand" /> Gestione utenti
                 </h2>
                 <form
                     onSubmit={(e) => { e.preventDefault(); loadUsers(q); }}
@@ -254,7 +225,7 @@ export default function DashboardAdmin() {
                             <tr>
                                 <th className="text-left font-medium px-5 py-3">Utente</th>
                                 <th className="text-left font-medium px-5 py-3 hidden md:table-cell">Ruolo</th>
-                                <th className="text-left font-medium px-5 py-3">Crediti</th>
+                                <th className="text-left font-medium px-5 py-3">Abbonamento</th>
                                 <th className="text-left font-medium px-5 py-3">Stato</th>
                                 <th className="text-right font-medium px-5 py-3">Azioni</th>
                             </tr>
@@ -269,11 +240,9 @@ export default function DashboardAdmin() {
                                     </td>
                                     <td className="px-5 py-4 text-slate-400 hidden md:table-cell">
                                         <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-xs">{u.role}</span>
-                                        {u.ruolo && <p className="text-xs text-slate-500 mt-1">{RUOLO_LABELS[u.ruolo] || u.ruolo}</p>}
                                     </td>
-                                    <td className="px-5 py-4 text-slate-300">
-                                        <span className="font-semibold text-white">{(u.bonus_credits || 0) + (u.purchased_credits || 0)}</span>
-                                        <p className="text-xs text-slate-500">{u.bonus_credits || 0} bonus · {u.purchased_credits || 0} acq.</p>
+                                    <td className="px-5 py-4">
+                                        {(() => { const [st, lb] = subInfo(u); return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${st}`} data-testid={`user-sub-${u.id}`}>{lb}</span>; })()}
                                     </td>
                                     <td className="px-5 py-4">
                                         {u.suspended

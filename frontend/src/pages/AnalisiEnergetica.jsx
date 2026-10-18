@@ -1,29 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
     UploadCloud, FileText, Loader2, Sparkles, TrendingDown, Zap, Gauge,
-    Building2, CheckCircle2, ArrowRight, RefreshCw, Coins, Wallet,
+    Building2, CheckCircle2, ArrowRight, RefreshCw,
     Share2, Copy, Check, QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useAuth } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 
 const fmtNum = (n) => (n == null ? "—" : new Intl.NumberFormat("it-IT").format(n));
 const fmtEur = (n) => (n == null ? "—" : `€${Number(n).toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
 
 export default function AnalisiEnergetica() {
-    const { user } = useAuth();
-    const navigate = useNavigate();
     const [phase, setPhase] = useState("upload"); // upload | analyzing | result
     const [progress, setProgress] = useState(0);
     const [dragOver, setDragOver] = useState(false);
     const [lead, setLead] = useState(null);
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
-    const [showRicarica, setShowRicarica] = useState(false);
     const [copied, setCopied] = useState(false);
     const fileRef = useRef(null);
     const progressTimer = useRef(null);
@@ -93,11 +87,7 @@ export default function AnalisiEnergetica() {
             setSent(true);
             toast.success("Pratica inviata con successo!");
         } catch (err) {
-            if (err?.response?.status === 402) {
-                setShowRicarica(true);
-            } else {
-                toast.error(formatApiError(err));
-            }
+            toast.error(formatApiError(err));
         } finally {
             setSending(false);
         }
@@ -304,9 +294,7 @@ export default function AnalisiEnergetica() {
                                 Risparmia Ora <ArrowRight className="h-5 w-5 ml-2" />
                             </Button>
                             <p className="mt-3 text-xs text-slate-400 flex items-center justify-center gap-1.5" data-testid="analisi-credit-hint">
-                                {isAzienda
-                                    ? <><Coins className="h-3.5 w-3.5 text-brand" /> Verrà scalato 1 credito dal tuo wallet (prima i bonus mensili)</>
-                                    : <><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Invio gratuito per i privati</>}
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Analisi e invio della pratica 100% gratuiti
                             </p>
                             <button onClick={reset} className="mt-4 block mx-auto text-sm text-slate-400 hover:text-white" data-testid="analisi-annulla">
                                 Analizza un'altra bolletta
@@ -315,36 +303,6 @@ export default function AnalisiEnergetica() {
                     )}
                 </div>
             )}
-
-            {/* Pop-up ricarica (saldo esaurito) */}
-            <Dialog open={showRicarica} onOpenChange={setShowRicarica}>
-                <DialogContent className="bg-navy-700 border-white/10 text-white" data-testid="analisi-ricarica-dialog">
-                    <DialogHeader>
-                        <div className="mx-auto h-14 w-14 rounded-full bg-brand/15 flex items-center justify-center mb-2">
-                            <Coins className="h-7 w-7 text-brand" />
-                        </div>
-                        <DialogTitle className="text-center font-display text-xl">Crediti esauriti</DialogTitle>
-                        <DialogDescription className="text-center text-slate-400">
-                            Per inviare la pratica al nostro broker partner serve 1 credito. Ricarica il tuo wallet per continuare.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="sm:justify-center gap-2">
-                        <Button
-                            variant="outline"
-                            className="rounded-xl border-white/20 text-white hover:bg-white/10"
-                            onClick={() => setShowRicarica(false)}
-                            data-testid="analisi-ricarica-annulla">
-                            Più tardi
-                        </Button>
-                        <Button
-                            className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold"
-                            onClick={() => navigate("/dashboard/wallet")}
-                            data-testid="analisi-ricarica-vai-wallet">
-                            <Wallet className="h-4 w-4 mr-2" /> Ricarica il Wallet
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

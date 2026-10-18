@@ -1,24 +1,23 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, ArrowRight, Sparkles } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CountdownOfferta } from "@/components/CountdownOfferta";
 
 const BASE_FEATURES = [
     "Presenza nella directory",
     "Profilo aziendale completo",
     "Descrizione dei servizi",
     "Recapiti e contatti",
-    "Funzioni essenziali della piattaforma",
+    "Fino a 2 preventivi al mese",
 ];
 
 const PRO_FEATURES = [
-    "Maggiore visibilità nelle ricerche locali",
+    "Badge PRO e massima visibilità nelle ricerche locali",
+    "Preventivi illimitati",
+    "Cantieri, annunci noleggio/usato e offerte di lavoro",
     "Più spazio per foto e portfolio",
-    "Più annunci (noleggio e usato)",
-    "Statistiche del profilo",
+    "Priorità nelle ricerche dei privati",
     "Supporto prioritario",
-    "Funzioni avanzate senza acquistare crediti per ogni richiesta",
 ];
 
 const SERVIZI = [
@@ -49,54 +48,18 @@ export default function Prezzi() {
                         Scegli il piano giusto per la tua impresa
                     </h1>
                     <p className="mt-4 text-base sm:text-lg text-slate-300">
-                        Il Profilo Base è sempre gratuito. Durante l'Offerta Lancio Fondatori anche il Profilo Pro è
-                        100% gratuito fino al 31 Dicembre 2026, senza carta di credito.
+                        Il Profilo Base è sempre gratuito. Prova il Profilo PRO gratis per 14 giorni:
+                        sblocchi tutte le funzioni gestionali e annulli quando vuoi.
                     </p>
                 </motion.div>
 
-                {/* Banner offerta lancio */}
-                <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-brand/30 bg-brand/10 p-5" data-testid="prezzi-offerta-banner">
-                    <div className="flex items-center gap-2 text-white font-semibold">
-                        <Sparkles className="h-5 w-5 text-brand" />
-                        Offerta Lancio Fondatori: Pro gratis fino al 31 Dicembre 2026
-                    </div>
-                    <div className="sm:ml-auto">
-                        <CountdownOfferta compact tone="onDark" className="text-white" />
-                    </div>
-                </div>
-
                 {/* Piani */}
-                <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Pay-As-You-Go */}
-                    <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-8" data-testid="plan-payg">
-                        <h2 className="font-display font-bold text-white text-xl">Piano a Consumo (Pay-As-You-Go)</h2>
-                        <p className="mt-2 font-display font-black text-4xl text-white">0€ <span className="text-base font-semibold text-slate-400">/ mese per sempre</span></p>
-                        <p className="mt-1 text-sm text-slate-400">Nessun canone fisso: paghi solo i crediti quando usi i servizi speciali.</p>
-                        <ul className="mt-6 space-y-3">
-                            {["Bacheca lavoro e noleggio attrezzatura", "Crediti acquistabili solo quando servono", "Nessuna carta richiesta per iniziare"].map((f) => (
-                                <li key={f} className="flex items-start gap-3 text-sm text-slate-300">
-                                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-300">
-                                        <Check className="h-3.5 w-3.5" />
-                                    </span>
-                                    {f}
-                                </li>
-                            ))}
-                        </ul>
-                        <Button asChild data-testid="plan-payg-cta"
-                            className="mt-8 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            <Link to="/registrati?ruolo=azienda">Crea Account Azienda Gratis</Link>
-                        </Button>
-                        <p className="mt-3 text-xs text-slate-400" data-testid="plan-payg-note">
-                            Le funzioni gestionali (fatture, cantieri) restano bloccate; puoi usare la bacheca lavoro e il
-                            noleggio attrezzatura acquistando i crediti solo quando servono.
-                        </p>
-                    </div>
-
+                <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Base */}
                     <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-8" data-testid="plan-base">
                         <h2 className="font-display font-bold text-white text-xl">Profilo Base</h2>
                         <p className="mt-2 font-display font-black text-4xl text-white">Gratis</p>
-                        <p className="mt-1 text-sm text-slate-400">Gratuito oggi e anche dopo il 31 Dicembre 2026.</p>
+                        <p className="mt-1 text-sm text-slate-400">Gratuito oggi e per sempre.</p>
                         <ul className="mt-6 space-y-3">
                             {BASE_FEATURES.map((f) => (
                                 <li key={f} className="flex items-start gap-3 text-sm text-slate-300">
@@ -115,12 +78,12 @@ export default function Prezzi() {
 
                     {/* Pro */}
                     <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-8 shadow-2xl shadow-brand/10" data-testid="plan-pro">
-                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">CONSIGLIATO</span>
+                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">14 GIORNI GRATIS</span>
                         <h2 className="font-display font-bold text-white text-xl">Profilo Pro</h2>
                         <p className="mt-2 font-display font-black text-4xl text-white" data-testid="plan-pro-price">
                             €4,99<span className="text-base font-semibold text-slate-400">/mese</span>
                         </p>
-                        <p className="mt-1 text-sm text-slate-400">oppure €49,99/anno (2 mesi gratis)</p>
+                        <p className="mt-1 text-sm text-slate-400">oppure €49,99/anno (2 mesi gratis) · prova 14 giorni gratis</p>
                         <ul className="mt-6 space-y-3">
                             {PRO_FEATURES.map((f) => (
                                 <li key={f} className="flex items-start gap-3 text-sm text-slate-200">
@@ -133,7 +96,7 @@ export default function Prezzi() {
                         </ul>
                         <Button asChild data-testid="plan-pro-cta"
                             className="mt-8 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            <Link to="/registrati?ruolo=azienda">Attiva Pro gratis ora <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                            <Link to="/registrati?ruolo=azienda">Inizia la prova gratuita <ArrowRight className="h-4 w-4 ml-1" /></Link>
                         </Button>
                     </div>
                 </div>

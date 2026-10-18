@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { api, formatApiError } from "@/lib/api";
+import { ProUpsell } from "@/components/ProUpsell";
 
 const inputCls = "bg-navy/80 border-white/10 text-white placeholder:text-slate-500";
 const EMPTY = { titolo: "", descrizione: "", zona: "", tipo_contratto: "Full-time", retribuzione: "", contatto_email: "", contatto_telefono: "", attivo: true };
@@ -123,7 +124,7 @@ function OffertaDialog({ tipiContratto, zonaDefault, offerta, onSaved }) {
     );
 }
 
-export function OfferteLavoroPanel({ azienda }) {
+export function OfferteLavoroPanel({ azienda, isPro = false, onGoToAbbonamento }) {
     const [items, setItems] = useState(null);
     const [tipiContratto, setTipiContratto] = useState(["Full-time", "Part-time", "Stagionale", "Apprendistato", "A chiamata", "Tirocinio"]);
     const zonaDefault = azienda?.zone?.[0] || "";
@@ -138,9 +139,10 @@ export function OfferteLavoroPanel({ azienda }) {
     };
 
     useEffect(() => {
+        if (!isPro) return;
         api.get("/offerte-lavoro/meta").then(({ data }) => setTipiContratto(data.tipi_contratto)).catch(() => {});
         load();
-    }, []);
+    }, [isPro]);
 
     const onSaved = (saved, mode) => {
         setItems((list) => {
@@ -159,6 +161,22 @@ export function OfferteLavoroPanel({ azienda }) {
             toast.error(formatApiError(err));
         }
     };
+
+    if (!isPro) {
+        return (
+            <ProUpsell
+                testid="offerte-lavoro-upsell"
+                title="Offerte di lavoro riservate al piano PRO"
+                desc="Con l'abbonamento PRO pubblichi tutte le posizioni aperte della tua azienda: appariranno sul tuo profilo pubblico e raggiungeranno gli operai della tua zona."
+                bullets={[
+                    "Offerte di lavoro illimitate",
+                    "Visibili sul profilo pubblico e nella bacheca lavoro",
+                    "Gestione contatti e candidature",
+                ]}
+                onGoToAbbonamento={onGoToAbbonamento}
+            />
+        );
+    }
 
     return (
         <div className="space-y-5" data-testid="offerte-lavoro-panel">

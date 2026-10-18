@@ -4,7 +4,8 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
-from core import db, now, clean_doc, require_roles
+from core import db, now, clean_doc, require_roles, azienda_for_user
+from subscription import azienda_pro_active, PRO_UPSELL
 
 router = APIRouter()
 
@@ -34,6 +35,9 @@ class StatoIn(BaseModel):
 
 @router.post("/interventi")
 async def crea_intervento(inp: InterventoIn, user: dict = Depends(require_roles("azienda"))):
+    azienda = await azienda_for_user(user["id"])
+    if not azienda_pro_active(azienda):
+        raise HTTPException(status_code=402, detail=PRO_UPSELL)
     titolo = (inp.titolo or "").strip()
     if not titolo:
         raise HTTPException(status_code=400, detail="Il titolo è obbligatorio")

@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CountdownOfferta } from "@/components/CountdownOfferta";
 
 const PRIVATO = {
     title: "Sei un Privato?",
@@ -20,14 +19,14 @@ const PRIVATO = {
 
 const AZIENDA = {
     title: "Sei un'Azienda o un Professionista?",
-    subtitle: "Attiva ora il tuo profilo PRO: durante l'Offerta Lancio Fondatori è tutto gratis, senza carta di credito.",
+    subtitle: "Prova il profilo PRO gratis per 14 giorni e sblocca tutte le funzioni gestionali. Annulli quando vuoi.",
     bullets: [
-        "Richieste di lavoro e preventivi illimitati gratis",
-        "Incluso: Sezione Annunci Noleggio Attrezzatura",
-        "Incluso: Vendita Macchinari Usati senza commissioni",
+        "Preventivi illimitati su tutte le categorie della tua zona",
+        "Gestione cantieri con promemoria automatici",
+        "Annunci noleggio, usato e offerte di lavoro",
         "Badge PRO e massima visibilità nelle ricerche locali",
     ],
-    cta: "Registrati Gratis Ora (Senza Carta)",
+    cta: "Inizia la prova gratuita di 14 giorni",
     to: "/registrati?ruolo=azienda",
     testid: "cta-azienda-button",
     gestionaleCta: "Scopri il Gestionale per Artigiani",
@@ -62,7 +61,11 @@ function CtaCard({ data, variant }) {
                     </li>
                 ))}
             </ul>
-            {orange && <CountdownOfferta tone="onOrange" className="mt-7" />}
+            {orange && (
+                <p className="mt-7 inline-flex items-center gap-2 rounded-full bg-navy/80 text-white text-sm font-semibold px-4 py-2">
+                    <Check className="h-4 w-4" /> 14 giorni di prova gratis · poi €4,99/mese
+                </p>
+            )}
             <Button
                 data-testid={data.testid}
                 onClick={() => navigate(data.to)}
@@ -98,12 +101,12 @@ export default function CtaBoxes() {
                     transition={{ duration: 0.6 }}
                     className="max-w-3xl"
                 >
-                    <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Riservato ai fondatori</p>
+                    <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Per le aziende</p>
                     <h2 className="mt-3 font-display font-black tracking-tight text-2xl sm:text-3xl lg:text-4xl text-white">
-                        Offerta Lancio Fondatori 2026
+                        Prova PRO gratis per 14 giorni
                     </h2>
                     <p className="mt-4 text-base sm:text-lg font-semibold text-white" style={{ color: "#FFFFFF" }} data-testid="offerta-lancio-subtitle">
-                        Tutte le funzioni del piano PRO sono 100% GRATUITE fino al 31 Dicembre. Nessuna carta di credito richiesta. Blocca il tuo profilo prima che scada l'offerta!
+                        Sblocca cantieri, annunci noleggio/usato, offerte di lavoro e preventivi illimitati. Nessun impegno: annulli quando vuoi durante la prova.
                     </p>
                 </motion.div>
                 <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">

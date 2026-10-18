@@ -23,7 +23,6 @@ from fpdf import FPDF
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
 from core import db, now, get_current_user, clean_doc, notify_admins
-from credits import charge, effective_ruolo, refund_charge
 from emailer import send_email, FRONTEND_URL, _wrap
 from html import escape
 
@@ -295,8 +294,7 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
     if lead.get("inviato_broker"):
         raise HTTPException(status_code=409, detail="Pratica gia inviata")
 
-    # Addebito: privato gratis; azienda (abbonata o pay-as-you-go) 1 credito, bonus prima (402 se saldo 0).
-    charge_res = await charge(user, "analisi_bolletta", meta={"lead_id": str(oid)})
+    # Analisi e invio pratica al broker: gratuiti per tutti (privati e aziende).
 
     u = await db.users.find_one({"_id": ObjectId(user["id"])}, {"email": 1, "name": 1, "telefono": 1})
     d = lead.get("dati", {})
@@ -326,15 +324,14 @@ async def invia_lead_broker(lead_id: str, user: dict = Depends(get_current_user)
                 r.raise_for_status()
         except Exception:
             logger.exception("Invio lead al broker fallito")
-            await refund_charge(user["id"], charge_res, "analisi_bolletta")
             raise HTTPException(status_code=502, detail="Invio al broker non riuscito, riprova piu tardi")
     else:
         logger.info("[SIMULAZIONE BROKER] lead %s -> %s", oid, json.dumps(payload)[:500])
 
     await db.leads.update_one({"_id": oid}, {"$set": {
-        "stato": "inviato_broker", "inviato_broker": True, "charged": charge_res["charged"],
+        "stato": "inviato_broker", "inviato_broker": True,
         "broker_simulato": not real, "inviato_at": now()}})
-    return {"ok": True, "inviato": True, "simulato": not real, "charged": charge_res["charged"]}
+    return {"ok": True, "inviato": True, "simulato": not real}
 
 
 class RichiestaPubblica(BaseModel):
@@ -418,7 +415,7 @@ async def richiedi_offerta_pubblica(token: str, body: RichiestaPubblica):
 
 @router.post("/analizza-macchinario")
 async def analizza_macchinario(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    if (await effective_ruolo(user)) == "privato":
+    if user.get("role") == "privato":
         raise HTTPException(status_code=403, detail="Funzione riservata alle aziende")
     if file.content_type not in IMG_MIME:
         raise HTTPException(status_code=400, detail="Formato immagine non supportato (JPG, PNG o WEBP)")

@@ -7,6 +7,7 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from pydantic import BaseModel, Field
 from core import db, now, clean_doc, require_roles, azienda_for_user
+from subscription import azienda_pro_active
 from routes_gallery import _put_object, ALLOWED, MAX_SIZE, APP_NAME, EMERGENT_KEY, optimize_image
 
 logger = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ async def _pro_azienda(user: dict) -> dict:
     azienda = await azienda_for_user(user["id"])
     if not azienda:
         raise HTTPException(status_code=404, detail="Profilo azienda non trovato")
-    if azienda.get("plan") != "pro":
+    if not azienda_pro_active(azienda):
         raise HTTPException(status_code=402, detail="Gli annunci noleggio e usato sono riservati alle aziende con abbonamento PRO")
     return azienda
 

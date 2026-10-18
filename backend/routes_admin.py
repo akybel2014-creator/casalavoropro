@@ -5,7 +5,7 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from core import db, now, clean_doc, require_roles, notify
-from credits import RUOLI
+from subscription import PRO_ACTIVE_STATES, TRIAL_STATES
 from emailer import send_verification_result
 
 logger = logging.getLogger(__name__)
@@ -26,14 +26,8 @@ class VerificaIn(BaseModel):
     azione: str  # verificata | rifiutata
 
 
-class CreditsIn(BaseModel):
-    bonus_credits: int | None = None
-    purchased_credits: int | None = None
-
-
 class RoleIn(BaseModel):
     role: str | None = None
-    ruolo: str | None = None
 
 
 class SuspendIn(BaseModel):
@@ -105,16 +99,10 @@ async def admin_stats(user: dict = Depends(require_roles("admin"))):
 
 @router.get("/admin/metrics")
 async def admin_metrics(user: dict = Depends(require_roles("admin"))):
-    """Metriche di business: MRR stimato, incasso pacchetti crediti, utenti per ruolo."""
-    agg = await db.payment_transactions.aggregate([
-        {"$match": {"kind": "crediti", "payment_status": "paid"}},
-        {"$group": {"_id": None, "tot": {"$sum": "$amount"}}},
-    ]).to_list(1)
-    credit_rev_cents = int((agg[0]["tot"] if agg else 0) or 0)
-
+    """Metriche di business: MRR stimato (abbonamenti e prove) e utenti per piano."""
     mrr_cents = 0
     active_subs = 0
-    async for az in db.aziende.find({"subscription_status": "active"}, {"owner_id": 1}):
+    async for az in db.aziende.find({"subscription_status": {"$in": list(PRO_ACTIVE_STATES)}}, {"owner_id": 1}):
         oid = az.get("owner_id")
         if not oid:
             continue
@@ -127,18 +115,19 @@ async def admin_metrics(user: dict = Depends(require_roles("admin"))):
         else:
             mrr_cents += SUB_MONTHLY_CENTS
 
+    trial_subs = await db.aziende.count_documents({"subscription_status": {"$in": list(TRIAL_STATES)}})
+    pro_subs = await db.aziende.count_documents({"subscription_status": "active"})
     privati = await db.users.count_documents({"role": "privato"})
-    abbonate = await db.users.count_documents({"ruolo": "azienda_abbonata"})
-    payg = await db.users.count_documents({"ruolo": "azienda_pay_as_you_go"})
     aziende_tot = await db.users.count_documents({"role": "azienda"})
     utenti_tot = await db.users.count_documents({})
+    aziende_free = max(0, aziende_tot - pro_subs - trial_subs)
     return {
         "mrr_cents": mrr_cents, "mrr_eur": round(mrr_cents / 100, 2),
-        "credit_revenue_cents": credit_rev_cents, "credit_revenue_eur": round(credit_rev_cents / 100, 2),
         "active_subscriptions": active_subs,
+        "trial_subscriptions": trial_subs,
         "counts": {
-            "privati": privati, "aziende_abbonate": abbonate,
-            "aziende_pay_as_you_go": payg, "aziende_totali": aziende_tot, "totale": utenti_tot,
+            "privati": privati, "aziende_pro": pro_subs, "aziende_trial": trial_subs,
+            "aziende_free": aziende_free, "aziende_totali": aziende_tot, "totale": utenti_tot,
         },
     }
 
@@ -159,57 +148,24 @@ async def admin_users(q: str = "", user: dict = Depends(require_roles("admin")))
         item["azienda_nome"] = (az or {}).get("nome")
         item["plan"] = (az or {}).get("plan")
         item["subscription_status"] = (az or {}).get("subscription_status")
-        item["bonus_credits"] = int(d.get("bonus_credits", 0) or 0)
-        item["purchased_credits"] = int(d.get("purchased_credits", 0) or 0)
         item["suspended"] = bool(d.get("suspended", False))
         out.append(item)
     return out
 
 
-@router.patch("/admin/users/{user_id}/credits")
-async def admin_set_credits(user_id: str, inp: CreditsIn, user: dict = Depends(require_roles("admin"))):
-    """Imposta manualmente il saldo crediti (ricarica/rimborso manuale)."""
-    oid = _oid(user_id)
-    target = await db.users.find_one({"_id": oid})
-    if not target:
-        raise HTTPException(status_code=404, detail="Utente non trovato")
-    set_fields = {}
-    if inp.bonus_credits is not None:
-        set_fields["bonus_credits"] = max(0, int(inp.bonus_credits))
-    if inp.purchased_credits is not None:
-        set_fields["purchased_credits"] = max(0, int(inp.purchased_credits))
-    if not set_fields:
-        raise HTTPException(status_code=400, detail="Nessun valore da aggiornare")
-    await db.users.update_one({"_id": oid}, {"$set": set_fields})
-    await db.credit_transactions.insert_one({
-        "user_id": user_id, "action": "admin_adjust", "delta": 0,
-        "meta": {"by": user.get("email"), **set_fields}, "created_at": now(),
-    })
-    u = await db.users.find_one({"_id": oid}, {"bonus_credits": 1, "purchased_credits": 1})
-    return {"ok": True, "bonus_credits": int(u.get("bonus_credits", 0) or 0),
-            "purchased_credits": int(u.get("purchased_credits", 0) or 0)}
-
-
 @router.patch("/admin/users/{user_id}/role")
 async def admin_set_role(user_id: str, inp: RoleIn, user: dict = Depends(require_roles("admin"))):
-    """Modifica il ruolo (role) e/o il ruolo crediti (ruolo) di un utente."""
+    """Modifica il tipo di account (role) di un utente."""
     oid = _oid(user_id)
     target = await db.users.find_one({"_id": oid})
     if not target:
         raise HTTPException(status_code=404, detail="Utente non trovato")
-    set_fields = {}
-    if inp.role is not None:
-        if inp.role not in ("privato", "azienda", "admin"):
-            raise HTTPException(status_code=400, detail="Ruolo non valido")
-        set_fields["role"] = inp.role
-    if inp.ruolo is not None:
-        if inp.ruolo not in RUOLI:
-            raise HTTPException(status_code=400, detail="Ruolo crediti non valido")
-        set_fields["ruolo"] = inp.ruolo
-    if not set_fields:
+    if inp.role is None:
         raise HTTPException(status_code=400, detail="Nessun valore da aggiornare")
-    await db.users.update_one({"_id": oid}, {"$set": set_fields})
-    return {"ok": True, **set_fields}
+    if inp.role not in ("privato", "azienda", "admin"):
+        raise HTTPException(status_code=400, detail="Ruolo non valido")
+    await db.users.update_one({"_id": oid}, {"$set": {"role": inp.role}})
+    return {"ok": True, "role": inp.role}
 
 
 @router.patch("/admin/users/{user_id}/suspend")

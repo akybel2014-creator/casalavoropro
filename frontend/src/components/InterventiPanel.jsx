@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, formatApiError } from "@/lib/api";
+import { ProUpsell } from "@/components/ProUpsell";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
 
@@ -17,20 +18,21 @@ const STATO_STYLES = {
 
 const EMPTY = { titolo: "", cliente: "", indirizzo: "", data: "", importo: "", note: "", stato: "pianificato" };
 
-export function InterventiPanel() {
+export function InterventiPanel({ isPro = false, onGoToAbbonamento }) {
     const [list, setList] = useState(null);
     const [form, setForm] = useState(EMPTY);
     const [busy, setBusy] = useState(false);
     const [filter, setFilter] = useState("tutti");
 
     const load = useCallback(async () => {
+        if (!isPro) return;
         try {
             const { data } = await api.get("/interventi/mine");
             setList(data);
         } catch (e) {
             toast.error(formatApiError(e));
         }
-    }, []);
+    }, [isPro]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -81,6 +83,22 @@ export function InterventiPanel() {
         { key: "in_corso", label: "In corso" },
         { key: "completato", label: "Completati" },
     ];
+
+    if (!isPro) {
+        return (
+            <ProUpsell
+                testid="interventi-upsell"
+                title="Gestione cantieri riservata al piano PRO"
+                desc="Con l'abbonamento PRO registri interventi e cantieri illimitati, segui lo stato dei lavori e ricevi un promemoria email il giorno prima di ogni intervento pianificato."
+                bullets={[
+                    "Interventi e cantieri illimitati",
+                    "Stati pianificato / in corso / completato",
+                    "Promemoria email automatico il giorno prima",
+                ]}
+                onGoToAbbonamento={onGoToAbbonamento}
+            />
+        );
+    }
 
     return (
         <div className="space-y-6" data-testid="interventi-panel">

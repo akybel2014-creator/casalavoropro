@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Wallet, Zap, ArrowLeft, Plus } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Zap, ArrowLeft, Plus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import LocationPicker from "@/components/LocationPicker";
 import ChatDialog from "@/components/ChatDialog";
 import { AnnunciPanel } from "@/components/AnnunciPanel";
 import { OfferteLavoroPanel } from "@/components/OfferteLavoroPanel";
-import { WalletPanel } from "@/components/WalletPanel";
 import { InterventiPanel } from "@/components/InterventiPanel";
 
 const inputCls = "bg-navy/70 border-white/10 text-white placeholder:text-slate-500";
@@ -109,20 +108,18 @@ export default function DashboardAzienda() {
     const [geoBusy, setGeoBusy] = useState(false);
     const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [saldo, setSaldo] = useState(null);
     const fileRef = useRef(null);
     const { section } = useParams();
     const navigate = useNavigate();
 
     const load = useCallback(async () => {
         try {
-            const [m, f, u, w] = await Promise.all([
-                api.get("/aziende/mine"), api.get("/richieste/feed"), api.get("/chat/unread-count"), api.get("/crediti/wallet"),
+            const [m, f, u] = await Promise.all([
+                api.get("/aziende/mine"), api.get("/richieste/feed"), api.get("/chat/unread-count"),
             ]);
             setMine(m.data);
             setFeed(f.data);
             setUnreadChat(u.data.per_risposta || {});
-            setSaldo(w.data.saldo_crediti);
         } catch (e) {
             toast.error(formatApiError(e));
         }
@@ -242,8 +239,8 @@ export default function DashboardAzienda() {
     };
 
     const foto = mine?.foto || [];
-    const walletTotal = saldo ?? "…";
-    const KNOWN_SECTIONS = ["nuovo-intervento", "cerca-operai", "wallet", "profilo", "annunci", "richieste"];
+    const isPro = mine?.plan === "pro" && ["active", "trialing", "active_trial"].includes(mine?.subscription_status);
+    const KNOWN_SECTIONS = ["nuovo-intervento", "cerca-operai", "profilo", "annunci", "richieste"];
     if (section === "analisi-energetica") return <Navigate to="/analisi-energetica" replace />;
     if (section && !KNOWN_SECTIONS.includes(section)) return <Navigate to="/dashboard" replace />;
 
@@ -284,7 +281,7 @@ export default function DashboardAzienda() {
                 <div className="pb-2">
                     {section === "nuovo-intervento" && (
                         <div className="mt-6" data-testid="nuovo-intervento-panel">
-                            <InterventiPanel />
+                            <InterventiPanel isPro={isPro} onGoToAbbonamento={() => navigate("/dashboard/profilo")} />
                         </div>
                     )}
 
@@ -465,11 +462,7 @@ export default function DashboardAzienda() {
                     </div>)}
 
                     {section === "cerca-operai" && (<div className="mt-6">
-                        <OfferteLavoroPanel azienda={mine} />
-                    </div>)}
-
-                    {section === "wallet" && (<div className="mt-6">
-                        <WalletPanel />
+                        <OfferteLavoroPanel azienda={mine} isPro={isPro} onGoToAbbonamento={() => navigate("/dashboard/profilo")} />
                     </div>)}
 
                     {section === "profilo" && (<div className="mt-6">
@@ -563,56 +556,33 @@ export default function DashboardAzienda() {
                     </div>)}
 
                     {section === "profilo" && (<div className="mt-6" data-testid="subscription-panel">
-                        {mine?.subscription_status === "active_trial" ? (
-                            <div className="relative overflow-hidden rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10 shadow-2xl shadow-brand/10">
-                                <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-brand/20 blur-3xl" aria-hidden="true" />
-                                <span className="inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1 text-xs font-bold uppercase tracking-wide text-white" data-testid="offerta-lancio-badge">
-                                    Riservato ai fondatori
-                                </span>
-                                <h3 className="mt-4 font-display font-black tracking-tight text-2xl sm:text-3xl text-white" data-testid="offerta-lancio-title">
-                                    Offerta Lancio Fondatori 2026
-                                </h3>
-                                <p className="mt-3 max-w-2xl text-base sm:text-lg font-semibold" style={{ color: "#FFFFFF" }} data-testid="offerta-lancio-subtitle">
-                                    Tutte le funzioni del piano PRO sono 100% GRATUITE fino al 31 Dicembre. Nessuna carta di credito richiesta. Blocca il tuo profilo prima che scada l'offerta!
-                                </p>
-                                <ul className="mt-7 space-y-3" data-testid="offerta-lancio-bullets">
-                                    {[
-                                        "Richieste di lavoro e preventivi illimitati gratis",
-                                        "Incluso: Sezione Annunci Noleggio Attrezzatura",
-                                        "Incluso: Vendita Macchinari Usati senza commissioni",
-                                        "Badge PRO e massima visibilità nelle ricerche locali",
-                                    ].map((f) => (
-                                        <li key={f} className="flex items-start gap-3 text-sm sm:text-base text-white">
-                                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/20 text-brand">
-                                                <Check className="h-3.5 w-3.5" />
-                                            </span>
-                                            {f}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
-                                    <Check className="h-4 w-4" /> Profilo PRO attivo · gratis fino al 31 Dicembre 2026
-                                </p>
-                            </div>
-                        ) : mine?.subscription_status === "active" ? (
+                        {isPro ? (
                             <div className="rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10">
-                                <h3 className="font-display font-bold text-white text-xl">Piano Pro</h3>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <h3 className="font-display font-bold text-white text-xl">Piano Pro</h3>
+                                    {["trialing", "active_trial"].includes(mine?.subscription_status) && (
+                                        <span className="rounded-full bg-brand px-3 py-1 text-xs font-bold text-white uppercase tracking-wide" data-testid="subscription-trial-badge">
+                                            Prova gratuita
+                                        </span>
+                                    )}
+                                </div>
                                 <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
-                                    {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Annunci noleggio e usato illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
+                                    {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Cantieri, annunci noleggio/usato e offerte di lavoro illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
                                         <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
                                     ))}
                                 </ul>
-                                <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
-                                    <Check className="h-4 w-4" /> Abbonamento attivo
-                                </p>
+                                {["trialing", "active_trial"].includes(mine?.subscription_status) && mine?.trial_ends_at ? (
+                                    <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
+                                        <Check className="h-4 w-4" /> Prova PRO attiva · {Math.max(0, Math.ceil((new Date(mine.trial_ends_at) - Date.now()) / 86400000))} giorni rimanenti
+                                    </p>
+                                ) : (
+                                    <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
+                                        <Check className="h-4 w-4" /> Abbonamento attivo
+                                    </p>
+                                )}
                             </div>
                         ) : (
                             <div data-testid="subscription-paid-plans">
-                                {mine?.subscription_status === "trial_expired" && (
-                                    <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200" data-testid="trial-expired-note">
-                                        L'Offerta Lancio Fondatori è terminata. Attiva un piano PRO per continuare a ricevere richieste illimitate e pubblicare annunci noleggio e usato.
-                                    </div>
-                                )}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7">
                                         <h3 className="font-display font-bold text-white text-xl">Base</h3>
@@ -626,23 +596,24 @@ export default function DashboardAzienda() {
                                     </div>
 
                                     <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 shadow-2xl shadow-brand/10">
-                                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">CONSIGLIATO</span>
+                                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">14 GIORNI GRATIS</span>
                                         <h3 className="font-display font-bold text-white text-xl">Pro</h3>
                                         <p className="mt-1 font-display font-black text-3xl text-white" data-testid="pro-price-monthly">€4,99<span className="text-base font-semibold text-slate-400">/mese</span></p>
                                         <p className="text-xs text-slate-400" data-testid="pro-price-yearly">oppure €49,99/anno (2 mesi gratis)</p>
-                                        <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
-                                            {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Annunci noleggio e usato illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
+                                        <p className="mt-3 text-sm font-semibold text-brand" data-testid="pro-trial-note">Prova gratis per 14 giorni, poi si rinnova automaticamente. Annulli quando vuoi.</p>
+                                        <ul className="mt-4 space-y-2.5 text-sm text-slate-300">
+                                            {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Cantieri, annunci noleggio/usato e offerte di lavoro", "Priorità nelle ricerche dei privati"].map((f) => (
                                                 <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
                                             ))}
                                         </ul>
                                         <div className="mt-6 flex flex-col sm:flex-row gap-3">
                                             <Button onClick={() => checkout("pro_monthly")} disabled={checkingOut} data-testid="checkout-monthly-button"
                                                 className="flex-1 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                                                {checkingOut && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Attiva mensile
+                                                {checkingOut && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Inizia prova · mensile
                                             </Button>
                                             <Button onClick={() => checkout("pro_yearly")} disabled={checkingOut} data-testid="checkout-yearly-button" variant="outline"
                                                 className="flex-1 rounded-xl border-brand text-brand hover:bg-brand hover:text-navy font-semibold">
-                                                Attiva annuale
+                                                Inizia prova · annuale
                                             </Button>
                                         </div>
                                     </div>

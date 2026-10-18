@@ -105,8 +105,8 @@ export default function Registrati() {
                                     <div className="grid grid-cols-1 gap-2">
                                         {[
                                             { v: "base", t: "Base", p: "Gratis", d: "Profilo in directory + fino a 2 preventivi/mese" },
-                                            { v: "pro_monthly", t: "PRO Mensile", p: "€4,99/mese", d: "Preventivi e funzioni illimitati + badge PRO" },
-                                            { v: "pro_yearly", t: "PRO Annuale", p: "€49,99/anno", d: "Tutto il PRO con 2 mesi gratis" },
+                                            { v: "pro_monthly", t: "PRO Mensile", p: "€4,99/mese", d: "14 giorni di prova gratis, poi preventivi e funzioni illimitati + badge PRO" },
+                                            { v: "pro_yearly", t: "PRO Annuale", p: "€49,99/anno", d: "14 giorni di prova gratis, poi tutto il PRO con 2 mesi gratis" },
                                         ].map((o) => (
                                             <button key={o.v} type="button" data-testid={`register-plan-${o.v}`} onClick={() => setPlan(o.v)}
                                                 className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
@@ -173,12 +173,13 @@ export default function Registrati() {
 
                         <Button type="submit" disabled={busy} data-testid="register-submit-button"
                             className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            {busy ? "Creazione…" : ruolo === "azienda" ? (plan === "base" ? "Crea Account Azienda Gratis" : "Crea Account e Attiva PRO") : "Registrati Gratis come Privato (Nessun costo nascosto)"}
+                            {busy ? "Creazione…" : ruolo === "azienda" ? (plan === "base" ? "Crea Account Azienda Gratis" : "Crea Account e Inizia la Prova Gratis") : "Registrati Gratis come Privato (Nessun costo nascosto)"}
                         </Button>
                         {ruolo === "azienda" && (
                             <p className="text-xs text-slate-400 text-center" data-testid="register-plan-note">
-                                Con il piano Base usi profilo e preventivi di base gratis. Con PRO sblocchi tutte le funzioni
-                                gestionali (cantieri, annunci, noleggio) e la massima visibilità. Puoi cambiare piano quando vuoi.
+                                Con il piano Base usi profilo e preventivi di base gratis. Con PRO hai 14 giorni di prova gratuita:
+                                sblocchi tutte le funzioni gestionali (cantieri, annunci, offerte di lavoro) e la massima visibilità.
+                                Al termine della prova si rinnova automaticamente, ma puoi annullare quando vuoi.
                             </p>
                         )}
                     </form>

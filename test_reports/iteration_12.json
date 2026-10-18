@@ -1,0 +1,71 @@
+{
+  "summary": "Validated the full SaaS subscription pivot (credit/wallet system removed, PRO gating + 14-day Stripe trial). Backend pytest 18/18 PASS (register defaults, billing/me, billing/trial, 402 gating on interventi/offerte-lavoro/annunci for Base, successful creation for PRO, old credit endpoints return 404/405, admin metrics/users new shape, PATCH role). Frontend E2E 14/14 PASS after fixing 1 critical ReferenceError that crashed /analisi-energetica. All data-testids verified: interventi-upsell(+button), offerte-lavoro-upsell, annunci-upgrade-button, subscription-panel with checkout-monthly-button + checkout-yearly-button + '14 giorni' note, intervento-form (PRO), subscription-active-badge (PRO), register-plan-base/pro_monthly/pro_yearly + register-plan-note, admin-metrics, admin-users-table (no 'Crediti' column — headers: Utente/Ruolo/Abbonamento/Stato/Azioni), manage dialog shows role+suspend only. /analisi-energetica now loads correctly (no wallet/credit references, no 'Ricarica il Wallet' dialog).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AnalisiEnergetica.jsx",
+        "issue": "FIXED by testing agent — line 24 referenced undefined variable `user` (`const isAzienda = user?.role === 'azienda';`), throwing ReferenceError and triggering the ErrorBoundary. The entire /analisi-energetica page rendered 'Qualcosa è andato storto'. `isAzienda` was never used elsewhere — leftover from wallet removal. Removed the dead line to unblock the page.",
+        "selector": "/analisi-energetica",
+        "priority": "CRITICAL (fixed)"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "backend_register_new_azienda_defaults_free_none": "PASS",
+    "backend_billing_me_base_pro_active_false": "PASS",
+    "backend_billing_me_pro_active_true": "PASS",
+    "backend_billing_trial_eligible_14d_new_azienda": "PASS",
+    "backend_402_gating_interventi_base": "PASS",
+    "backend_402_gating_offerte_lavoro_base": "PASS",
+    "backend_402_gating_annunci_base": "PASS",
+    "backend_pro_can_create_intervento": "PASS",
+    "backend_pro_can_create_offerta_lavoro": "PASS",
+    "backend_pro_can_create_annuncio": "PASS",
+    "backend_old_credit_endpoints_404_or_405": "PASS (5/5: /crediti/wallet, /crediti/costi, /crediti/movimenti, /crediti/sblocca-contatto, /stripe/create-checkout-session)",
+    "backend_admin_credits_patch_removed": "PASS",
+    "backend_admin_metrics_new_shape": "PASS (mrr_eur, active_subscriptions, trial_subscriptions, counts{privati, aziende_pro, aziende_trial, aziende_free, aziende_totali, totale}; no credit_revenue)",
+    "backend_admin_users_no_credit_fields_with_plan_and_sub": "PASS",
+    "backend_admin_patch_role_azienda": "PASS",
+    "frontend_base_interventi_upsell": "PASS",
+    "frontend_base_offerte_upsell": "PASS",
+    "frontend_base_annunci_upgrade_button": "PASS",
+    "frontend_base_subscription_panel_with_14d_and_checkout_buttons": "PASS",
+    "frontend_pro_intervento_form_no_upsell": "PASS",
+    "frontend_pro_create_intervento": "PASS",
+    "frontend_pro_subscription_active_badge": "PASS",
+    "frontend_registration_plan_selector": "PASS (base + pro_monthly + pro_yearly)",
+    "frontend_registration_14d_note": "PASS ('Con PRO hai 14 giorni...')",
+    "frontend_admin_metrics_and_users_table": "PASS (headers: Utente, Ruolo, Abbonamento, Stato, Azioni — no 'Crediti')",
+    "frontend_admin_manage_dialog_no_credit_inputs": "PASS",
+    "frontend_analisi_energetica_loads_no_wallet": "PASS (after fix — no wallet/crediti references on page)"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_saas_gating.py",
+    "/app/test_reports/pytest/saas_gating.xml"
+  ],
+  "action_items": [
+    "Verify the AnalisiEnergetica fix is acceptable (removed dead `isAzienda` line that referenced undefined `user`). If role-specific UI was intended, main agent should re-introduce it with `useAuth()` import.",
+    "Consider wiring the `100% gratuiti` hint area to also appear in the upload phase (currently only visible in result phase after bolletta analysis), since the user prompt mentions it as a general reassurance for the page."
+  ],
+  "critical_code_review_comments": [
+    "AnalisiEnergetica.jsx had dead code (`isAzienda`) referencing an undefined `user` — classic leftover after wallet removal. Suggests the wallet-removal refactor needs a search for other stale references to removed hooks/vars.",
+    "routes_billing.py: PLANS list still uses hardcoded 'EUR' strings in Italian decimal format inside the display payload — fine for FE, but the hardcoded prices risk drift from the actual Stripe prices (fetched via lookup_keys). Consider surfacing them from Stripe.",
+    "subscription.py gating logic correctly handles trial expiry via trial_ends_at, admin bypass included; good coverage.",
+    "routes_annunci._pro_azienda gates POST /annunci but should also gate PATCH/PUT update endpoints if any — audit recommended.",
+    "Dashboard 'Qualcosa è andato storto' ErrorBoundary is good UX, but it swallows the underlying error silently in prod. Consider logging the error server-side via a /api/log/client endpoint to catch regressions like the AnalisiEnergetica crash earlier."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_saas_gating.py (new)",
+    "/app/frontend/src/pages/AnalisiEnergetica.jsx (removed stale `isAzienda` dead code at line 24)"
+  ],
+  "success_rate": {"backend": "100% (18/18)", "frontend": "100% (14/14 after fix)"},
+  "test_credentials": "Verified: admin@casalavoripro.it/Admin2026!, info@caloreeclima.it/Demo2026! (PRO), azienda.free@casalavoripro.it/Demo2026! (Base), mario.rossi@example.com/Demo2026!",
+  "seed_data_creation": "Created a TEST azienda user TEST_az_<rand>@example.com (via /api/auth/register) to verify defaults (plan=free, subscription_status=none, trial eligible=true, days=14); not cleaned up (no admin delete endpoint used). Created+deleted TEST_pro_int intervento, TEST_pro_off offerta, TEST_pro_ann annuncio under the PRO azienda. Created one TEST_UI intervento under PRO azienda via UI (not deleted after UI test).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "SaaS pivot fully validated. Backend regression file: /app/backend/tests/test_saas_gating.py (run with `python -m pytest backend/tests/test_saas_gating.py -o 'addopts=' -v`). Frontend testids all present and correctly wired. One leftover-from-wallet-removal bug fixed in AnalisiEnergetica.jsx (dead `isAzienda` referencing undefined `user`). Watch for similar stale references in other pages that previously consumed the wallet (e.g., Prezzi, DashboardAzienda sidebar). Stripe checkout redirect was not exercised to Stripe-hosted page — only verified the checkout buttons exist on subscription-panel.",
+  "rca of the issue": "Bug: /analisi-energetica rendered the ErrorBoundary ('Qualcosa è andato storto'). RCA: AnalisiEnergetica.jsx line 24 had `const isAzienda = user?.role === 'azienda';` but the `user` identifier was neither imported nor obtained from a hook — likely a remnant of a `const { user } = useAuth();` deleted during the wallet/credit removal refactor. `isAzienda` had no other usage in the file. React threw `ReferenceError: user is not defined` on render → ErrorBoundary caught it. Repro: visit /analisi-energetica (any user or anonymous) → full-page 'Qualcosa è andato storto' message. Mitigation applied: removed the dead line. Confirmed page now renders upload UI with no wallet/credit references."
+}

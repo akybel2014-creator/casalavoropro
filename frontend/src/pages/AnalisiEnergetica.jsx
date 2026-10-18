@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
     UploadCloud, FileText, Loader2, Sparkles, TrendingDown, Zap, Gauge,
-    Building2, CheckCircle2, ArrowRight, RefreshCw,
+    Building2, CheckCircle2, ArrowRight, RefreshCw, Camera,
     Share2, Copy, Check, QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, formatApiError } from "@/lib/api";
+
+const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
 const fmtNum = (n) => (n == null ? "—" : new Intl.NumberFormat("it-IT").format(n));
 const fmtEur = (n) => (n == null ? "—" : `€${Number(n).toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
@@ -20,8 +22,8 @@ export default function AnalisiEnergetica() {
     const [sent, setSent] = useState(false);
     const [copied, setCopied] = useState(false);
     const fileRef = useRef(null);
+    const cameraRef = useRef(null);
     const progressTimer = useRef(null);
-    const isAzienda = user?.role === "azienda";
 
     // Se arriviamo dalla Hero con un lead gia analizzato, mostra subito i risultati.
     useEffect(() => {
@@ -46,17 +48,19 @@ export default function AnalisiEnergetica() {
         progressTimer.current = null;
     };
 
-    const analizza = useCallback(async (file) => {
-        if (!file) return;
-        if (file.type !== "application/pdf") {
-            toast.error("Carica la bolletta in formato PDF");
+    const analizza = useCallback(async (fileList) => {
+        const arr = Array.from(fileList || []).filter(Boolean);
+        if (arr.length === 0) return;
+        const invalid = arr.find((f) => !ALLOWED_TYPES.includes(f.type));
+        if (invalid) {
+            toast.error("Carica la bolletta in PDF oppure scatta una foto (JPG/PNG/WEBP)");
             return;
         }
         setPhase("analyzing");
         startFakeProgress();
         try {
             const fd = new FormData();
-            fd.append("file", file);
+            arr.forEach((f) => fd.append("files", f));
             const { data } = await api.post("/analizza-bolletta", fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
@@ -75,8 +79,7 @@ export default function AnalisiEnergetica() {
     const onDrop = (e) => {
         e.preventDefault();
         setDragOver(false);
-        const f = e.dataTransfer?.files?.[0];
-        analizza(f);
+        analizza(e.dataTransfer?.files);
     };
 
     const risparmiaOra = async () => {
@@ -140,23 +143,43 @@ export default function AnalisiEnergetica() {
                         <div className="mx-auto h-20 w-20 rounded-full bg-brand/15 flex items-center justify-center">
                             <UploadCloud className="h-10 w-10 text-brand" />
                         </div>
-                        <p className="mt-6 font-display font-bold text-white text-lg">Trascina qui la tua bolletta PDF</p>
+                        <p className="mt-6 font-display font-bold text-white text-lg">Trascina qui la tua bolletta (PDF o foto)</p>
                         <p className="mt-1 text-sm text-slate-400">oppure</p>
-                        <Button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                            data-testid="analisi-select-file-button"
-                            className="mt-4 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            <FileText className="h-4 w-4 mr-2" /> Seleziona File
-                        </Button>
-                        <p className="mt-5 text-xs text-slate-500">Formato supportato: PDF · Max 15 MB</p>
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                            <Button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                                data-testid="analisi-select-file-button"
+                                className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                <FileText className="h-4 w-4 mr-2" /> Carica PDF o foto
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+                                data-testid="analisi-camera-button"
+                                className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
+                                <Camera className="h-4 w-4 mr-2" /> Scatta foto
+                            </Button>
+                        </div>
+                        <p className="mt-5 text-xs text-slate-500">PDF o foto (JPG/PNG/WEBP) · puoi caricare più pagine · max 15 MB</p>
                         <input
                             ref={fileRef}
                             type="file"
-                            accept="application/pdf"
+                            multiple
+                            accept="application/pdf,image/jpeg,image/png,image/webp"
                             className="hidden"
                             data-testid="analisi-file-input"
-                            onChange={(e) => analizza(e.target.files?.[0])}
+                            onChange={(e) => analizza(e.target.files)}
+                        />
+                        <input
+                            ref={cameraRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            data-testid="analisi-camera-input"
+                            onChange={(e) => analizza(e.target.files)}
                         />
                     </div>
                 </div>

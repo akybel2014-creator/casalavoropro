@@ -167,6 +167,14 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
   * Camera bolletta: /api/analizza-bolletta ora accetta anche immagini (JPG/PNG/WEBP) oltre al PDF; input `capture="environment"` nel frontend.
   * CTA "Scopri il Gestionale per Artigiani" spostata nella sezione pubblica #per-le-aziende (CtaBoxes, card azienda, data-testid gestionale-cta-button).
   * DEFERITO (prossima fase, pagamenti+auth): rimozione sistema crediti/wallet e gating via abbonamento PRO; scelta piano in registrazione azienda (Base gratis / PRO €4,99-49,99 con checkout post-registrazione); aggiornamento prezzi €4,99/€49,99 ovunque + creazione nuovi Price su Stripe (transfer_lookup_key).
+- PIVOT ABBONAMENTO (parziale) + MULTI-PAGINA + MESSAGGIO HERO (2026-07):
+  * Prezzi aggiornati a €4,99/mese e €49,99/anno OVUNQUE: nuovi Price su Stripe (lookup_key pro_monthly/pro_yearly spostati con transfer_lookup_key, valuta EUR) + UI (Prezzi.jsx, DashboardAzienda abbonamento, emailer, PLANS routes_billing, banner). Verificato (plans endpoint + Stripe list).
+  * Registrazione azienda: selettore piano Base (gratis) / PRO Mensile €4,99 / PRO Annuale €49,99. Se PRO -> dopo la registrazione parte subito il checkout Stripe (POST /api/payments/checkout, redirect a checkout_url). Testato E2E via curl (checkout_url Stripe valido). Rimosso il vecchio riquadro PAYG/crediti e la card "Offerta Fondatori" dalla registrazione.
+  * Dashboard azienda: box hub "Wallet crediti" sostituito da box "Abbonamento PRO" -> /dashboard/profilo.
+  * Hero: messaggio aggiornato per chiarire che si fanno anche lavori in casa (ristrutturazioni, impianti, riparazioni).
+  * Analisi bolletta: fotocamera ("Scatta foto") + MULTI-PAGINA (accumulo di più pagine/foto e analisi insieme). Backend /api/analizza-bolletta ora accetta `files` (lista) PDF/immagini via _gemini_json_multi.
+  * Promemoria cantiere: email il giorno prima (piggyback sul cron noleggio-reminder). Filtri+conteggi stato in InterventiPanel.
+  * RESIDUO da completare (prossima fase): rimozione COMPLETA del codice crediti (WalletPanel/pacchetti a /dashboard/wallet, scalo crediti su "Risparmia Ora", gestione crediti admin, cron credits-refresh) e gating esplicito delle funzioni azienda per abbonamento PRO attivo. Oggi la UX è "subscription-first" ma il codice crediti è ancora presente/dormiente.
 
 
 ## Persone

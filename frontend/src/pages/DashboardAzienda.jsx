@@ -268,7 +268,7 @@ export default function DashboardAzienda() {
                         <HubBox to="/dashboard/nuovo-intervento" testid="box-nuovo-intervento" Icon={Plus} title="Nuovo Intervento" desc="Registra un nuovo lavoro o cantiere" />
                         <HubBox to="/analisi-energetica" testid="box-scansione-ai" Icon={Zap} title="Scansione Energetica AI" desc="Analizza una bolletta" />
                         <HubBox to="/dashboard/cerca-operai" testid="box-cerca-operai" Icon={Megaphone} title="Cerca Operai" desc="Trova personale qualificato per la tua ditta" />
-                        <HubBox to="/dashboard/wallet" testid="box-wallet" Icon={Wallet} title={`Wallet: ${walletTotal} crediti`} desc="Gestisci crediti e ricariche" />
+                        <HubBox to="/dashboard/profilo" testid="box-abbonamento" Icon={CreditCard} title="Abbonamento PRO" desc="Gestisci il tuo piano e la fatturazione" />
                         <HubBox to="/dashboard/profilo" testid="box-profilo" Icon={Building2} title="Profilo Aziendale" desc="Dati ditta, galleria foto, verifica, abbonamento ed emergenze" />
                         <HubBox to="/dashboard/annunci" testid="box-annunci" Icon={Truck} title="I Miei Annunci" desc="Gestisci le tue inserzioni di lavoro, usato e noleggio" />
                     </div>
@@ -628,8 +628,8 @@ export default function DashboardAzienda() {
                                     <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 shadow-2xl shadow-brand/10">
                                         <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">CONSIGLIATO</span>
                                         <h3 className="font-display font-bold text-white text-xl">Pro</h3>
-                                        <p className="mt-1 font-display font-black text-3xl text-white" data-testid="pro-price-monthly">€3,99<span className="text-base font-semibold text-slate-400">/mese</span></p>
-                                        <p className="text-xs text-slate-400" data-testid="pro-price-yearly">oppure €39,99/anno (2 mesi gratis)</p>
+                                        <p className="mt-1 font-display font-black text-3xl text-white" data-testid="pro-price-monthly">€4,99<span className="text-base font-semibold text-slate-400">/mese</span></p>
+                                        <p className="text-xs text-slate-400" data-testid="pro-price-yearly">oppure €49,99/anno (2 mesi gratis)</p>
                                         <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
                                             {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Annunci noleggio e usato illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
                                                 <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>

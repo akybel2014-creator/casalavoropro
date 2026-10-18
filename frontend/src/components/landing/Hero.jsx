@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { UploadCloud, Camera, Search } from "lucide-react";
+import { UploadCloud, Camera, Search, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
@@ -28,6 +28,7 @@ export default function Hero() {
     const [dragOver, setDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [pending, setPending] = useState([]);
     const fileRef = useRef(null);
     const cameraRef = useRef(null);
     const cosaRef = useRef(null);
@@ -44,10 +45,20 @@ export default function Hero() {
         navigate(`/aziende?${params.toString()}`);
     };
 
-    const analizza = async (file) => {
-        if (!file) return;
-        if (!ALLOWED.includes(file.type)) {
-            toast.error("Carica la bolletta in PDF oppure scatta una foto (JPG/PNG)");
+    const addFiles = (list) => {
+        const arr = Array.from(list || []).filter((f) => ALLOWED.includes(f.type));
+        if (arr.length === 0) {
+            toast.error("Formati validi: PDF, JPG o PNG");
+            return;
+        }
+        setPending((p) => [...p, ...arr]);
+    };
+
+    const removePending = (idx) => setPending((p) => p.filter((_, i) => i !== idx));
+
+    const avviaAnalisi = async () => {
+        if (pending.length === 0) {
+            toast.error("Aggiungi almeno una pagina della bolletta");
             return;
         }
         setUploading(true);
@@ -66,7 +77,7 @@ export default function Hero() {
         }
         try {
             const fd = new FormData();
-            fd.append("file", file);
+            pending.forEach((f) => fd.append("files", f));
             const { data } = await api.post("/analizza-bolletta", fd, { headers: { "Content-Type": "multipart/form-data" } });
             clearInterval(timer.current);
             setProgress(100);
@@ -83,7 +94,7 @@ export default function Hero() {
     const onDrop = (e) => {
         e.preventDefault();
         setDragOver(false);
-        analizza(e.dataTransfer?.files?.[0]);
+        addFiles(e.dataTransfer?.files);
     };
 
     return (
@@ -105,7 +116,8 @@ export default function Hero() {
                     </h1>
                     <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5 }}
                         className="mt-5 text-base sm:text-lg text-slate-300 leading-relaxed">
-                        Due strumenti, un unico posto: scopri quanto risparmi sulle utenze e trova professionisti verificati in tutta Italia.
+                        Tutto per la tua casa in un unico posto: scopri quanto risparmi sulle bollette e trova artigiani
+                        verificati per ristrutturazioni, impianti, riparazioni e piccoli lavori di casa in tutta Italia.
                     </motion.p>
                 </div>
 
@@ -137,23 +149,43 @@ export default function Hero() {
                                     className={`mt-4 cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${dragOver ? "border-brand bg-brand/10" : "border-white/20 hover:border-brand/50"}`}
                                 >
                                     <UploadCloud className="h-7 w-7 text-brand mx-auto" />
-                                    <p className="mt-2 text-sm font-semibold text-white">Trascina qui la bolletta (PDF o foto)</p>
-                                    <p className="mt-1 text-xs text-slate-500">PDF, JPG o PNG · max 15 MB</p>
+                                    <p className="mt-2 text-sm font-semibold text-white">Trascina qui le pagine (PDF o foto)</p>
+                                    <p className="mt-1 text-xs text-slate-500">Puoi aggiungere più pagine · PDF, JPG o PNG</p>
                                 </div>
                                 <div className="mt-3 grid grid-cols-2 gap-2">
                                     <Button type="button" onClick={() => fileRef.current?.click()} data-testid="hero-carica-pdf-button"
-                                        className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                                        <UploadCloud className="h-4 w-4 mr-1.5" /> Carica PDF
+                                        variant="outline" className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
+                                        <UploadCloud className="h-4 w-4 mr-1.5" /> Carica file
                                     </Button>
                                     <Button type="button" onClick={() => cameraRef.current?.click()} data-testid="hero-scatta-foto-button"
                                         variant="outline" className="rounded-xl border-brand text-brand hover:bg-brand hover:text-white font-semibold">
                                         <Camera className="h-4 w-4 mr-1.5" /> Scatta foto
                                     </Button>
                                 </div>
-                                <input ref={fileRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden"
-                                    data-testid="hero-bolletta-file-input" onChange={(e) => analizza(e.target.files?.[0])} />
+
+                                {pending.length > 0 && (
+                                    <div className="mt-4 space-y-2" data-testid="hero-bolletta-pending">
+                                        {pending.map((f, i) => (
+                                            <div key={i} className="flex items-center gap-2 rounded-lg bg-navy/60 border border-white/10 px-3 py-2">
+                                                <FileText className="h-4 w-4 text-brand shrink-0" />
+                                                <span className="flex-1 truncate text-xs text-slate-300">{f.name || `Pagina ${i + 1}`}</span>
+                                                <button type="button" onClick={() => removePending(i)} aria-label="Rimuovi pagina"
+                                                    data-testid={`hero-bolletta-remove-${i}`} className="p-1 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10">
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <Button type="button" onClick={avviaAnalisi} data-testid="hero-analizza-button"
+                                            className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                            Analizza {pending.length} {pending.length === 1 ? "pagina" : "pagine"}
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <input ref={fileRef} type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden"
+                                    data-testid="hero-bolletta-file-input" onChange={(e) => addFiles(e.target.files)} />
                                 <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
-                                    data-testid="hero-bolletta-camera-input" onChange={(e) => analizza(e.target.files?.[0])} />
+                                    data-testid="hero-bolletta-camera-input" onChange={(e) => addFiles(e.target.files)} />
                             </>
                         )}
                     </motion.div>

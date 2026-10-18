@@ -203,7 +203,7 @@ async def send_reactivation_email(to: str, name: str, leads: int = 0):
             f'<p>L\'Offerta Lancio Fondatori 2026 &egrave; terminata e il tuo profilo PRO &egrave; stato messo in pausa.</p>'
             f'<p>Riattiva ora il piano <strong>PRO</strong> per tornare a ricevere richieste di lavoro illimitate, '
             f'pubblicare annunci di noleggio e usato, e avere il badge PRO con la massima visibilit&agrave; nelle '
-            f'ricerche locali &mdash; a partire da soli <strong>3,99 &euro;/mese</strong> (o 39,99 &euro;/anno).</p>'
+            f'ricerche locali &mdash; a partire da soli <strong>4,99 &euro;/mese</strong> (o 49,99 &euro;/anno).</p>'
             f'{gancio}'
             f'<p>Bastano pochi secondi: clicca qui sotto e completa l\'attivazione.</p>')
     await send_email(to=to, subject="Riattiva il tuo profilo PRO su CasaLavoroPRO",

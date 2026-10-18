@@ -61,17 +61,24 @@ def _parse_json(text: str) -> dict:
 
 async def _gemini_json(model: str, system_message: str, prompt: str,
                        file_bytes: bytes, mime_type: str, suffix: str) -> dict:
+    return await _gemini_json_multi(model, system_message, prompt, [(file_bytes, mime_type, suffix)])
+
+
+async def _gemini_json_multi(model: str, system_message: str, prompt: str, items: list) -> dict:
+    """items: lista di tuple (bytes, mime_type, suffix). Analizza piu file insieme."""
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=503, detail="Servizio AI non configurato")
-    tmp_path = None
+    tmp_paths = []
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            tmp.write(file_bytes)
-            tmp_path = tmp.name
+        contents = []
+        for file_bytes, mime_type, suffix in items:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(file_bytes)
+                tmp_paths.append(tmp.name)
+            contents.append(FileContentWithMimeType(file_path=tmp_paths[-1], mime_type=mime_type))
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=str(uuid.uuid4()),
                        system_message=system_message).with_model("gemini", model)
-        file_content = FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)
-        resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
+        resp = await chat.send_message(UserMessage(text=prompt, file_contents=contents))
         return _parse_json(resp)
     except HTTPException:
         raise
@@ -79,11 +86,12 @@ async def _gemini_json(model: str, system_message: str, prompt: str,
         logger.exception("Gemini call failed (%s)", model)
         raise HTTPException(status_code=502, detail="Analisi AI non riuscita, riprova piu tardi")
     finally:
-        if tmp_path and os.path.exists(tmp_path):
-            try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
+        for p in tmp_paths:
+            if p and os.path.exists(p):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
 
 
 BOLLETTA_SYSTEM = (
@@ -234,25 +242,31 @@ async def _invia_report_risparmio(user_id: str, dati: dict):
 
 
 @router.post("/analizza-bolletta")
-async def analizza_bolletta(background: BackgroundTasks, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    if file.content_type == "application/pdf":
-        mime, suffix = "application/pdf", ".pdf"
-    elif file.content_type in IMG_MIME:
-        mime = file.content_type
-        suffix = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[file.content_type]
-    else:
-        raise HTTPException(status_code=400, detail="Carica la bolletta in PDF oppure scatta una foto (JPG/PNG/WEBP)")
-    data = await file.read()
-    if len(data) > MAX_UPLOAD:
-        raise HTTPException(status_code=400, detail="File troppo grande (max 15 MB)")
+async def analizza_bolletta(background: BackgroundTasks, files: list[UploadFile] = File(...), user: dict = Depends(get_current_user)):
+    if not files:
+        raise HTTPException(status_code=400, detail="Nessun file caricato")
+    items = []
+    total = 0
+    for f in files:
+        if f.content_type == "application/pdf":
+            mime, suffix = "application/pdf", ".pdf"
+        elif f.content_type in IMG_MIME:
+            mime = f.content_type
+            suffix = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[f.content_type]
+        else:
+            raise HTTPException(status_code=400, detail="Carica la bolletta in PDF oppure scatta una foto (JPG/PNG/WEBP)")
+        data = await f.read()
+        total += len(data)
+        if total > MAX_UPLOAD:
+            raise HTTPException(status_code=400, detail="File troppo grandi (max 15 MB in totale)")
+        items.append((data, mime, suffix))
 
     # L'analisi e gratuita per tutti: l'eventuale credito viene scalato al momento dell'invio al broker ("Risparmia Ora").
-    estratto = await _gemini_json(GEMINI_BOLLETTA_MODEL, BOLLETTA_SYSTEM, BOLLETTA_PROMPT,
-                                  data, mime, suffix)
+    estratto = await _gemini_json_multi(GEMINI_BOLLETTA_MODEL, BOLLETTA_SYSTEM, BOLLETTA_PROMPT, items)
 
     lead_doc = {
         "user_id": user["id"], "tipo": "bolletta", "stato": "lead_in_attesa",
-        "filename": file.filename, "dati": estratto,
+        "filename": files[0].filename, "pagine": len(items), "dati": estratto,
         "share_token": uuid.uuid4().hex,
         "created_at": now(), "inviato_broker": False,
     }

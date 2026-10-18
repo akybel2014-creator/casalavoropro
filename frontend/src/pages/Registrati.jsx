@@ -10,7 +10,7 @@ import { Logo } from "@/components/Logo";
 import LaunchBanner from "@/components/site/LaunchBanner";
 import { CountdownOfferta } from "@/components/CountdownOfferta";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
-import { formatApiError } from "@/lib/api";
+import { api, formatApiError } from "@/lib/api";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 
 export default function Registrati() {
@@ -20,6 +20,7 @@ export default function Registrati() {
     const [ruolo, setRuolo] = useState(params.get("ruolo") === "azienda" ? "azienda" : "privato");
     const [form, setForm] = useState({ name: "", email: "", password: "", nome: "", zone: "", piva: "", descrizione: "" });
     const [categorie, setCategorie] = useState([]);
+    const [plan, setPlan] = useState("base");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
 
@@ -45,6 +46,15 @@ export default function Registrati() {
             }
             const { user } = await register(payload);
             toast.success(`Benvenuto su CasaLavoroPRO, ${user.name}!`);
+            if (ruolo === "azienda" && plan !== "base") {
+                try {
+                    const { data } = await api.post("/payments/checkout", { lookup_key: plan, origin_url: window.location.origin });
+                    window.location.href = data.checkout_url;
+                    return;
+                } catch (err) {
+                    toast.error("Account creato! Puoi attivare il piano PRO dalla tua dashboard (Profilo → Abbonamento).");
+                }
+            }
             navigate(dashboardPathFor(user.role));
         } catch (err) {
             setError(formatApiError(err));
@@ -65,15 +75,6 @@ export default function Registrati() {
                 <div className="mt-8 rounded-3xl border border-white/10 bg-navy-700/70 p-7 sm:p-9 shadow-2xl">
                     <h1 className="font-display font-black text-2xl text-white tracking-tight">Crea il tuo account</h1>
                     <p className="mt-1 text-sm text-slate-400">Gratis, senza vincoli. Scegli chi sei.</p>
-
-                    {ruolo === "azienda" && (
-                        <div className="mt-5 rounded-2xl border border-brand/30 bg-brand/10 p-4" data-testid="register-offerta-lancio">
-                            <p className="text-sm font-semibold" style={{ color: "#FFFFFF" }}>
-                                Offerta Lancio Fondatori: profilo PRO 100% GRATIS fino al 31 Dicembre, senza carta di credito.
-                            </p>
-                            <CountdownOfferta tone="onDark" className="mt-3" />
-                        </div>
-                    )}
 
                     <div className="mt-6 grid grid-cols-2 gap-3" data-testid="register-role-toggle">
                         {[
@@ -99,10 +100,26 @@ export default function Registrati() {
 
                         {ruolo === "azienda" && (
                             <>
-                                <div className="rounded-xl border border-brand/30 bg-brand/5 p-4" data-testid="register-payg-card">
-                                    <p className="text-xs uppercase tracking-wide text-brand font-bold">Piano a Consumo (Pay-As-You-Go)</p>
-                                    <p className="mt-1 font-display font-black text-white text-2xl">0€ <span className="text-base font-semibold text-slate-300">/ mese per sempre</span></p>
-                                    <p className="mt-1 text-xs text-slate-400">Nessun canone fisso: paghi solo i crediti per i servizi speciali quando ti servono.</p>
+                                <div className="space-y-2" data-testid="register-plan-select">
+                                    <Label className="text-slate-300">Scegli il tuo piano</Label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {[
+                                            { v: "base", t: "Base", p: "Gratis", d: "Profilo in directory + fino a 2 preventivi/mese" },
+                                            { v: "pro_monthly", t: "PRO Mensile", p: "€4,99/mese", d: "Preventivi e funzioni illimitati + badge PRO" },
+                                            { v: "pro_yearly", t: "PRO Annuale", p: "€49,99/anno", d: "Tutto il PRO con 2 mesi gratis" },
+                                        ].map((o) => (
+                                            <button key={o.v} type="button" data-testid={`register-plan-${o.v}`} onClick={() => setPlan(o.v)}
+                                                className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                                                    plan === o.v ? "border-brand bg-brand/15" : "border-white/10 hover:border-white/25"
+                                                }`}>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-white">{o.t}</p>
+                                                    <p className="text-xs text-slate-400">{o.d}</p>
+                                                </div>
+                                                <span className="text-sm font-bold text-brand shrink-0">{o.p}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-slate-300">Nome dell'azienda</Label>
@@ -156,12 +173,12 @@ export default function Registrati() {
 
                         <Button type="submit" disabled={busy} data-testid="register-submit-button"
                             className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            {busy ? "Creazione…" : ruolo === "azienda" ? "Crea Account Azienda Gratis" : "Registrati Gratis come Privato (Nessun costo nascosto)"}
+                            {busy ? "Creazione…" : ruolo === "azienda" ? (plan === "base" ? "Crea Account Azienda Gratis" : "Crea Account e Attiva PRO") : "Registrati Gratis come Privato (Nessun costo nascosto)"}
                         </Button>
                         {ruolo === "azienda" && (
-                            <p className="text-xs text-slate-400 text-center" data-testid="register-payg-note">
-                                Le funzioni gestionali (fatture, cantieri) resteranno bloccate, ma potrai usare la bacheca lavoro
-                                e il noleggio attrezzatura acquistando i crediti solo quando ti servono.
+                            <p className="text-xs text-slate-400 text-center" data-testid="register-plan-note">
+                                Con il piano Base usi profilo e preventivi di base gratis. Con PRO sblocchi tutte le funzioni
+                                gestionali (cantieri, annunci, noleggio) e la massima visibilità. Puoi cambiare piano quando vuoi.
                             </p>
                         )}
                     </form>

@@ -22,8 +22,8 @@ const PRO_FEATURES = [
 ];
 
 const SERVIZI = [
-    { nome: "Profilo Pro mensile", prezzo: "€3,99 / mese" },
-    { nome: "Profilo Pro annuale", prezzo: "€39,99 / anno" },
+    { nome: "Profilo Pro mensile", prezzo: "€4,99 / mese" },
+    { nome: "Profilo Pro annuale", prezzo: "€49,99 / anno" },
     { nome: "Annuncio in evidenza (7 giorni)", prezzo: "da €4,99 a €9,99" },
     { nome: "Profilo sponsorizzato nella tua zona", prezzo: "da €14,99 a €29,99 / mese" },
     { nome: "Annuncio attrezzatura usata in evidenza", prezzo: "da €2,99 a €6,99" },
@@ -118,9 +118,9 @@ export default function Prezzi() {
                         <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">CONSIGLIATO</span>
                         <h2 className="font-display font-bold text-white text-xl">Profilo Pro</h2>
                         <p className="mt-2 font-display font-black text-4xl text-white" data-testid="plan-pro-price">
-                            €3,99<span className="text-base font-semibold text-slate-400">/mese</span>
+                            €4,99<span className="text-base font-semibold text-slate-400">/mese</span>
                         </p>
-                        <p className="mt-1 text-sm text-slate-400">oppure €39,99/anno (2 mesi gratis)</p>
+                        <p className="mt-1 text-sm text-slate-400">oppure €49,99/anno (2 mesi gratis)</p>
                         <ul className="mt-6 space-y-3">
                             {PRO_FEATURES.map((f) => (
                                 <li key={f} className="flex items-start gap-3 text-sm text-slate-200">

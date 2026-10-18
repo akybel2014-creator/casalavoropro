@@ -231,6 +231,17 @@ export default function DashboardAzienda() {
         }
     };
 
+    const openPortal = async () => {
+        setCheckingOut(true);
+        try {
+            const { data } = await api.post("/billing/portal", { origin_url: window.location.origin });
+            window.location.href = data.portal_url;
+        } catch (err) {
+            toast.error(formatApiError(err));
+            setCheckingOut(false);
+        }
+    };
+
     const VER_STYLES = {
         none: ["bg-white/5 text-slate-400", "Non richiesta"],
         in_attesa: ["bg-amber-500/15 text-amber-400", "In attesa di revisione"],
@@ -580,6 +591,14 @@ export default function DashboardAzienda() {
                                         <Check className="h-4 w-4" /> Abbonamento attivo
                                     </p>
                                 )}
+                                <div className="mt-6 border-t border-white/10 pt-5">
+                                    <Button onClick={openPortal} disabled={checkingOut} variant="outline" data-testid="manage-subscription-button"
+                                        className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
+                                        {checkingOut ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
+                                        Gestisci / Annulla abbonamento
+                                    </Button>
+                                    <p className="mt-2 text-xs text-slate-500">Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo dal portale Stripe.</p>
+                                </div>
                             </div>
                         ) : (
                             <div data-testid="subscription-paid-plans">

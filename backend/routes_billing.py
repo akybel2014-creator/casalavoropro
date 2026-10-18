@@ -45,7 +45,7 @@ PLANS = [
 ]
 
 
-async def _activate_pro(user_id: str, trial_days: int = 0):
+async def _activate_pro(user_id: str, trial_days: int = 0, customer_id: str | None = None):
     if not user_id:
         return
     updates = {"plan": "pro", "subscription_status": "active"}
@@ -53,6 +53,8 @@ async def _activate_pro(user_id: str, trial_days: int = 0):
         from datetime import timedelta
         updates.update({"trial_used": True, "subscription_status": "trialing",
                         "trial_ends_at": now() + timedelta(days=trial_days)})
+    if customer_id:
+        updates["stripe_customer_id"] = customer_id
     await db.aziende.update_one({"owner_id": user_id}, {"$set": updates})
 
 
@@ -63,7 +65,8 @@ async def _on_paid(record: dict):
         from routes_prenotazioni import segna_caparra_pagata
         await segna_caparra_pagata(record["prenotazione_id"], record.get("stripe_payment_intent_id"))
     else:
-        await _activate_pro(record.get("user_id"), record.get("trial_days", 0))
+        await _activate_pro(record.get("user_id"), record.get("trial_days", 0),
+                            record.get("stripe_customer_id"))
 
 
 def _create_session(**kwargs):
@@ -196,6 +199,68 @@ async def my_trial(user: dict = Depends(require_roles("azienda"))):
     return {"eligible": await trial_eligible(user["id"]), "days": TRIAL_DAYS}
 
 
+class PortalRequest(BaseModel):
+    origin_url: str
+
+
+async def _find_customer_id(user_id: str) -> str | None:
+    """Stripe customer id dell'azienda: dal profilo, altrimenti dall'ultima sub pagata."""
+    az = await db.aziende.find_one({"owner_id": user_id}, {"stripe_customer_id": 1})
+    if az and az.get("stripe_customer_id"):
+        return az["stripe_customer_id"]
+    rec = await payment_transactions.find_one(
+        {"user_id": user_id, "payment_status": "paid", "stripe_subscription_id": {"$nin": [None, ""]}},
+        sort=[("created_at", -1)])
+    if not rec:
+        return None
+    cid = rec.get("stripe_customer_id")
+    if not cid:
+        try:
+            sub = stripe.Subscription.retrieve(rec["stripe_subscription_id"])
+            cid = sub.customer
+        except Exception:
+            cid = None
+    if cid:
+        await db.aziende.update_one({"owner_id": user_id}, {"$set": {"stripe_customer_id": cid}})
+    return cid
+
+
+def _portal_session(customer_id: str, return_url: str):
+    try:
+        return stripe.billing_portal.Session.create(customer=customer_id, return_url=return_url)
+    except InvalidRequestError as e:
+        msg = (getattr(e, "user_message", "") or str(e)).lower()
+        if "configuration" in msg:
+            # In test/sandbox mode non esiste una configurazione di default: creala al volo.
+            stripe.billing_portal.Configuration.create(
+                business_profile={"headline": "CasaLavoroPRO - Gestione abbonamento"},
+                features={
+                    "invoice_history": {"enabled": True},
+                    "payment_method_update": {"enabled": True},
+                    "customer_update": {"enabled": True, "allowed_updates": ["email", "address"]},
+                    "subscription_cancel": {"enabled": True, "mode": "at_period_end"},
+                },
+            )
+            return stripe.billing_portal.Session.create(customer=customer_id, return_url=return_url)
+        raise
+
+
+@router.post("/billing/portal")
+async def billing_portal(req: PortalRequest, user: dict = Depends(require_roles("azienda"))):
+    """Apre il portale clienti Stripe per gestire/annullare l'abbonamento."""
+    customer_id = await _find_customer_id(user["id"])
+    if not customer_id:
+        raise HTTPException(status_code=404,
+                            detail="Nessun abbonamento Stripe da gestire. Attiva il piano PRO per gestire la fatturazione.")
+    try:
+        session = _portal_session(customer_id, f"{req.origin_url}/dashboard/profilo")
+    except Exception as e:
+        logger.exception("portal session failed")
+        raise HTTPException(status_code=502,
+                            detail=f"Impossibile aprire il portale abbonamento: {getattr(e, 'user_message', '') or str(e)}")
+    return {"portal_url": session.url}
+
+
 @router.get("/payments/status/{session_id}")
 async def get_status(session_id: str):
     record = await payment_transactions.find_one({"session_id": session_id})
@@ -209,6 +274,7 @@ async def get_status(session_id: str):
                     {"session_id": session_id, "payment_status": {"$ne": "paid"}},
                     {"$set": {"status": "completed", "payment_status": "paid",
                               "stripe_subscription_id": s.subscription,
+                              "stripe_customer_id": s.customer,
                               "stripe_payment_intent_id": s.payment_intent,
                               "updated_at": now()}})
                 record = await payment_transactions.find_one({"session_id": session_id})
@@ -235,6 +301,7 @@ async def stripe_webhook(request: Request):
             {"session_id": obj["id"], "payment_status": {"$ne": "paid"}},
             {"$set": {"status": "completed", "payment_status": "paid",
                       "stripe_subscription_id": obj.get("subscription"),
+                      "stripe_customer_id": obj.get("customer"),
                       "stripe_payment_intent_id": obj.get("payment_intent"),
                       "updated_at": now()}})
         if res.modified_count:

@@ -1,0 +1,45 @@
+{
+  "summary": "Validated the async bolletta analysis + broker queue pattern end-to-end. Backend: pytest 13/13 PASS (fast upload <2s with stato='in_elaborazione', polling converges to 'lead_in_attesa' with dati != null, GET /lead/mine not shadowed by /lead/{id}, invalid id -> 400, missing/non-owner -> 404, /lead/{id}/risparmia with unreachable broker returns 200 {ok:true, inviato:false, in_coda:true} and lead becomes 'in_coda_broker' (NO 502), /analizza-macchinario still works and always returns JSON, PRO vs Base 402 gating regression unchanged). Frontend: /analisi-energetica full flow works for logged-in privato (upload -> analisi-loading -> analisi-result with 'Dati estratti dalla bolletta' -> Risparmia Ora -> analisi-success 'Pratica inviata con successo!'); anonymous Hero flow correctly redirects to /registrati (sessionStorage 'analisi_lead_id' used for logged-in handoff).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_results": {
+    "backend_analizza_bolletta_fast_in_elaborazione": "PASS (elapsed ~0.3s, stato=in_elaborazione, lead.id present, content-type JSON)",
+    "backend_lead_mine_not_shadowed_by_lead_id": "PASS (newly-created lead appears in /lead/mine)",
+    "backend_lead_invalid_id_400": "PASS",
+    "backend_lead_not_found_404": "PASS",
+    "backend_lead_other_user_404": "PASS",
+    "backend_polling_converge_to_lead_in_attesa": "PASS (Gemini completed in <90s, dati populated)",
+    "backend_risparmia_broker_unreachable_in_coda_no_502": "PASS (HTTP 200 JSON {ok:true, inviato:false, in_coda:true, messaggio:...}; lead stato -> in_coda_broker)",
+    "backend_analizza_macchinario_pro_json_always": "PASS",
+    "backend_analizza_macchinario_privato_403": "PASS",
+    "backend_regression_base_402_interventi": "PASS",
+    "backend_regression_base_402_offerte_lavoro": "PASS",
+    "backend_regression_base_402_annunci": "PASS",
+    "backend_regression_pro_can_create_intervento": "PASS",
+    "frontend_analisi_energetica_full_flow_privato": "PASS (upload -> analyzing -> result with 'Dati estratti dalla bolletta' + Risparmia Ora -> 'Pratica inviata con successo!')",
+    "frontend_hero_anon_redirect_to_registrati": "PASS"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bolletta_async.py",
+    "/app/test_reports/pytest/bolletta_async.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes_ai.py /lead/{lead_id} is correctly declared AFTER /lead/mine so FastAPI order resolution prevents shadowing — good. Keep this comment/order explicit if someone refactors.",
+    "In invia_lead_broker the 'in_coda_broker' path returns a nice JSON but does not persist the user's phone/email snapshot into the lead doc — if admins process the queue later from DB, they must re-join with users. Consider storing a 'contatto_snapshot' on the lead when queued.",
+    "/analizza-bolletta reads all files sequentially before enforcing the 15MB total cap — a malicious client could still stream large payloads: consider enforcing Content-Length early or UploadFile size via starlette settings.",
+    "AI_TIMEOUT=120s is still enforced per-call inside the BackgroundTask (correct). The frontend poll deadline is 150s, which gives ~30s buffer for Gemini + DB update — adequate but tight for 15MB PDFs; consider raising frontend poll deadline to AI_TIMEOUT+60s.",
+    "AnalisiEnergetica.jsx polls every 2.5s with no exponential backoff — fine at scale now, but worth adding backoff if the page gets heavy traffic.",
+    "Hero.jsx anonymous flow shows a toast then navigates to /registrati but it does NOT persist the pending files (user has to re-upload after signup). Minor UX gap — acceptable for MVP."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bolletta_async.py (new regression suite for async bolletta + broker queue + PRO gating)"
+  ],
+  "success_rate": {"backend": "100% (13/13)", "frontend": "100% (2/2 critical flows)"},
+  "test_credentials": "mario.rossi@example.com/Demo2026! (privato), info@caloreeclima.it/Demo2026! (PRO), azienda.free@casalavoripro.it/Demo2026! (Base) — all verified.",
+  "seed_data_creation": "Each test run creates a bolletta lead for mario.rossi (not deleted — small, user-owned). No admin cleanup available. Created+deleted a TEST_async_int intervento under the PRO azienda.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Async bolletta + broker queue pattern fully validated. Backend regression file: /app/backend/tests/test_bolletta_async.py (run: python -m pytest backend/tests/test_bolletta_async.py -o 'addopts=' -v). The broker in this env (BROKER_WEBHOOK_URL=brokerenergeticonazionale.it) is intentionally unresolvable to exercise the 'in_coda_broker' path — do not point it to a real URL during tests. Gemini bolletta on tiny blank PNGs may return nullish dati (ok, stato still 'lead_in_attesa'). Previous iteration_12 saas_gating tests still green. For UI, use /login (not /accedi — the hint banner link uses /registrati).",
+  "rca of the issue": "N/A — this iteration validated the fix. Previously /api/analizza-bolletta ran Gemini synchronously in-request (8-15s typical, up to 30s+ on PDFs) and the Cloudflare gateway killed the connection at ~100s with 520/504 before Gemini responded, giving the user a generic 'formato PDF' error. Fix pattern (verified working): (1) POST returns immediately after inserting a lead with stato='in_elaborazione' and queues the Gemini call via FastAPI BackgroundTasks; (2) GET /api/lead/{id} is the polling endpoint, placed AFTER /lead/mine so the literal route is not shadowed; (3) /lead/{id}/risparmia catches httpx broker failures and returns 200 {in_coda:true} + notify_admins instead of propagating 502. Frontend AnalisiEnergetica.jsx polls every 2.5s with a 150s deadline; Hero.jsx hands off the lead id via sessionStorage 'analisi_lead_id'."
+}

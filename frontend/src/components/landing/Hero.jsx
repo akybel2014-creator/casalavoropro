@@ -1,12 +1,14 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, ShieldCheck, Star, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/api";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
 const HERO_IMG = "https://images.pexels.com/photos/6473978/pexels-photo-6473978.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=900&w=1200";
+const CATS = ["Idraulico", "Elettricista", "Imbianchino", "Climatizzazione", "Fabbro", "Muratore"];
 
 function RevealLine({ children, delay = 0 }) {
     return (
@@ -23,6 +25,20 @@ export default function Hero() {
     const navigate = useNavigate();
     const cosaRef = useRef(null);
     const doveRef = useRef(null);
+    const [aziende, setAziende] = useState([]);
+
+    useEffect(() => {
+        // Prova sociale: artigiani verificati reali (endpoint pubblico, best-effort).
+        api.get("/aziende?verificate=true")
+            .then(({ data }) => setAziende(Array.isArray(data) ? data : []))
+            .catch(() => { /* silenzioso */ });
+    }, []);
+
+    const verifiedCount = aziende.length;
+    const rated = aziende.filter((a) => a.rating);
+    const avgRating = rated.length ? rated.reduce((s, a) => s + (a.rating || 0), 0) / rated.length : 0;
+    const totalRecensioni = aziende.reduce((s, a) => s + (a.recensioni || 0), 0);
+    const avatars = aziende.slice(0, 5);
 
     const submitSearch = (e) => {
         e.preventDefault();
@@ -33,6 +49,8 @@ export default function Hero() {
         if (dove) params.set("zona", dove);
         navigate(`/aziende?${params.toString()}`);
     };
+
+    const cercaCategoria = (cat) => navigate(`/aziende?q=${encodeURIComponent(cat)}`);
 
     return (
         <section className="relative overflow-hidden bg-navy" data-testid="hero-section">
@@ -80,14 +98,56 @@ export default function Hero() {
                                     <Search className="h-4 w-4 mr-1.5" /> Avvia Ricerca
                                 </Button>
                             </form>
+
+                            {/* Categorie in evidenza: ricerca con un tap */}
+                            <div className="mt-4" data-testid="hero-quick-categories">
+                                <p className="text-xs font-semibold text-slate-400 mb-2">Categorie più richieste</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {CATS.map((c) => (
+                                        <button key={c} type="button" onClick={() => cercaCategoria(c)}
+                                            data-testid={`hero-cat-${c.toLowerCase()}`}
+                                            className="rounded-full border border-white/15 bg-navy/60 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-brand hover:text-white hover:bg-brand/10 transition-colors">
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </motion.div>
 
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.8 }}
-                            className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-400">
-                            <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-brand" /> Artigiani verificati</span>
-                            <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> In tutta Italia</span>
-                            <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 text-brand" /> Preventivi gratuiti</span>
-                        </motion.div>
+                        {/* Prova sociale: artigiani verificati reali + rating */}
+                        {verifiedCount > 0 ? (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.8 }}
+                                className="mt-6 flex items-center gap-4" data-testid="hero-social-proof">
+                                <div className="flex -space-x-3">
+                                    {avatars.map((a, i) => (
+                                        <div key={a.id || i} title={a.nome}
+                                            className="h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+                                            {(a.nome || "?").trim().charAt(0).toUpperCase()}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div>
+                                    {avgRating > 0 && (
+                                        <div className="flex items-center gap-0.5" data-testid="hero-social-rating">
+                                            {[1, 2, 3, 4, 5].map((n) => (
+                                                <Star key={n} className={`h-4 w-4 ${n <= Math.round(avgRating) ? "text-brand fill-current" : "text-slate-600"}`} />
+                                            ))}
+                                            <span className="ml-1.5 text-sm font-bold text-white">{avgRating.toFixed(1)}</span>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-slate-400">
+                                        {verifiedCount}+ artigiani verificati{totalRecensioni > 0 ? ` · ${totalRecensioni}+ recensioni` : ""}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.8 }}
+                                className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-400">
+                                <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-brand" /> Artigiani verificati</span>
+                                <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> In tutta Italia</span>
+                                <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 text-brand" /> Preventivi gratuiti</span>
+                            </motion.div>
+                        )}
                     </div>
 
                     {/* Colonna destra: immagine esplicativa */}

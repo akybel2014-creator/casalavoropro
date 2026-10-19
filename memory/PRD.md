@@ -196,6 +196,10 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
 
 - HOMEPAGE: SPOSTATA ANALISI BOLLETTA DALL'HERO (2026-10-19): rimossa la card "Analisi Bolletta" dall'Hero della homepage (Hero.jsx riscritto). L'hero ora e a due colonne: a sinistra titolo "Trova l'artigiano giusto per casa tua" + card ricerca "Trova Professionista" (cosa/dove) + trust row (artigiani verificati / in tutta Italia / preventivi gratuiti); a destra un'immagine di un artigiano al lavoro (Pexels) con badge "Profili controllati" e "1.200+ professionisti verificati". L'analisi bolletta resta accessibile SOLO dopo l'iscrizione: area privato (bottone "Analisi Energetica AI" in DashboardPrivato), dashboard azienda (hub box "Scansione Energetica AI"), e voce di menu "Analisi Energetica" nell'header mostrata solo a privati/aziende loggati (Header.jsx: ANALISI_ITEM iniettato in navItems se user && role != admin; rimosso dal NAV_ITEMS pubblico). Verificato via screenshot (loggato e non). NOTA: richiede REDEPLOY per andare live.
 
+- HOMEPAGE: PROVA SOCIALE + CATEGORIE RAPIDE NELL'HERO (2026-10-19): due feature aggiunte in Hero.jsx.
+  * Categorie in evidenza: riga "Categorie più richieste" con chip (Idraulico, Elettricista, Imbianchino, Climatizzazione, Fabbro, Muratore) sotto la ricerca; il tap avvia la ricerca -> /aziende?q=<categoria> (data-testid hero-cat-<cat>, contenitore hero-quick-categories).
+  * Prova sociale (dati REALI): fetch pubblico GET /api/aziende?verificate=true; stack di avatar (iniziali) degli artigiani verificati + rating medio reale (stelle) + "{N}+ artigiani verificati · {M}+ recensioni" (data-testid hero-social-proof / hero-social-rating). Fallback alla trust row statica se non ci sono dati. Verificato via screenshot (4.6★, 7 verificati, 203+ recensioni). NOTA: richiede REDEPLOY per andare live.
+
 
 
 ## Persone

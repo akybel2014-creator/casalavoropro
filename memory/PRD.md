@@ -24,7 +24,11 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
 - Cleanup crediti + PRO gating, trial Stripe 14gg, portale clienti Stripe, fix 520 (async AI), fix upload bollette img/PDF.
 - Homepage: ricerca professionisti, social proof loghi reali, categorie quick link, avatar loghi reali, upload logo azienda.
 - Promo Founder 50 (PRO gratis per sempre) + banner countdown.
-- **[NEW] Contatore Live in Home**: badge "OFFERTA FONDATORI · LIVE" nell'hero (sotto il sottotitolo) con posti rimasti (remaining/total), barra di avanzamento posti occupati, pallino pulsante e CTA registrazione azienda. Visibile solo se `offer.active`. Riusa `/api/founder-offer`. File: `Hero.jsx`.
+- **Contatore Live in Home**: badge "OFFERTA FONDATORI · LIVE" nell'hero (sotto il sottotitolo) con posti rimasti (remaining/total), barra di avanzamento posti occupati, pallino pulsante e CTA registrazione azienda. Visibile solo se `offer.active`. Riusa `/api/founder-offer`. File: `Hero.jsx`.
+- **[19/10] Urgenza Dinamica**: quando `remaining < 10`, il contatore Hero diventa ROSSO e lampeggia (opacity pulse infinito), badge "ULTIMI POSTI · LIVE", testo "Solo X posti rimasti!", barra rossa e glow rosso. File: `Hero.jsx` (attr `data-urgent`). Verificato a 5 posti via screenshot.
+- **[19/10] Reset Aziende**: azzerate tutte le aziende + account + dati collegati (su richiesta utente). Privati/admin preservati.
+- **[19/10] Aziende Demo ripopolate**: riavvio backend → `seed_demo_data` ha reinserito 8 aziende demo (6 verificate) per la prova sociale in home. Contatore Fondatori resta 50/50 (demo non sono founder50).
+- **[19/10] Pubblicazione**: deploy avviato per collegare dominio custom casalavoropro.com (auto-link dal pannello deploy + record CNAME).
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

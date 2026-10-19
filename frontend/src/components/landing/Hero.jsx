@@ -9,6 +9,32 @@ import { api } from "@/lib/api";
 const LINE_EASE = [0.22, 1, 0.36, 1];
 const HERO_IMG = "https://images.pexels.com/photos/6473978/pexels-photo-6473978.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=900&w=1200";
 const CATS = ["Idraulico", "Elettricista", "Imbianchino", "Climatizzazione", "Fabbro", "Muratore"];
+const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
+
+// URL del vero logo/foto dell'artigiano (se disponibile), altrimenti null -> iniziali.
+function avatarUrl(a) {
+    if (a?.logo) return a.logo.startsWith("http") ? a.logo : `${FILES_BASE}${a.logo}`;
+    const f = a?.foto?.[0];
+    if (f?.path) return `${FILES_BASE}${f.path}`;
+    return null;
+}
+
+function AvatarCircle({ a }) {
+    const [err, setErr] = useState(false);
+    const url = avatarUrl(a);
+    if (url && !err) {
+        return (
+            <img src={url} alt={a.nome} title={a.nome} onError={() => setErr(true)} loading="lazy"
+                className="h-10 w-10 rounded-full border-2 border-navy object-cover bg-navy shadow-md" />
+        );
+    }
+    return (
+        <div title={a.nome}
+            className="h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+            {(a.nome || "?").trim().charAt(0).toUpperCase()}
+        </div>
+    );
+}
 
 function RevealLine({ children, delay = 0 }) {
     return (
@@ -120,10 +146,7 @@ export default function Hero() {
                                 className="mt-6 flex items-center gap-4" data-testid="hero-social-proof">
                                 <div className="flex -space-x-3">
                                     {avatars.map((a, i) => (
-                                        <div key={a.id || i} title={a.nome}
-                                            className="h-10 w-10 rounded-full border-2 border-navy bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
-                                            {(a.nome || "?").trim().charAt(0).toUpperCase()}
-                                        </div>
+                                        <AvatarCircle key={a.id || i} a={a} />
                                     ))}
                                 </div>
                                 <div>

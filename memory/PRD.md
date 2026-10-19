@@ -199,6 +199,7 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
 - HOMEPAGE: PROVA SOCIALE + CATEGORIE RAPIDE NELL'HERO (2026-10-19): due feature aggiunte in Hero.jsx.
   * Categorie in evidenza: riga "Categorie più richieste" con chip (Idraulico, Elettricista, Imbianchino, Climatizzazione, Fabbro, Muratore) sotto la ricerca; il tap avvia la ricerca -> /aziende?q=<categoria> (data-testid hero-cat-<cat>, contenitore hero-quick-categories).
   * Prova sociale (dati REALI): fetch pubblico GET /api/aziende?verificate=true; stack di avatar (iniziali) degli artigiani verificati + rating medio reale (stelle) + "{N}+ artigiani verificati · {M}+ recensioni" (data-testid hero-social-proof / hero-social-rating). Fallback alla trust row statica se non ci sono dati. Verificato via screenshot (4.6★, 7 verificati, 203+ recensioni). NOTA: richiede REDEPLOY per andare live.
+  * AVATAR CON LOGO/FOTO REALE (2026-10-19): gli avatar della prova sociale ora mostrano il vero logo/foto dell'artigiano quando disponibile (helper avatarUrl: usa `logo` se presente — URL http o path via FILES_BASE — altrimenti `foto[0].path` via FILES_BASE), con fallback alle iniziali (componente AvatarCircle con onError -> iniziali). FILES_BASE = `${REACT_APP_BACKEND_URL}/api/files/`. Verificato: l'avatar di Lampioni Idraulica mostra la foto reale, gli altri le iniziali.
 
 
 

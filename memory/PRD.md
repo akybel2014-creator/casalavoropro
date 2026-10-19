@@ -194,6 +194,8 @@ Implementato NATIVAMENTE in FastAPI + MongoDB (la richiesta originale era Node/E
   * analizza-macchinario: aggiunto try/except -> JSON 500 pulito in caso di errore inatteso.
   * Testato E2E (iteration_13): backend 13/13 PASS, frontend 2/2 flussi critici PASS. NOTA: richiede REDEPLOY per andare live in produzione.
 
+- HOMEPAGE: SPOSTATA ANALISI BOLLETTA DALL'HERO (2026-10-19): rimossa la card "Analisi Bolletta" dall'Hero della homepage (Hero.jsx riscritto). L'hero ora e a due colonne: a sinistra titolo "Trova l'artigiano giusto per casa tua" + card ricerca "Trova Professionista" (cosa/dove) + trust row (artigiani verificati / in tutta Italia / preventivi gratuiti); a destra un'immagine di un artigiano al lavoro (Pexels) con badge "Profili controllati" e "1.200+ professionisti verificati". L'analisi bolletta resta accessibile SOLO dopo l'iscrizione: area privato (bottone "Analisi Energetica AI" in DashboardPrivato), dashboard azienda (hub box "Scansione Energetica AI"), e voce di menu "Analisi Energetica" nell'header mostrata solo a privati/aziende loggati (Header.jsx: ANALISI_ITEM iniettato in navItems se user && role != admin; rimosso dal NAV_ITEMS pubblico). Verificato via screenshot (loggato e non). NOTA: richiede REDEPLOY per andare live.
+
 
 
 ## Persone

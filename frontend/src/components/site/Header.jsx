@@ -13,12 +13,14 @@ export const NAV_ITEMS = [
     { label: "Categorie", to: "/#categorie", id: "header-nav-categorie" },
     { label: "Noleggio Attrezzi", to: "/noleggio", id: "header-nav-noleggio" },
     { label: "Mercatino Usato", to: "/mercatino", id: "header-nav-mercatino" },
-    { label: "Analisi Energetica", to: "/analisi-energetica", id: "header-nav-analisi" },
     { label: "Aziende", to: "/aziende", id: "header-nav-aziende" },
     { label: "Per le aziende", to: "/#per-le-aziende", id: "header-nav-per-aziende" },
     { label: "Prezzi", to: "/prezzi", id: "header-nav-prezzi" },
     { label: "Contatti", to: "/#contatti", id: "header-nav-contatti" },
 ];
+
+// Mostrata solo dopo l'iscrizione (privati e aziende): l'analisi bolletta vive nell'area riservata.
+const ANALISI_ITEM = { label: "Analisi Energetica", to: "/analisi-energetica", id: "header-nav-analisi" };
 
 export function scrollToSection(hash) {
     const id = hash.replace(/^#/, "");
@@ -34,6 +36,11 @@ export default function Header() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // L'analisi energetica compare nel menu solo per privati/aziende loggati (dopo l'iscrizione).
+    const navItems = user && user.role !== "admin"
+        ? [...NAV_ITEMS.slice(0, 5), ANALISI_ITEM, ...NAV_ITEMS.slice(5)]
+        : NAV_ITEMS;
 
     useEffect(() => {
         if (!user || user.role === "admin") {
@@ -100,7 +107,7 @@ export default function Header() {
                     </Link>
 
                     <nav className="hidden xl:flex items-center gap-0.5 xl:gap-1">
-                        {NAV_ITEMS.map((item) => (
+                        {navItems.map((item) => (
                             <a
                                 key={item.to}
                                 href={item.to}
@@ -176,7 +183,7 @@ export default function Header() {
             {open && (
                 <div className="xl:hidden border-t border-white/10 bg-navy/95 backdrop-blur-xl px-4 pb-6 pt-2">
                     <nav className="flex flex-col">
-                        {NAV_ITEMS.map((item) => (
+                        {navItems.map((item) => (
                             <a
                                 key={item.to}
                                 href={item.to}

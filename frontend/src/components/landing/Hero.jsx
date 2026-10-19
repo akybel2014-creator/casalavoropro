@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, ShieldCheck, Star, MapPin } from "lucide-react";
+import { Search, ShieldCheck, Star, MapPin, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -52,11 +52,16 @@ export default function Hero() {
     const cosaRef = useRef(null);
     const doveRef = useRef(null);
     const [aziende, setAziende] = useState([]);
+    const [offer, setOffer] = useState(null);
 
     useEffect(() => {
         // Prova sociale: artigiani verificati reali (endpoint pubblico, best-effort).
         api.get("/aziende?verificate=true")
             .then(({ data }) => setAziende(Array.isArray(data) ? data : []))
+            .catch(() => { /* silenzioso */ });
+        // Offerta Fondatori: posti PRO gratis rimasti (endpoint pubblico, best-effort).
+        api.get("/founder-offer")
+            .then(({ data }) => setOffer(data))
             .catch(() => { /* silenzioso */ });
     }, []);
 
@@ -101,6 +106,56 @@ export default function Hero() {
                             Aziende e artigiani verificati per ristrutturazioni, impianti, riparazioni e piccoli lavori di casa
                             in tutta Italia. Cerca nella tua zona e richiedi un preventivo gratuito in pochi minuti.
                         </motion.p>
+
+                        {/* Contatore live Offerta Fondatori: crea urgenza sui posti PRO gratis rimasti */}
+                        {offer?.active && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: 0.55 }}
+                                className="mt-6 max-w-xl"
+                                data-testid="hero-founder-counter"
+                            >
+                                <Link
+                                    to="/registrati?ruolo=azienda"
+                                    data-testid="hero-founder-counter-cta"
+                                    className="group block rounded-2xl border border-brand/40 bg-brand/10 backdrop-blur-sm p-4 transition-colors hover:border-brand hover:bg-brand/15"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="inline-flex items-center gap-2">
+                                            <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                                                <span className="absolute inline-flex h-full w-full rounded-full bg-brand opacity-75 animate-ping" />
+                                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand" />
+                                            </span>
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-brand">
+                                                <Sparkles className="h-3.5 w-3.5" /> Offerta Fondatori · LIVE
+                                            </span>
+                                        </div>
+                                        <span className="font-display font-black text-white leading-none text-2xl" data-testid="hero-founder-remaining">
+                                            {offer.remaining}<span className="text-sm font-bold text-slate-400">/{offer.total}</span>
+                                        </span>
+                                    </div>
+                                    <p className="mt-2 text-sm text-slate-200">
+                                        <span className="font-bold text-white">Abbonamento PRO gratis per sempre</span> per le prime {offer.total} aziende iscritte.
+                                    </p>
+                                    {/* Barra di avanzamento: posti occupati */}
+                                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-navy/70">
+                                        <motion.div
+                                            className="h-full rounded-full bg-gradient-to-r from-orange-600 via-brand to-amber-400"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${Math.min(100, Math.round((offer.taken / offer.total) * 100))}%` }}
+                                            transition={{ duration: 0.9, delay: 0.7, ease: LINE_EASE }}
+                                        />
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between text-xs">
+                                        <span className="text-slate-400">{offer.taken} posti già occupati</span>
+                                        <span className="inline-flex items-center gap-1 font-semibold text-brand group-hover:translate-x-0.5 transition-transform">
+                                            Approfitta ora <ArrowRight className="h-3 w-3" />
+                                        </span>
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        )}
 
                         {/* Ricerca: Trova Professionista */}
                         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.6 }}

@@ -108,7 +108,9 @@ export default function DashboardAzienda() {
     const [geoBusy, setGeoBusy] = useState(false);
     const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [logoBusy, setLogoBusy] = useState(false);
     const fileRef = useRef(null);
+    const logoRef = useRef(null);
     const { section } = useParams();
     const navigate = useNavigate();
 
@@ -213,6 +215,39 @@ export default function DashboardAzienda() {
             refreshMe();
         } catch (err) {
             toast.error(formatApiError(err));
+        }
+    };
+
+    const uploadLogo = async (e) => {
+        const file = (e.target.files || [])[0];
+        if (!file) return;
+        setLogoBusy(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const { data } = await api.post("/aziende/mine/logo", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            setMine((m) => ({ ...m, logo: data.logo }));
+            toast.success("Logo aggiornato!");
+            refreshMe();
+        } catch (err) {
+            toast.error(formatApiError(err));
+        } finally {
+            setLogoBusy(false);
+            if (logoRef.current) logoRef.current.value = "";
+        }
+    };
+
+    const eliminaLogo = async () => {
+        setLogoBusy(true);
+        try {
+            await api.delete("/aziende/mine/logo");
+            setMine((m) => ({ ...m, logo: null }));
+            toast.success("Logo rimosso");
+            refreshMe();
+        } catch (err) {
+            toast.error(formatApiError(err));
+        } finally {
+            setLogoBusy(false);
         }
     };
 
@@ -410,6 +445,46 @@ export default function DashboardAzienda() {
                                 </div>
                             </>
                         )}
+                    </div>)}
+
+                    {section === "profilo" && (<div className="mt-6" data-testid="logo-panel">
+                        <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-6 sm:p-8">
+                            <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                <Building2 className="h-5 w-5 text-brand" /> Logo azienda
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-400">Il tuo logo appare come avatar nelle ricerche e in homepage. Se non lo carichi, mostriamo l'iniziale del nome.</p>
+
+                            <div className="mt-5 flex items-center gap-5">
+                                {mine?.logo ? (
+                                    <img src={mine.logo.startsWith("http") ? mine.logo : `${FILES_BASE}${mine.logo}`}
+                                        alt="Logo azienda" data-testid="logo-preview"
+                                        className="h-20 w-20 rounded-2xl object-cover border border-white/15 bg-navy" />
+                                ) : (
+                                    <div data-testid="logo-placeholder"
+                                        className="h-20 w-20 rounded-2xl border border-white/15 bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-2xl font-bold">
+                                        {(mine?.nome || "?").trim().charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap gap-2">
+                                    <input ref={logoRef} type="file" accept="image/jpeg,image/png,image/webp"
+                                        className="hidden" data-testid="logo-upload-input" onChange={uploadLogo} />
+                                    <Button type="button" disabled={logoBusy} data-testid="logo-upload-button"
+                                        onClick={() => logoRef.current?.click()}
+                                        className="rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
+                                        {logoBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ImagePlus className="h-4 w-4 mr-2" />}
+                                        {mine?.logo ? "Cambia logo" : "Carica logo"}
+                                    </Button>
+                                    {mine?.logo && (
+                                        <Button type="button" variant="outline" disabled={logoBusy} data-testid="logo-delete-button"
+                                            onClick={eliminaLogo}
+                                            className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
+                                            <Trash2 className="h-4 w-4 mr-2" /> Rimuovi
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                            <p className="mt-4 text-xs text-slate-500">JPG, PNG o WEBP · max 5 MB · consigliato quadrato.</p>
+                        </div>
                     </div>)}
 
                     {section === "profilo" && (<div className="mt-6" data-testid="gallery-panel">

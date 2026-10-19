@@ -132,6 +132,46 @@ async def delete_foto(foto_id: str, user: dict = Depends(require_roles("azienda"
     return {"foto": [clean_doc(f) for f in fresh.get("foto", [])]}
 
 
+@router.post("/aziende/mine/logo")
+async def upload_logo(file: UploadFile = File(...), user: dict = Depends(require_roles("azienda"))):
+    azienda = await azienda_for_user(user["id"])
+    if not azienda:
+        raise HTTPException(status_code=404, detail="Profilo azienda non trovato")
+    if EMERGENT_KEY is None:
+        raise HTTPException(status_code=503, detail="Storage non configurato")
+    if file.content_type not in ALLOWED:
+        raise HTTPException(status_code=400, detail="Formato non supportato: usa JPG, PNG o WEBP")
+    data = await file.read()
+    if len(data) > MAX_SIZE:
+        raise HTTPException(status_code=400, detail="Immagine troppo grande (max 5 MB)")
+    opt_data, opt_ct, opt_ext = optimize_image(data)
+    path = f"{APP_NAME}/logo/{azienda['_id']}/{uuidlib.uuid4()}.{opt_ext}"
+    try:
+        result = _put_object(path, opt_data, opt_ct)
+    except Exception:
+        logger.exception("logo upload failed")
+        raise HTTPException(status_code=502, detail="Upload non riuscito, riprova")
+    old = azienda.get("logo")
+    if old and not str(old).startswith("http"):
+        await db.files.update_one({"path": old}, {"$set": {"is_deleted": True}})
+    await db.files.insert_one({"path": result["path"], "owner_id": user["id"], "is_deleted": False,
+                               "is_public": True, "content_type": opt_ct, "created_at": now()})
+    await db.aziende.update_one({"_id": azienda["_id"]}, {"$set": {"logo": result["path"]}})
+    return {"logo": result["path"]}
+
+
+@router.delete("/aziende/mine/logo")
+async def delete_logo(user: dict = Depends(require_roles("azienda"))):
+    azienda = await azienda_for_user(user["id"])
+    if not azienda:
+        raise HTTPException(status_code=404, detail="Profilo azienda non trovato")
+    old = azienda.get("logo")
+    if old and not str(old).startswith("http"):
+        await db.files.update_one({"path": old}, {"$set": {"is_deleted": True}})
+    await db.aziende.update_one({"_id": azienda["_id"]}, {"$set": {"logo": None}})
+    return {"logo": None}
+
+
 @router.get("/files/{path:path}")
 async def serve_file(path: str):
     record = await db.files.find_one({"path": path, "is_deleted": False, "is_public": True})

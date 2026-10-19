@@ -14,6 +14,9 @@ from emailer import send_welcome, send_email, _wrap, FRONTEND_URL
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Offerta Fondatori: le prime 50 aziende iscritte ottengono il PRO gratis per sempre.
+FOUNDER_LIMIT = 50
+
 
 class AziendaRegIn(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
@@ -63,13 +66,17 @@ async def register(inp: RegisterIn, response: Response):
     azienda_out = None
     if inp.ruolo == "azienda":
         a = inp.azienda or AziendaRegIn(nome=inp.name.strip())
+        # Offerta Fondatori: PRO gratis per sempre per le prime 50 aziende iscritte.
+        founder = await db.aziende.count_documents({"founder50": True}) < FOUNDER_LIMIT
         azienda_doc = {
             "owner_id": user_id, "nome": a.nome.strip(), "categorie": a.categorie,
             "zone": a.zone, "piva": a.piva or "", "descrizione": a.descrizione or "",
             "telefono": "", "sito": "", "durc_number": "", "docs": [],
             "verified": False, "verification_status": "none",
-            "plan": "free", "subscription_status": "none",
-            "trial_used": False, "trial_ends_at": None,
+            "plan": "pro" if founder else "free",
+            "subscription_status": "active" if founder else "none",
+            "founder50": founder,
+            "trial_used": founder, "trial_ends_at": None,
             "emergenze": False, "emergenze_weekend": False,
             "emergenze_notturno": False, "emergenze_telefono": "",
             "rating": 0.0, "recensioni": 0, "created_at": now(),
@@ -89,6 +96,14 @@ async def register(inp: RegisterIn, response: Response):
     except Exception:
         logger.exception("welcome email failed")
     return {"user": user_out, "azienda": azienda_out}
+
+
+@router.get("/founder-offer")
+async def founder_offer():
+    """Stato pubblico dell'Offerta Fondatori (PRO gratis per le prime 50 aziende)."""
+    taken = await db.aziende.count_documents({"founder50": True})
+    remaining = max(0, FOUNDER_LIMIT - taken)
+    return {"total": FOUNDER_LIMIT, "taken": taken, "remaining": remaining, "active": remaining > 0}
 
 
 @router.post("/auth/login")

@@ -646,7 +646,11 @@ export default function DashboardAzienda() {
                             <div className="rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10">
                                 <div className="flex flex-wrap items-center gap-3">
                                     <h3 className="font-display font-bold text-white text-xl">Piano Pro</h3>
-                                    {["trialing", "active_trial"].includes(mine?.subscription_status) && (
+                                    {mine?.founder50 ? (
+                                        <span className="rounded-full bg-brand px-3 py-1 text-xs font-bold text-white uppercase tracking-wide" data-testid="subscription-founder-badge">
+                                            Fondatore · gratis per sempre
+                                        </span>
+                                    ) : ["trialing", "active_trial"].includes(mine?.subscription_status) && (
                                         <span className="rounded-full bg-brand px-3 py-1 text-xs font-bold text-white uppercase tracking-wide" data-testid="subscription-trial-badge">
                                             Prova gratuita
                                         </span>
@@ -657,7 +661,11 @@ export default function DashboardAzienda() {
                                         <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
                                     ))}
                                 </ul>
-                                {["trialing", "active_trial"].includes(mine?.subscription_status) && mine?.trial_ends_at ? (
+                                {mine?.founder50 ? (
+                                    <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
+                                        <Check className="h-4 w-4" /> PRO Fondatore attivo · gratis per sempre
+                                    </p>
+                                ) : ["trialing", "active_trial"].includes(mine?.subscription_status) && mine?.trial_ends_at ? (
                                     <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
                                         <Check className="h-4 w-4" /> Prova PRO attiva · {Math.max(0, Math.ceil((new Date(mine.trial_ends_at) - Date.now()) / 86400000))} giorni rimanenti
                                     </p>
@@ -666,14 +674,18 @@ export default function DashboardAzienda() {
                                         <Check className="h-4 w-4" /> Abbonamento attivo
                                     </p>
                                 )}
-                                <div className="mt-6 border-t border-white/10 pt-5">
-                                    <Button onClick={openPortal} disabled={checkingOut} variant="outline" data-testid="manage-subscription-button"
-                                        className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
-                                        {checkingOut ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
-                                        Gestisci / Annulla abbonamento
-                                    </Button>
-                                    <p className="mt-2 text-xs text-slate-500">Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo dal portale Stripe.</p>
-                                </div>
+                                {mine?.founder50 ? (
+                                    <p className="mt-6 text-xs text-slate-500">Fai parte delle prime 50 aziende: il tuo piano PRO è gratuito per sempre, nessun pagamento richiesto.</p>
+                                ) : (
+                                    <div className="mt-6 border-t border-white/10 pt-5">
+                                        <Button onClick={openPortal} disabled={checkingOut} variant="outline" data-testid="manage-subscription-button"
+                                            className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
+                                            {checkingOut ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
+                                            Gestisci / Annulla abbonamento
+                                        </Button>
+                                        <p className="mt-2 text-xs text-slate-500">Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo dal portale Stripe.</p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div data-testid="subscription-paid-plans">

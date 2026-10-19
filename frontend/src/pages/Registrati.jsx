@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Building2, User } from "lucide-react";
+import { Building2, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/Logo";
 import LaunchBanner from "@/components/site/LaunchBanner";
-import { CountdownOfferta } from "@/components/CountdownOfferta";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
@@ -23,6 +22,11 @@ export default function Registrati() {
     const [plan, setPlan] = useState("base");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
+    const [founder, setFounder] = useState(null);
+
+    useEffect(() => {
+        api.get("/founder-offer").then(({ data }) => setFounder(data)).catch(() => { /* silenzioso */ });
+    }, []);
 
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
     const toggleCat = (c) => setCategorie((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]));
@@ -44,8 +48,14 @@ export default function Registrati() {
                     descrizione: form.descrizione || undefined,
                 };
             }
-            const { user } = await register(payload);
+            const { user, azienda } = await register(payload);
             toast.success(`Benvenuto su CasaLavoroPRO, ${user.name}!`);
+            // Offerta Fondatori: le prime 50 aziende hanno gia il PRO gratis -> nessun pagamento.
+            if (ruolo === "azienda" && azienda?.founder50) {
+                toast.success("Sei tra le prime 50 aziende: PRO attivato GRATIS per sempre!");
+                navigate(dashboardPathFor(user.role));
+                return;
+            }
             if (ruolo === "azienda" && plan !== "base") {
                 try {
                     const { data } = await api.post("/payments/checkout", { lookup_key: plan, origin_url: window.location.origin });
@@ -100,6 +110,16 @@ export default function Registrati() {
 
                         {ruolo === "azienda" && (
                             <>
+                                {founder?.active && (
+                                    <div data-testid="register-founder-note"
+                                        className="rounded-xl border border-brand/40 bg-brand/10 p-4 flex items-start gap-3">
+                                        <Sparkles className="h-5 w-5 text-brand shrink-0 mt-0.5" />
+                                        <p className="text-sm text-white font-semibold">
+                                            Sei tra le prime 50 aziende! Attiviamo il <span className="text-brand">PRO GRATIS per sempre</span>, senza carta di credito.
+                                            <span className="block text-xs font-normal text-slate-300 mt-0.5">Restano {founder.remaining} posti. Qualsiasi piano scegli qui sotto, non pagherai nulla.</span>
+                                        </p>
+                                    </div>
+                                )}
                                 <div className="space-y-2" data-testid="register-plan-select">
                                     <Label className="text-slate-300">Scegli il tuo piano</Label>
                                     <div className="grid grid-cols-1 gap-2">

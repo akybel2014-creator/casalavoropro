@@ -29,6 +29,9 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
 - **[19/10] Reset Aziende**: azzerate tutte le aziende + account + dati collegati (su richiesta utente). Privati/admin preservati.
 - **[19/10] Aziende Demo ripopolate**: riavvio backend → `seed_demo_data` ha reinserito 8 aziende demo (6 verificate) per la prova sociale in home. Contatore Fondatori resta 50/50 (demo non sono founder50).
 - **[19/10] Pubblicazione**: deploy avviato per collegare dominio custom casalavoropro.com (auto-link dal pannello deploy + record CNAME).
+- **[20/10] Messaggistica semplificata**: banner top ora "Iscrizione gratis per tutti · Aziende e privati, registratevi senza alcun costo" (rimossa logica founder-offer dal banner). File `LaunchBanner.jsx`.
+- **[20/10] Rimosso contatore Fondatori LIVE dall'hero** (incl. stato urgente rosso). File `Hero.jsx` ripulito (import/state inutilizzati). NB: la logica backend founder50 (primi 50 PRO gratis) resta attiva, solo non più pubblicizzata.
+- **[20/10] Conteggi reali categorie in home**: nuovo endpoint `GET /api/aziende/categorie-count` (aggregazione $unwind+$group) + `CategoryGrid.jsx` mostra il numero reale di aziende per categoria (normalizzazione accenti, singolare/plurale).
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

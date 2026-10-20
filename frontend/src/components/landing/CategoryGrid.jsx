@@ -1,16 +1,18 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Wrench, Flame, Zap, Hammer, Paintbrush, Trees, Layers, LayoutGrid, ArrowUpRight } from "lucide-react";
+import { api } from "@/lib/api";
 
 export const CATEGORIES = [
-    { name: "Idraulica", count: "1.420 aziende", icon: Wrench, id: "category-card-idraulica" },
-    { name: "Termoidraulica", count: "980 aziende", icon: Flame, id: "category-card-termoidraulica" },
-    { name: "Elettricità", count: "1.850 aziende", icon: Zap, id: "category-card-elettricita" },
-    { name: "Edilizia", count: "3.100 aziende", icon: Hammer, id: "category-card-edilizia" },
-    { name: "Imbiancatura", count: "1.240 aziende", icon: Paintbrush, id: "category-card-imbiancatura" },
-    { name: "Giardinaggio", count: "890 aziende", icon: Trees, id: "category-card-giardinaggio" },
-    { name: "Pavimenti", count: "1.050 aziende", icon: Layers, id: "category-card-pavimenti" },
-    { name: "Altri Servizi", count: "2.400 aziende", icon: LayoutGrid, id: "category-card-altri-servizi" },
+    { name: "Idraulica", icon: Wrench, id: "category-card-idraulica" },
+    { name: "Termoidraulica", icon: Flame, id: "category-card-termoidraulica" },
+    { name: "Elettricità", icon: Zap, id: "category-card-elettricita" },
+    { name: "Edilizia", icon: Hammer, id: "category-card-edilizia" },
+    { name: "Imbiancatura", icon: Paintbrush, id: "category-card-imbiancatura" },
+    { name: "Giardinaggio", icon: Trees, id: "category-card-giardinaggio" },
+    { name: "Pavimenti", icon: Layers, id: "category-card-pavimenti" },
+    { name: "Altri Servizi", icon: LayoutGrid, id: "category-card-altri-servizi" },
 ];
 
 // Elenco completo delle categorie di servizio selezionabili (registrazione azienda, nuova richiesta, filtri).
@@ -49,7 +51,24 @@ export const SERVICE_CATEGORIES = [
     "Altri Servizi",
 ];
 
+// Normalizza i nomi categoria (minuscolo, senza accenti) per allineare card e dati reali.
+const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
 export default function CategoryGrid() {
+    const [counts, setCounts] = useState({});
+
+    useEffect(() => {
+        api.get("/aziende/categorie-count")
+            .then(({ data }) => {
+                const lookup = {};
+                Object.entries(data?.counts || {}).forEach(([k, v]) => {
+                    lookup[norm(k)] = (lookup[norm(k)] || 0) + v;
+                });
+                setCounts(lookup);
+            })
+            .catch(() => { /* silenzioso */ });
+    }, []);
+
     return (
         <section id="categorie" className="relative bg-navy py-16 sm:py-24 lg:py-32">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -71,7 +90,10 @@ export default function CategoryGrid() {
                 </div>
 
                 <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                    {CATEGORIES.map((c, i) => (
+                    {CATEGORIES.map((c, i) => {
+                        const n = counts[norm(c.name)] || 0;
+                        const label = `${n} ${n === 1 ? "azienda" : "aziende"}`;
+                        return (
                         <motion.div
                             key={c.name}
                             initial={{ opacity: 0, y: 28 }}
@@ -88,10 +110,11 @@ export default function CategoryGrid() {
                                     <c.icon className="h-6 w-6" />
                                 </span>
                                 <h3 className="mt-4 font-display font-bold text-white">{c.name}</h3>
-                                <p className="mt-1 text-xs sm:text-sm text-slate-400">{c.count}</p>
+                                <p className="mt-1 text-xs sm:text-sm text-slate-400" data-testid={`${c.id}-count`}>{label}</p>
                             </Link>
                         </motion.div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </section>

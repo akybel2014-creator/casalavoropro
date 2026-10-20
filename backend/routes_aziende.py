@@ -124,6 +124,19 @@ async def list_aziende(categoria: str = "", zona: str = "", q: str = "", verific
     return out
 
 
+@router.get("/aziende/categorie-count")
+async def categorie_count():
+    """Numero reale di aziende registrate per categoria (aggregazione su tutte le aziende)."""
+    pipeline = [
+        {"$unwind": "$categorie"},
+        {"$group": {"_id": "$categorie", "count": {"$sum": 1}}},
+    ]
+    rows = await db.aziende.aggregate(pipeline).to_list(500)
+    counts = {r["_id"]: r["count"] for r in rows if r.get("_id")}
+    totale = await db.aziende.count_documents({})
+    return {"counts": counts, "totale": totale}
+
+
 @router.get("/aziende/{azienda_id}")
 async def get_azienda(azienda_id: str):
     try:

@@ -1,0 +1,25 @@
+# CasaLavoroPRO
+
+> Marketplace italiano che collega privati e aziende con Partita IVA per i lavori di casa: idraulica, elettricità, edilizia, climatizzazione, imbiancatura, giardinaggio, pavimenti e altri servizi.
+
+CasaLavoroPRO permette di cercare professionisti verificati nella propria zona, confrontare i profili e richiedere un preventivo gratuito. Le aziende iscritte possono pubblicare il proprio profilo, gestire i cantieri, mettere a disposizione il proprio parco macchine a noleggio e vendere attrezzatura usata. L'iscrizione alla piattaforma è gratuita sia per i privati sia per le aziende.
+
+## Pagine principali
+
+- [Trova professionisti](https://casalavoropro.com/aziende): directory di artigiani e aziende di servizi, filtrabile per zona e categoria.
+- [Noleggio attrezzature e mezzi](https://casalavoropro.com/noleggio): mezzi e macchinari da cantiere messi a disposizione dalle aziende iscritte, con consegna in cantiere e pagamento a giorni di utilizzo.
+- [Marketplace usato](https://casalavoropro.com/mercatino): utensili e macchinari usati venduti dalle imprese del network.
+- [Piani e prezzi](https://casalavoropro.com/prezzi): l'iscrizione è gratuita per tutti, senza abbonamento.
+- [Registrati](https://casalavoropro.com/registrati): iscrizione gratuita per privati e aziende.
+- [Richiedi un preventivo](https://casalavoropro.com/nuova-richiesta): invia una richiesta e ricevi preventivi dalle aziende della tua zona.
+
+## Categorie di servizi
+
+- Idraulica
+- Termoidraulica
+- Elettricità
+- Edilizia
+- Imbiancatura
+- Giardinaggio
+- Pavimenti
+- Altri Servizi

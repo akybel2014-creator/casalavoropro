@@ -32,6 +32,7 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
 - **[20/10] Messaggistica semplificata**: banner top ora "Iscrizione gratis per tutti · Aziende e privati, registratevi senza alcun costo" (rimossa logica founder-offer dal banner). File `LaunchBanner.jsx`.
 - **[20/10] Rimosso contatore Fondatori LIVE dall'hero** (incl. stato urgente rosso). File `Hero.jsx` ripulito (import/state inutilizzati). NB: la logica backend founder50 (primi 50 PRO gratis) resta attiva, solo non più pubblicizzata.
 - **[20/10] Conteggi reali categorie in home**: nuovo endpoint `GET /api/aziende/categorie-count` (aggregazione $unwind+$group) + `CategoryGrid.jsx` mostra il numero reale di aziende per categoria (normalizzazione accenti, singolare/plurale).
+- **[20/10] Loghi aziende demo**: generati 8 loghi flat/moderni (Gemini Nano Banana) e assegnati al campo `logo` delle 8 aziende demo → gli avatar della prova sociale in home mostrano loghi reali invece delle iniziali. Loghi salvati anche in `seed.py` (persistono ai re-seed).
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

@@ -208,7 +208,7 @@ export default function AziendaDettaglio() {
                                     <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
                                         <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Stato verifica</p>
                                         <p className={`mt-1 font-medium ${a.verified ? "text-emerald-400" : "text-brand-amber"}`}>
-                                            {a.verified ? "Verificata dallo staff PRO" : "Verifica in corso / richiesta inviata"}
+                                            {a.verified ? "Verificata dallo staff" : "Verifica in corso / richiesta inviata"}
                                         </p>
                                     </div>
                                 </div>

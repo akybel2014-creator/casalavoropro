@@ -3,13 +3,14 @@ import { Truck, Recycle, MapPin, Phone, ArrowRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "@/pages/Aziende";
 import { BlurImage } from "@/components/BlurImage";
+import { optimizeRemoteImg } from "@/lib/img";
 
 export const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
 const PLACEHOLDER = "https://images.unsplash.com/photo-1530191601183-4de2969575ad?crop=entropy&cs=srgb&auto=format&q=70&w=560";
 
 export function annuncioImg(a) {
     if (a.foto?.length) return `${FILES_BASE}${a.foto[0].path}`;
-    return a.immagine_url || PLACEHOLDER;
+    return optimizeRemoteImg(a.immagine_url || PLACEHOLDER, 700);
 }
 
 export function prezzoLabel(a) {

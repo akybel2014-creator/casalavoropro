@@ -11,7 +11,7 @@ const COPY = {
     noleggio: {
         eyebrow: "Noleggio Attrezzi", icon: Truck,
         title: "Macchinari e attrezzature a noleggio",
-        text: "Mezzi delle aziende PRO del network: prenoti per i giorni che servono, consegna in cantiere e tariffe trasparenti.",
+        text: "Mezzi delle aziende con Partita IVA iscritte: prenoti per i giorni che servono, consegna in cantiere e tariffe trasparenti.",
         empty: "Nessun mezzo a noleggio con questi filtri.",
     },
     usato: {

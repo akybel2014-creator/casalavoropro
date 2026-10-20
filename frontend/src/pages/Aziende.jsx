@@ -24,7 +24,10 @@ const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
 
 // URL del logo/foto reale dell'azienda (se disponibile), altrimenti null -> iniziali.
 function aziendaLogoUrl(logo, foto) {
-    if (logo) return logo.startsWith("http") ? logo : `${FILES_BASE}${logo}`;
+    if (logo) {
+        if (logo.startsWith("http") || logo.startsWith("/")) return logo;
+        return `${FILES_BASE}${logo}`;
+    }
     const f = foto?.[0];
     if (f?.path) return `${FILES_BASE}${f.path}`;
     return null;

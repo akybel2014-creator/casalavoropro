@@ -44,6 +44,11 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
   - Registrati azienda: rimossa scelta piani/prova 14gg → box unico "Iscrizione gratuita" con Profilo PRO barrato "in arrivo"; `plan` forzato a "base" (niente checkout Stripe in registrazione); rimossi stato/fetch founder inutilizzati.
   - CtaBoxes, NoleggioUsato ("aziende con P.IVA iscritte"), AnnuncioDettaglio: messaggi allineati a iscrizione gratuita.
   - Dashboard azienda billing/Stripe LASCIATA INVARIATA (meccanismo pronto per il futuro, scelta confermata dall'utente).
+- **[20/10] Performance & WebP**:
+  - Rimosso il carosello "Aziende verificate" (BrandWall) dalla home (meno richieste/immagini).
+  - Loghi demo convertiti in WebP 256px serviti localmente da `/public/brand/*.webp` (3-6KB vs ~100-200KB JPEG). DB + seed.py aggiornati. Helper logo (`Hero`, `Aziende`) gestiscono path app-relative "/".
+  - Nuovo helper `lib/img.js` `optimizeRemoteImg`: Unsplash → `fm=webp&q=70&w=`, Pexels → `w=` (rimosso `dpr`). Applicato a hero (pexels w=1200, LCP `fetchPriority=high`, width/height anti-CLS) e card annunci (`annuncioImg`, w=700).
+  - Messaggi "aziende PRO/abbonate" residui (Annunci, AziendaDettaglio) allineati a "aziende con P.IVA iscritte".
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

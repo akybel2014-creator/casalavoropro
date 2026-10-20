@@ -5,15 +5,19 @@ import { Search, ShieldCheck, Star, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { optimizeRemoteImg } from "@/lib/img";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
-const HERO_IMG = "https://images.pexels.com/photos/6473978/pexels-photo-6473978.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=900&w=1200";
+const HERO_IMG = "https://images.pexels.com/photos/6473978/pexels-photo-6473978.jpeg?auto=compress&cs=tinysrgb&w=1200";
 const CATS = ["Idraulico", "Elettricista", "Imbianchino", "Climatizzazione", "Fabbro", "Muratore"];
 const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
 
 // URL del vero logo/foto dell'artigiano (se disponibile), altrimenti null -> iniziali.
 function avatarUrl(a) {
-    if (a?.logo) return a.logo.startsWith("http") ? a.logo : `${FILES_BASE}${a.logo}`;
+    if (a?.logo) {
+        if (a.logo.startsWith("http") || a.logo.startsWith("/")) return a.logo;
+        return `${FILES_BASE}${a.logo}`;
+    }
     const f = a?.foto?.[0];
     if (f?.path) return `${FILES_BASE}${f.path}`;
     return null;
@@ -177,8 +181,8 @@ export default function Hero() {
                     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.9, delay: 0.4, ease: LINE_EASE }}
                         className="relative hidden lg:block" data-testid="hero-image">
                         <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
-                            <img src={HERO_IMG} alt="Artigiano al lavoro durante una ristrutturazione di casa"
-                                className="w-full h-[460px] object-cover" loading="eager" />
+                            <img src={optimizeRemoteImg(HERO_IMG, 1200)} alt="Artigiano al lavoro durante una ristrutturazione di casa"
+                                className="w-full h-[460px] object-cover" loading="eager" fetchPriority="high" decoding="async" width="1200" height="920" />
                             <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/10 to-transparent" aria-hidden="true" />
                         </div>
                         {/* Badge flottante: numero reale di aziende verificate */}

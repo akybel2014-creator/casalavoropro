@@ -12,7 +12,7 @@ export const NAV_ITEMS = [
     { label: "Come funziona", to: "/#come-funziona", id: "header-nav-come-funziona" },
     { label: "Categorie", to: "/#categorie", id: "header-nav-categorie" },
     { label: "Noleggio Attrezzi", to: "/noleggio", id: "header-nav-noleggio" },
-    { label: "Mercatino Usato", to: "/mercatino", id: "header-nav-mercatino" },
+    { label: "Marketplace", to: "/mercatino", id: "header-nav-mercatino" },
     { label: "Aziende", to: "/aziende", id: "header-nav-aziende" },
     { label: "Per le aziende", to: "/#per-le-aziende", id: "header-nav-per-aziende" },
     { label: "Prezzi", to: "/prezzi", id: "header-nav-prezzi" },

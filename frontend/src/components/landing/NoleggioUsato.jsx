@@ -79,7 +79,7 @@ export default function NoleggioUsato() {
             <section id="mercatino-usato" className="relative bg-navy py-16 sm:py-24 lg:py-32" data-testid="section-mercatino">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <BlockHeader
-                        eyebrow="Mercatino Usato"
+                        eyebrow="Marketplace"
                         title="Attrezzatura professionale di seconda mano, verificata"
                         text="Le imprese del network vendono utensili e macchinari che non usano più: prezzi onesti, stato dichiarato e venditore verificato dallo staff PRO."
                         perks={[
@@ -87,7 +87,7 @@ export default function NoleggioUsato() {
                             { icon: Recycle, label: "Stato dichiarato e foto reali" },
                             { icon: Tag, label: "Fino al 60% in meno del nuovo" },
                         ]}
-                        to="/mercatino" linkLabel="Vedi tutto il mercatino"
+                        to="/mercatino" linkLabel="Vedi tutto il Marketplace"
                     />
                     <Grid items={usato} emptyText="Nessun articolo usato pubblicato al momento." />
                     <motion.div {...fade} className="mt-10 flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-brand/30 bg-brand/5 p-6">

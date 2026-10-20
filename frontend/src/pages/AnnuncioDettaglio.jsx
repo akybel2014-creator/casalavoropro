@@ -49,7 +49,7 @@ export default function AnnuncioDettaglio() {
         <div className="bg-navy min-h-screen pt-32 sm:pt-36 pb-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Link to={back} data-testid="annuncio-back-link" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-brand transition-colors">
-                    <ArrowLeft className="h-4 w-4" /> {noleggio ? "Tutti i mezzi a noleggio" : "Tutto il mercatino"}
+                    <ArrowLeft className="h-4 w-4" /> {noleggio ? "Tutti i mezzi a noleggio" : "Tutto il Marketplace"}
                 </Link>
                 {error && <p className="mt-10 text-red-400" data-testid="annuncio-error">{error}</p>}
                 {!a && !error && <p className="mt-10 text-slate-400">Caricamento annuncio…</p>}

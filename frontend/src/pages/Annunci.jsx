@@ -15,7 +15,7 @@ const COPY = {
         empty: "Nessun mezzo a noleggio con questi filtri.",
     },
     usato: {
-        eyebrow: "Mercatino Usato", icon: Recycle,
+        eyebrow: "Marketplace", icon: Recycle,
         title: "Attrezzatura professionale di seconda mano",
         text: "Utensili e macchinari venduti da imprese verificate: stato dichiarato, foto reali e prezzi onesti.",
         empty: "Nessun articolo usato con questi filtri.",
@@ -139,7 +139,7 @@ export default function Annunci({ tipo }) {
                             )}
                             <Link to={tipo === "noleggio" ? "/mercatino" : "/noleggio"} data-testid="annunci-switch-link"
                                 className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-white transition-colors">
-                                {tipo === "noleggio" ? "Vai al Mercatino Usato" : "Vai al Noleggio Attrezzi"} <ArrowRight className="h-4 w-4" />
+                                {tipo === "noleggio" ? "Vai al Marketplace" : "Vai al Noleggio Attrezzi"} <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
                     </form>

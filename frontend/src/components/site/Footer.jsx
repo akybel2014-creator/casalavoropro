@@ -53,7 +53,7 @@ export default function Footer() {
                             <li><Link className="hover:text-brand transition-colors" to="/#come-funziona">Come funziona</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/#categorie">Categorie</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/noleggio">Noleggio Attrezzi</Link></li>
-                            <li><Link className="hover:text-brand transition-colors" to="/mercatino">Mercatino Usato</Link></li>
+                            <li><Link className="hover:text-brand transition-colors" to="/mercatino">Marketplace</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/aziende">Directory aziende</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/prezzi">Prezzi</Link></li>
                             <li><Link className="hover:text-brand transition-colors" to="/#per-le-aziende">Per le aziende</Link></li>

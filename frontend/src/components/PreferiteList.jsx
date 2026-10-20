@@ -32,7 +32,7 @@ export function PreferiteList({ items, onRemove }) {
                 <div key={a.id} data-testid={`preferita-card-${a.id}`}
                     className="flex flex-col rounded-3xl border border-white/10 bg-navy-700/60 p-6 hover:border-brand/40 transition-colors">
                     <div className="flex items-start gap-4">
-                        <AziendaAvatar nome={a.nome} logo={a.logo} foto={a.foto} />
+                        <AziendaAvatar nome={a.nome} logo={a.logo} foto={a.foto} verified={a.verified} />
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="font-display font-bold text-white truncate">{a.nome}</h3>

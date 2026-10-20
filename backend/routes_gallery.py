@@ -182,4 +182,9 @@ async def serve_file(path: str):
     except Exception:
         logger.exception("download failed")
         raise HTTPException(status_code=502, detail="File non disponibile, riprova")
-    return Response(content=data, media_type=record.get("content_type") or content_type)
+    # I file hanno path immutabile (UUID) -> cache aggressiva per velocizzare le visite di ritorno.
+    return Response(
+        content=data,
+        media_type=record.get("content_type") or content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )

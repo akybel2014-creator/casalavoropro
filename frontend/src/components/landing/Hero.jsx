@@ -181,11 +181,13 @@ export default function Hero() {
                                 className="w-full h-[460px] object-cover" loading="eager" />
                             <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/10 to-transparent" aria-hidden="true" />
                         </div>
-                        {/* Badge flottante */}
-                        <div className="absolute -bottom-5 -left-5 rounded-2xl border border-white/10 bg-navy-700/90 backdrop-blur-xl px-5 py-4 shadow-2xl">
-                            <p className="font-display font-black text-2xl text-white">1.200+</p>
-                            <p className="text-xs text-slate-400">professionisti verificati</p>
-                        </div>
+                        {/* Badge flottante: numero reale di aziende verificate */}
+                        {verifiedCount > 0 && (
+                            <div className="absolute -bottom-5 -left-5 rounded-2xl border border-white/10 bg-navy-700/90 backdrop-blur-xl px-5 py-4 shadow-2xl" data-testid="hero-verified-badge">
+                                <p className="font-display font-black text-2xl text-white">{verifiedCount}</p>
+                                <p className="text-xs text-slate-400">{verifiedCount === 1 ? "azienda verificata" : "aziende verificate"}</p>
+                            </div>
+                        )}
                         <div className="absolute -top-4 right-6 inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-lg">
                             <ShieldCheck className="h-3.5 w-3.5" /> Profili controllati
                         </div>

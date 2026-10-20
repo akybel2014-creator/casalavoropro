@@ -279,7 +279,7 @@ export default function DashboardAdmin() {
                                 <tr key={a.id} className="border-t border-white/5 bg-navy-700/30 hover:bg-navy-700/60 transition-colors" data-testid={`admin-row-${a.id}`}>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center gap-3">
-                                            <AziendaAvatar nome={a.nome} size="h-9 w-9 text-xs" />
+                                            <AziendaAvatar nome={a.nome} logo={a.logo} foto={a.foto} size="h-9 w-9 text-xs" />
                                             <div>
                                                 <p className="font-semibold text-white">{a.nome}</p>
                                                 <p className="text-xs text-slate-500">{a.plan === "pro" ? "Piano PRO" : "Piano Base"}</p>

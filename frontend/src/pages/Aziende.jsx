@@ -20,7 +20,31 @@ const AVATAR_GRADIENTS = [
     "from-rose-500 to-orange-400",
 ];
 
-export function AziendaAvatar({ nome, size = "h-14 w-14 text-lg" }) {
+const FILES_BASE = `${process.env.REACT_APP_BACKEND_URL}/api/files/`;
+
+// URL del logo/foto reale dell'azienda (se disponibile), altrimenti null -> iniziali.
+function aziendaLogoUrl(logo, foto) {
+    if (logo) return logo.startsWith("http") ? logo : `${FILES_BASE}${logo}`;
+    const f = foto?.[0];
+    if (f?.path) return `${FILES_BASE}${f.path}`;
+    return null;
+}
+
+export function AziendaAvatar({ nome, logo, foto, size = "h-14 w-14 text-lg" }) {
+    const [err, setErr] = useState(false);
+    const url = aziendaLogoUrl(logo, foto);
+    if (url && !err) {
+        return (
+            <img
+                src={url}
+                alt={nome}
+                title={nome}
+                onError={() => setErr(true)}
+                loading="lazy"
+                className={`inline-flex ${size} shrink-0 rounded-2xl object-cover bg-navy border border-white/10`}
+            />
+        );
+    }
     const initials = (nome || "?").split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
     const idx = (nome || "").length % AVATAR_GRADIENTS.length;
     return (
@@ -223,7 +247,7 @@ export default function Aziende() {
                             <div key={a.id} data-testid={`company-card-${a.nome.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                                 className="group flex flex-col h-full rounded-2xl border border-white/10 bg-navy-700/60 p-6 hover:-translate-y-1.5 hover:border-brand/40 hover:shadow-xl transition-all duration-300">
                                 <div className="flex items-start gap-4">
-                                    <AziendaAvatar nome={a.nome} />
+                                    <AziendaAvatar nome={a.nome} logo={a.logo} foto={a.foto} />
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <h3 className="font-display font-bold text-white truncate">{a.nome}</h3>

@@ -33,6 +33,9 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
 - **[20/10] Rimosso contatore Fondatori LIVE dall'hero** (incl. stato urgente rosso). File `Hero.jsx` ripulito (import/state inutilizzati). NB: la logica backend founder50 (primi 50 PRO gratis) resta attiva, solo non più pubblicizzata.
 - **[20/10] Conteggi reali categorie in home**: nuovo endpoint `GET /api/aziende/categorie-count` (aggregazione $unwind+$group) + `CategoryGrid.jsx` mostra il numero reale di aziende per categoria (normalizzazione accenti, singolare/plurale).
 - **[20/10] Loghi aziende demo**: generati 8 loghi flat/moderni (Gemini Nano Banana) e assegnati al campo `logo` delle 8 aziende demo → gli avatar della prova sociale in home mostrano loghi reali invece delle iniziali. Loghi salvati anche in `seed.py` (persistono ai re-seed).
+- **[20/10] Badge hero numero reale**: sostituito il fittizio "1.200+ professionisti verificati" con il conteggio reale di aziende verificate (`verifiedCount`, label singolare/plurale), nascosto se 0. File `Hero.jsx`.
+- **[20/10] Logo in /aziende e dettaglio**: `AziendaAvatar` (in `Aziende.jsx`) ora mostra il logo reale (prop `logo`/`foto`, fallback iniziali). Passato in card directory, dettaglio azienda, PreferiteList e lista admin.
+- **[20/10] Stato chiavi API (preview)**: Mapbox ✅, Broker (URL+token) ✅, Twilio SID ✅ ma TWILIO_AUTH_TOKEN e TWILIO_WHATSAPP_FROM VUOTI (WhatsApp non operativo). NB: in produzione le chiavi vanno nei Secrets del pannello deploy.
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

@@ -66,7 +66,7 @@ export default function AziendaDettaglio() {
                         <div className="lg:col-span-8 space-y-6">
                             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
                                 <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-                                    <AziendaAvatar nome={a.nome} size="h-20 w-20 text-2xl" />
+                                    <AziendaAvatar nome={a.nome} logo={a.logo} foto={a.foto} size="h-20 w-20 text-2xl" />
                                     <div className="flex-1">
                                         <div className="flex flex-wrap items-center gap-2.5">
                                             <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">{a.nome}</h1>

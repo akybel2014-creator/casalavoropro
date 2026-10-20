@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Hero from "@/components/landing/Hero";
 import ValueBadges from "@/components/landing/ValueBadges";
+import BrandWall from "@/components/landing/BrandWall";
 import Marquee from "@/components/landing/Marquee";
 import CategoryGrid from "@/components/landing/CategoryGrid";
 import NoleggioUsato from "@/components/landing/NoleggioUsato";
@@ -20,6 +21,7 @@ export default function Home() {
     return (
         <>
             <Hero />
+            <BrandWall />
             <ValueBadges />
             <Marquee />
             <CategoryGrid />

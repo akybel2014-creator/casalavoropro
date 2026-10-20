@@ -36,6 +36,7 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
 - **[20/10] Badge hero numero reale**: sostituito il fittizio "1.200+ professionisti verificati" con il conteggio reale di aziende verificate (`verifiedCount`, label singolare/plurale), nascosto se 0. File `Hero.jsx`.
 - **[20/10] Logo in /aziende e dettaglio**: `AziendaAvatar` (in `Aziende.jsx`) ora mostra il logo reale (prop `logo`/`foto`, fallback iniziali). Passato in card directory, dettaglio azienda, PreferiteList e lista admin.
 - **[20/10] Stato chiavi API (preview)**: Mapbox ✅, Broker (URL+token) ✅, Twilio SID ✅ ma TWILIO_AUTH_TOKEN e TWILIO_WHATSAPP_FROM VUOTI (WhatsApp non operativo). NB: in produzione le chiavi vanno nei Secrets del pannello deploy.
+- **[20/10] Muro di Brand (marquee loghi)**: nuovo componente `BrandWall.jsx` in home (dopo l'hero) che mostra i loghi delle aziende verificate in scorrimento continuo (pausa su hover, loghi cliccabili). Riusa l'animazione `.marquee`/`.marquee-track`. Nascosto se nessuna azienda verificata con logo.
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

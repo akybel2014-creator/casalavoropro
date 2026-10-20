@@ -53,6 +53,7 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
   - `components/LazySection.jsx` (IntersectionObserver, rootMargin 500px, minHeight anti-CLS) + `React.lazy` per ValueBadges, NoleggioUsato, HowItWorks, Emergenze, CtaBoxes, FaqSection → chunk separati montati solo allo scroll. Hero e CategoryGrid restano eager.
   - Rimosso il secondo carosello (Marquee testuale) dalla home; file `Marquee.jsx` eliminato.
   - Pulsante registrazione privati → testo "Registrati" (form Registrati + CTA Prezzi).
+- **[20/10] Manifest ARD `ai-catalog.json`**: creato `frontend/public/ai-catalog.json` (+ copia `/.well-known/`) conforme a spec ARD 1.0 (specVersion, host did:web, 2 entries: directory text/html + categorie application/json inline). Risolve l'errore "Malformed JSON in manifest" (prima /ai-catalog.json restituiva l'HTML della SPA). Servito come application/json. Richiede ripubblicazione per essere live in produzione.
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

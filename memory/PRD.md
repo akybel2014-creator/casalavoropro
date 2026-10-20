@@ -49,6 +49,10 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
   - Loghi demo convertiti in WebP 256px serviti localmente da `/public/brand/*.webp` (3-6KB vs ~100-200KB JPEG). DB + seed.py aggiornati. Helper logo (`Hero`, `Aziende`) gestiscono path app-relative "/".
   - Nuovo helper `lib/img.js` `optimizeRemoteImg`: Unsplash → `fm=webp&q=70&w=`, Pexels → `w=` (rimosso `dpr`). Applicato a hero (pexels w=1200, LCP `fetchPriority=high`, width/height anti-CLS) e card annunci (`annuncioImg`, w=700).
   - Messaggi "aziende PRO/abbonate" residui (Annunci, AziendaDettaglio) allineati a "aziende con P.IVA iscritte".
+- **[20/10] Lazy-load & cleanup home**:
+  - `components/LazySection.jsx` (IntersectionObserver, rootMargin 500px, minHeight anti-CLS) + `React.lazy` per ValueBadges, NoleggioUsato, HowItWorks, Emergenze, CtaBoxes, FaqSection → chunk separati montati solo allo scroll. Hero e CategoryGrid restano eager.
+  - Rimosso il secondo carosello (Marquee testuale) dalla home; file `Marquee.jsx` eliminato.
+  - Pulsante registrazione privati → testo "Registrati" (form Registrati + CTA Prezzi).
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

@@ -97,7 +97,7 @@ export default function Prezzi() {
                     </div>
                     <Button asChild data-testid="plan-privati-cta"
                         className="sm:ml-auto rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                        <Link to="/registrati?ruolo=privato">Registrati Gratis come Privato (Nessun costo nascosto)</Link>
+                        <Link to="/registrati?ruolo=privato">Registrati</Link>
                     </Button>
                 </div>
 

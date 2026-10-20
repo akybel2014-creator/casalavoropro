@@ -169,7 +169,7 @@ export default function Registrati() {
 
                         <Button type="submit" disabled={busy} data-testid="register-submit-button"
                             className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            {busy ? "Creazione…" : ruolo === "azienda" ? "Crea Account Azienda Gratis" : "Registrati Gratis come Privato (Nessun costo nascosto)"}
+                            {busy ? "Creazione…" : ruolo === "azienda" ? "Crea Account Azienda Gratis" : "Registrati"}
                         </Button>
                         {ruolo === "azienda" && (
                             <p className="text-xs text-slate-400 text-center" data-testid="register-plan-note">

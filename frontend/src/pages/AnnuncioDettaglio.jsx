@@ -131,7 +131,7 @@ export default function AnnuncioDettaglio() {
                                     <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Scegli le date e prenota" : "Contatta il venditore"}
                                 </Button>
                                 <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">
-                                    <ShieldCheck className="h-3.5 w-3.5 text-brand" /> Annuncio pubblicato da un'azienda con abbonamento PRO.
+                                    <ShieldCheck className="h-3.5 w-3.5 text-brand" /> Annuncio pubblicato da un'azienda con Partita IVA iscritta.
                                 </p>
                             </div>
                         </aside>

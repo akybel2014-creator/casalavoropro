@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Building2, User, Sparkles } from "lucide-react";
@@ -19,14 +19,9 @@ export default function Registrati() {
     const [ruolo, setRuolo] = useState(params.get("ruolo") === "azienda" ? "azienda" : "privato");
     const [form, setForm] = useState({ name: "", email: "", password: "", nome: "", zone: "", piva: "", descrizione: "" });
     const [categorie, setCategorie] = useState([]);
-    const [plan, setPlan] = useState("base");
+    const [plan] = useState("base");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
-    const [founder, setFounder] = useState(null);
-
-    useEffect(() => {
-        api.get("/founder-offer").then(({ data }) => setFounder(data)).catch(() => { /* silenzioso */ });
-    }, []);
 
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
     const toggleCat = (c) => setCategorie((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]));
@@ -110,35 +105,16 @@ export default function Registrati() {
 
                         {ruolo === "azienda" && (
                             <>
-                                {founder?.active && (
-                                    <div data-testid="register-founder-note"
-                                        className="rounded-xl border border-brand/40 bg-brand/10 p-4 flex items-start gap-3">
-                                        <Sparkles className="h-5 w-5 text-brand shrink-0 mt-0.5" />
-                                        <p className="text-sm text-white font-semibold">
-                                            Sei tra le prime 50 aziende! Attiviamo il <span className="text-brand">PRO GRATIS per sempre</span>, senza carta di credito.
-                                            <span className="block text-xs font-normal text-slate-300 mt-0.5">Restano {founder.remaining} posti. Qualsiasi piano scegli qui sotto, non pagherai nulla.</span>
+                                <div data-testid="register-free-note"
+                                    className="rounded-xl border border-brand/40 bg-brand/10 p-4 flex items-start gap-3">
+                                    <Sparkles className="h-5 w-5 text-brand shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm text-white font-semibold">Iscrizione gratuita, senza costi né carta di credito.</p>
+                                        <p className="mt-1 text-xs text-slate-300">
+                                            Oggi tutte le funzioni sono incluse gratis. Il{" "}
+                                            <span className="line-through text-slate-400">Profilo PRO €4,99/mese</span>{" "}
+                                            <span className="font-semibold text-brand">arriverà in futuro</span>: per ora non paghi nulla.
                                         </p>
-                                    </div>
-                                )}
-                                <div className="space-y-2" data-testid="register-plan-select">
-                                    <Label className="text-slate-300">Scegli il tuo piano</Label>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {[
-                                            { v: "base", t: "Base", p: "Gratis", d: "Profilo in directory + fino a 2 preventivi/mese" },
-                                            { v: "pro_monthly", t: "PRO Mensile", p: "€4,99/mese", d: "14 giorni di prova gratis, poi preventivi e funzioni illimitati + badge PRO" },
-                                            { v: "pro_yearly", t: "PRO Annuale", p: "€49,99/anno", d: "14 giorni di prova gratis, poi tutto il PRO con 2 mesi gratis" },
-                                        ].map((o) => (
-                                            <button key={o.v} type="button" data-testid={`register-plan-${o.v}`} onClick={() => setPlan(o.v)}
-                                                className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                                                    plan === o.v ? "border-brand bg-brand/15" : "border-white/10 hover:border-white/25"
-                                                }`}>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-white">{o.t}</p>
-                                                    <p className="text-xs text-slate-400">{o.d}</p>
-                                                </div>
-                                                <span className="text-sm font-bold text-brand shrink-0">{o.p}</span>
-                                            </button>
-                                        ))}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -193,13 +169,12 @@ export default function Registrati() {
 
                         <Button type="submit" disabled={busy} data-testid="register-submit-button"
                             className="w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            {busy ? "Creazione…" : ruolo === "azienda" ? (plan === "base" ? "Crea Account Azienda Gratis" : "Crea Account e Inizia la Prova Gratis") : "Registrati Gratis come Privato (Nessun costo nascosto)"}
+                            {busy ? "Creazione…" : ruolo === "azienda" ? "Crea Account Azienda Gratis" : "Registrati Gratis come Privato (Nessun costo nascosto)"}
                         </Button>
                         {ruolo === "azienda" && (
                             <p className="text-xs text-slate-400 text-center" data-testid="register-plan-note">
-                                Con il piano Base usi profilo e preventivi di base gratis. Con PRO hai 14 giorni di prova gratuita:
-                                sblocchi tutte le funzioni gestionali (cantieri, annunci, offerte di lavoro) e la massima visibilità.
-                                Al termine della prova si rinnova automaticamente, ma puoi annullare quando vuoi.
+                                L'iscrizione è completamente gratuita: profilo in directory, preventivi, cantieri, annunci e offerte di lavoro inclusi.
+                                Nessun abbonamento e nessuna carta di credito. Il Profilo PRO verrà introdotto in futuro.
                             </p>
                         )}
                     </form>

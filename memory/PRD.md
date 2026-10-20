@@ -39,6 +39,11 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
 - **[20/10] Muro di Brand (marquee loghi)**: nuovo componente `BrandWall.jsx` in home (dopo l'hero) che mostra i loghi delle aziende verificate in scorrimento continuo (pausa su hover, loghi cliccabili). Riusa l'animazione `.marquee`/`.marquee-track`. Nascosto se nessuna azienda verificata con logo.
 - **[20/10] Badge verificata sul logo**: `AziendaAvatar` accetta prop `verified` e sovrappone un check verde all'angolo del logo. Applicato a card directory `/aziende`, dettaglio azienda e preferiti.
 - **[20/10] Rename "Mercatino Usato" → "Marketplace"**: etichette visibili aggiornate in Header, Footer, Annunci, NoleggioUsato, AnnuncioDettaglio. Route interna `/mercatino` invariata.
+- **[20/10] Pivot "Iscrizione gratuita, nessun abbonamento (PRO in arrivo)"**:
+  - Prezzi: rimossa sezione "Servizi opzionali"; titolo "L'iscrizione è gratuita per tutti"; card PRO con prezzo barrato + "Gratis ora" + badge "IN ARRIVO" + CTA "Registrati gratis"; Condizioni aggiornate.
+  - Registrati azienda: rimossa scelta piani/prova 14gg → box unico "Iscrizione gratuita" con Profilo PRO barrato "in arrivo"; `plan` forzato a "base" (niente checkout Stripe in registrazione); rimossi stato/fetch founder inutilizzati.
+  - CtaBoxes, NoleggioUsato ("aziende con P.IVA iscritte"), AnnuncioDettaglio: messaggi allineati a iscrizione gratuita.
+  - Dashboard azienda billing/Stripe LASCIATA INVARIATA (meccanismo pronto per il futuro, scelta confermata dall'utente).
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

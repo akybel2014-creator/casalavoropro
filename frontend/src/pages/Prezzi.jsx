@@ -20,19 +20,6 @@ const PRO_FEATURES = [
     "Supporto prioritario",
 ];
 
-const SERVIZI = [
-    { nome: "Profilo Pro mensile", prezzo: "€4,99 / mese" },
-    { nome: "Profilo Pro annuale", prezzo: "€49,99 / anno" },
-    { nome: "Annuncio in evidenza (7 giorni)", prezzo: "da €4,99 a €9,99" },
-    { nome: "Profilo sponsorizzato nella tua zona", prezzo: "da €14,99 a €29,99 / mese" },
-    { nome: "Annuncio attrezzatura usata in evidenza", prezzo: "da €2,99 a €6,99" },
-    { nome: "Offerta di lavoro in evidenza", prezzo: "da €4,99 a €9,99" },
-    { nome: "Verifica documentale avanzata", prezzo: "comunicato prima dell'acquisto" },
-    { nome: "Creazione di portfolio professionale", prezzo: "una tantum, con preventivo" },
-    { nome: "Pacchetto noleggio (più macchinari)", prezzo: "piano personalizzato" },
-    { nome: "Pacchetto multi-sede / multi-categoria", prezzo: "piano personalizzato" },
-];
-
 export default function Prezzi() {
     return (
         <div className="min-h-screen bg-navy grid-pattern pt-32 pb-24" data-testid="prezzi-page">
@@ -45,11 +32,11 @@ export default function Prezzi() {
                 >
                     <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Piani e prezzi</p>
                     <h1 className="mt-3 font-display font-black tracking-tight text-4xl sm:text-5xl text-white">
-                        Scegli il piano giusto per la tua impresa
+                        L'iscrizione è gratuita per tutti
                     </h1>
                     <p className="mt-4 text-base sm:text-lg text-slate-300">
-                        Il Profilo Base è sempre gratuito. Prova il Profilo PRO gratis per 14 giorni:
-                        sblocchi tutte le funzioni gestionali e annulli quando vuoi.
+                        Aziende e privati si iscrivono senza alcun costo e senza carta di credito.
+                        Oggi tutte le funzioni sono incluse gratis: il Profilo PRO arriverà in futuro, ma per ora non paghi nulla.
                     </p>
                 </motion.div>
 
@@ -76,14 +63,15 @@ export default function Prezzi() {
                         </Button>
                     </div>
 
-                    {/* Pro */}
+                    {/* Pro (mostrato per il futuro: nessun abbonamento attivo oggi) */}
                     <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-8 shadow-2xl shadow-brand/10" data-testid="plan-pro">
-                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">14 GIORNI GRATIS</span>
+                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">IN ARRIVO</span>
                         <h2 className="font-display font-bold text-white text-xl">Profilo Pro</h2>
-                        <p className="mt-2 font-display font-black text-4xl text-white" data-testid="plan-pro-price">
-                            €4,99<span className="text-base font-semibold text-slate-400">/mese</span>
+                        <p className="mt-2 flex items-baseline gap-2" data-testid="plan-pro-price">
+                            <span className="font-display font-black text-3xl text-slate-500 line-through">€4,99/mese</span>
+                            <span className="font-display font-black text-3xl text-brand">Gratis ora</span>
                         </p>
-                        <p className="mt-1 text-sm text-slate-400">oppure €49,99/anno (2 mesi gratis) · prova 14 giorni gratis</p>
+                        <p className="mt-1 text-sm text-slate-400">Oggi incluso gratis durante il lancio. Nessun pagamento, nessun abbonamento attivo: lo introdurremo in futuro.</p>
                         <ul className="mt-6 space-y-3">
                             {PRO_FEATURES.map((f) => (
                                 <li key={f} className="flex items-start gap-3 text-sm text-slate-200">
@@ -96,7 +84,7 @@ export default function Prezzi() {
                         </ul>
                         <Button asChild data-testid="plan-pro-cta"
                             className="mt-8 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                            <Link to="/registrati?ruolo=azienda">Inizia la prova gratuita <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                            <Link to="/registrati?ruolo=azienda">Registrati gratis <ArrowRight className="h-4 w-4 ml-1" /></Link>
                         </Button>
                     </div>
                 </div>
@@ -113,43 +101,15 @@ export default function Prezzi() {
                     </Button>
                 </div>
 
-                {/* Servizi opzionali */}
-                <div className="mt-14" data-testid="servizi-opzionali">
-                    <h2 className="font-display font-bold text-white text-2xl">Servizi opzionali</h2>
-                    <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-                        Servizi promozionali per mettere in evidenza profili, annunci di attrezzatura usata e offerte di
-                        lavoro. Prezzi indicativi; quello finale è mostrato prima della conferma dell'acquisto.
-                    </p>
-                    <div className="mt-6 overflow-hidden rounded-2xl border border-white/10">
-                        <table className="w-full text-left">
-                            <thead className="bg-white/5">
-                                <tr>
-                                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Servizio</th>
-                                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 text-right">Prezzo indicativo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {SERVIZI.map((s, i) => (
-                                    <tr key={s.nome} className={i % 2 === 0 ? "bg-navy-700/40" : "bg-transparent"}>
-                                        <td className="px-5 py-3.5 text-sm text-slate-200">{s.nome}</td>
-                                        <td className="px-5 py-3.5 text-sm font-semibold text-brand text-right whitespace-nowrap">{s.prezzo}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 {/* Condizioni */}
-                <div className="mt-12 rounded-2xl border border-white/10 bg-navy-700/50 p-6" data-testid="prezzi-condizioni">
+                <div className="mt-14 rounded-2xl border border-white/10 bg-navy-700/50 p-6" data-testid="prezzi-condizioni">
                     <h3 className="font-display font-semibold text-white">Condizioni</h3>
                     <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                        Le funzionalità incluse nei piani, i limiti di utilizzo, la disponibilità dei servizi promozionali
-                        e i relativi prezzi sono indicati nella pagina dell'offerta al momento dell'attivazione o
-                        dell'acquisto. Il Profilo Base è gratuito, mentre il Profilo Pro e i servizi opzionali sono
-                        soggetti ai prezzi e alle condizioni visualizzati prima della conferma. Dati, documenti e
-                        contenuti pubblicati dall'utente devono essere veritieri, aggiornati e conformi alla normativa
-                        applicabile.
+                        L'iscrizione alla piattaforma è gratuita sia per i privati sia per le aziende, senza costi né
+                        carta di credito. Al momento tutte le funzioni sono incluse gratuitamente. Il Profilo PRO è
+                        mostrato come anteprima di una futura offerta premium: non è attivo alcun abbonamento e non è
+                        previsto alcun addebito. Dati, documenti e contenuti pubblicati dall'utente devono essere veritieri,
+                        aggiornati e conformi alla normativa applicabile.
                     </p>
                 </div>
             </div>

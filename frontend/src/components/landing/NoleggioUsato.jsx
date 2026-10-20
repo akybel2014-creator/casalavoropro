@@ -64,7 +64,7 @@ export default function NoleggioUsato() {
                     <BlockHeader
                         eyebrow="Noleggio Attrezzi"
                         title="I macchinari giusti, solo per il tempo che serve"
-                        text="Le aziende abbonate mettono a disposizione il proprio parco macchine: prenoti il mezzo, lo ricevi in cantiere e paghi solo i giorni di utilizzo."
+                        text="Le aziende con Partita IVA iscritte mettono a disposizione il proprio parco macchine: prenoti il mezzo, lo ricevi in cantiere e paghi solo i giorni di utilizzo."
                         perks={[
                             { icon: ShieldCheck, label: "Mezzi revisionati e assicurati" },
                             { icon: Clock, label: "Consegna in 24/48h" },
@@ -81,7 +81,7 @@ export default function NoleggioUsato() {
                     <BlockHeader
                         eyebrow="Marketplace"
                         title="Attrezzatura professionale di seconda mano, verificata"
-                        text="Le imprese del network vendono utensili e macchinari che non usano più: prezzi onesti, stato dichiarato e venditore verificato dallo staff PRO."
+                        text="Le imprese del network vendono utensili e macchinari che non usano più: prezzi onesti, stato dichiarato e venditore verificato dallo staff."
                         perks={[
                             { icon: BadgeCheck, label: "Venditori verificati" },
                             { icon: Recycle, label: "Stato dichiarato e foto reali" },
@@ -92,7 +92,7 @@ export default function NoleggioUsato() {
                     <Grid items={usato} emptyText="Nessun articolo usato pubblicato al momento." />
                     <motion.div {...fade} className="mt-10 flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-brand/30 bg-brand/5 p-6">
                         <p className="flex-1 text-sm text-slate-300">
-                            <span className="font-semibold text-white">Sei un'azienda abbonata?</span> Pubblica dalla tua dashboard i mezzi a noleggio e gli utensili usati: raggiungi privati e imprese della tua provincia.
+                            <span className="font-semibold text-white">Sei un'azienda iscritta?</span> Pubblica dalla tua dashboard i mezzi a noleggio e gli utensili usati: raggiungi privati e imprese della tua provincia.
                         </p>
                         <Button asChild className="rounded-full bg-brand hover:bg-brand-dark text-white font-semibold shrink-0">
                             <Link to="/registrati?ruolo=azienda" data-testid="mercatino-azienda-cta">Pubblica un annuncio <ArrowRight className="h-4 w-4 ml-1.5" /></Link>

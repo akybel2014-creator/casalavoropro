@@ -19,14 +19,14 @@ const PRIVATO = {
 
 const AZIENDA = {
     title: "Sei un'Azienda o un Professionista?",
-    subtitle: "Prova il profilo PRO gratis per 14 giorni e sblocca tutte le funzioni gestionali. Annulli quando vuoi.",
+    subtitle: "Iscrizione gratuita, senza costi né carta di credito. Oggi tutte le funzioni sono incluse gratis.",
     bullets: [
         "Preventivi illimitati su tutte le categorie della tua zona",
         "Gestione cantieri con promemoria automatici",
         "Annunci noleggio, usato e offerte di lavoro",
         "Badge PRO e massima visibilità nelle ricerche locali",
     ],
-    cta: "Inizia la prova gratuita di 14 giorni",
+    cta: "Registrati gratis",
     to: "/registrati?ruolo=azienda",
     testid: "cta-azienda-button",
     gestionaleCta: "Scopri il Gestionale per Artigiani",
@@ -63,7 +63,7 @@ function CtaCard({ data, variant }) {
             </ul>
             {orange && (
                 <p className="mt-7 inline-flex items-center gap-2 rounded-full bg-navy/80 text-white text-sm font-semibold px-4 py-2">
-                    <Check className="h-4 w-4" /> 14 giorni di prova gratis · poi €4,99/mese
+                    <Check className="h-4 w-4" /> Iscrizione gratuita · nessun abbonamento
                 </p>
             )}
             <Button
@@ -103,10 +103,10 @@ export default function CtaBoxes() {
                 >
                     <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand">Per le aziende</p>
                     <h2 className="mt-3 font-display font-black tracking-tight text-2xl sm:text-3xl lg:text-4xl text-white">
-                        Prova PRO gratis per 14 giorni
+                        Iscrizione gratuita per le aziende
                     </h2>
                     <p className="mt-4 text-base sm:text-lg font-semibold text-white" style={{ color: "#FFFFFF" }} data-testid="offerta-lancio-subtitle">
-                        Sblocca cantieri, annunci noleggio/usato, offerte di lavoro e preventivi illimitati. Nessun impegno: annulli quando vuoi durante la prova.
+                        Registrati senza costi e sblocca cantieri, annunci noleggio/usato, offerte di lavoro e preventivi illimitati. Nessun abbonamento, nessuna carta di credito.
                     </p>
                 </motion.div>
                 <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">

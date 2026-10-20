@@ -1,4 +1,4 @@
-import { Component, useEffect } from "react";
+import { Component, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -6,22 +6,24 @@ import { AuthProvider, useAuth, dashboardPathFor } from "@/context/AuthContext";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
 import Home from "@/pages/Home";
-import Aziende from "@/pages/Aziende";
-import AziendaDettaglio from "@/pages/AziendaDettaglio";
-import Annunci from "@/pages/Annunci";
-import Prezzi from "@/pages/Prezzi";
-import AnnuncioDettaglio from "@/pages/AnnuncioDettaglio";
-import Login from "@/pages/Login";
-import Registrati from "@/pages/Registrati";
-import NuovaRichiesta from "@/pages/NuovaRichiesta";
-import DashboardPrivato from "@/pages/DashboardPrivato";
-import DashboardAzienda from "@/pages/DashboardAzienda";
-import AnalisiEnergetica from "@/pages/AnalisiEnergetica";
-import DashboardAdmin from "@/pages/DashboardAdmin";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
-import ResetPassword from "@/pages/ResetPassword";
-import ReportPubblico from "@/pages/ReportPubblico";
 import "@/App.css";
+
+// Route in code-splitting: caricate on-demand per alleggerire il bundle iniziale (JS inutilizzato in home).
+const Aziende = lazy(() => import("@/pages/Aziende"));
+const AziendaDettaglio = lazy(() => import("@/pages/AziendaDettaglio"));
+const Annunci = lazy(() => import("@/pages/Annunci"));
+const Prezzi = lazy(() => import("@/pages/Prezzi"));
+const AnnuncioDettaglio = lazy(() => import("@/pages/AnnuncioDettaglio"));
+const Login = lazy(() => import("@/pages/Login"));
+const Registrati = lazy(() => import("@/pages/Registrati"));
+const NuovaRichiesta = lazy(() => import("@/pages/NuovaRichiesta"));
+const DashboardPrivato = lazy(() => import("@/pages/DashboardPrivato"));
+const DashboardAzienda = lazy(() => import("@/pages/DashboardAzienda"));
+const AnalisiEnergetica = lazy(() => import("@/pages/AnalisiEnergetica"));
+const DashboardAdmin = lazy(() => import("@/pages/DashboardAdmin"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const ReportPubblico = lazy(() => import("@/pages/ReportPubblico"));
 
 class ErrorBoundary extends Component {
     constructor(props) {
@@ -141,6 +143,14 @@ function DashLayout({ children }) {
     );
 }
 
+function PageLoader() {
+    return (
+        <div className="min-h-screen bg-navy flex items-center justify-center">
+            <p className="text-slate-400 text-sm">Caricamento…</p>
+        </div>
+    );
+}
+
 function App() {
     return (
         <ErrorBoundary>
@@ -149,6 +159,7 @@ function App() {
                     <SmoothScroll />
                     <ScrollToTop />
                     <Toaster theme="dark" position="top-center" richColors />
+                    <Suspense fallback={<PageLoader />}>
                     <Routes>
                         <Route element={<PublicLayout />}>
                             <Route path="/" element={<Home />} />
@@ -175,6 +186,7 @@ function App() {
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancel" element={<PaymentCancel />} />
                     </Routes>
+                    </Suspense>
                 </AuthProvider>
             </BrowserRouter>
         </ErrorBoundary>

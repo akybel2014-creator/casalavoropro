@@ -55,6 +55,7 @@ Utente italiano — tutte le comunicazioni in ITALIANO.
   - Pulsante registrazione privati → testo "Registrati" (form Registrati + CTA Prezzi).
 - **[20/10] Manifest ARD `ai-catalog.json`**: creato `frontend/public/ai-catalog.json` (+ copia `/.well-known/`) conforme a spec ARD 1.0 (specVersion, host did:web, 2 entries: directory text/html + categorie application/json inline). Risolve l'errore "Malformed JSON in manifest" (prima /ai-catalog.json restituiva l'HTML della SPA). Servito come application/json. Richiede ripubblicazione per essere live in produzione.
 - **[20/10] `llms.txt`**: creato `frontend/public/llms.txt` (Markdown con H1 `# CasaLavoroPRO`, descrizione, 6 link alle pagine pubbliche con dominio casalavoropro.com, elenco categorie reali). Risolve l'errore "manca intestazione H1 / nessun link". Servito come text/plain. Richiede ripubblicazione per essere live.
+- **[20/10] Google Fonts non-bloccante**: in `index.html` il CSS dei font caricato con `media="print" onload="this.media='all'"` + fallback `noscript` (già `display=swap`) → fuori dal percorso critico, migliora FCP/LCP. `emergent-main.js` (piattaforma) e `main.css` (bundle CRA) lasciati invariati per sicurezza.
 
 ## Backlog
 - P1: Chiavi Twilio/Mapbox/Broker (BLOCCATO su utente).

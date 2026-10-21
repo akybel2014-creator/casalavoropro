@@ -1,14 +1,16 @@
 import re
 import logging
+import uuid as uuidlib
 from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel, Field
 from core import db, now, clean_doc, require_roles, notify
 from subscription import PRO_ACTIVE_STATES, TRIAL_STATES
 from emailer import send_verification_result
-from routes_annunci import TIPI, UNITA, STATI_USATO, CATEGORIE_ANNUNCI
+from routes_annunci import TIPI, UNITA, STATI_USATO, CATEGORIE_ANNUNCI, MAX_FOTO_ANNUNCIO
+from routes_gallery import _put_object, ALLOWED, MAX_SIZE, APP_NAME, EMERGENT_KEY, optimize_image
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -138,6 +140,171 @@ async def admin_crea_annuncio(inp: AdminAnnuncioIn, user: dict = Depends(require
     out = clean_doc(doc, drop=("owner_id",))
     out["id"] = str(res.inserted_id)
     return out
+
+
+def _admin_oid(value: str) -> ObjectId:
+    try:
+        return ObjectId(value)
+    except (InvalidId, TypeError):
+        raise HTTPException(status_code=404, detail="Elemento non trovato")
+
+
+class AdminAziendaUpdateIn(BaseModel):
+    nome: Optional[str] = None
+    categorie: Optional[List[str]] = None
+    zone: Optional[List[str]] = None
+    piva: Optional[str] = None
+    descrizione: Optional[str] = None
+    telefono: Optional[str] = None
+    sito: Optional[str] = None
+    logo: Optional[str] = None
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    recensioni: Optional[int] = Field(None, ge=0)
+    verified: Optional[bool] = None
+
+
+class AdminAnnuncioUpdateIn(BaseModel):
+    titolo: Optional[str] = Field(None, min_length=3, max_length=120)
+    descrizione: Optional[str] = Field(None, min_length=10, max_length=2000)
+    categoria: Optional[str] = None
+    sottocategoria: Optional[str] = None
+    zona: Optional[str] = Field(None, min_length=2, max_length=80)
+    prezzo: Optional[float] = Field(None, gt=0, le=1_000_000)
+    unita: Optional[str] = None
+    stato: Optional[str] = None
+    immagine_url: Optional[str] = None
+    attivo: Optional[bool] = None
+
+
+@router.put("/admin/aziende/{azienda_id}")
+async def admin_modifica_azienda(azienda_id: str, inp: AdminAziendaUpdateIn, user: dict = Depends(require_roles("admin"))):
+    oid = _admin_oid(azienda_id)
+    az = await db.aziende.find_one({"_id": oid})
+    if not az:
+        raise HTTPException(status_code=404, detail="Azienda non trovata")
+    data = inp.model_dump(exclude_none=True)
+    update = {}
+    for k in ("nome", "piva", "descrizione", "telefono", "sito", "logo"):
+        if k in data:
+            update[k] = (data[k] or "").strip() if isinstance(data[k], str) else data[k]
+    for k in ("categorie", "zone", "rating", "recensioni"):
+        if k in data:
+            update[k] = data[k]
+    if "verified" in data:
+        update["verified"] = bool(data["verified"])
+        update["verification_status"] = "verificata" if data["verified"] else "none"
+        update["verified_at"] = now() if data["verified"] else None
+    if update:
+        await db.aziende.update_one({"_id": oid}, {"$set": update})
+    fresh = await db.aziende.find_one({"_id": oid})
+    return clean_doc(fresh)
+
+
+@router.delete("/admin/aziende/{azienda_id}")
+async def admin_elimina_azienda(azienda_id: str, user: dict = Depends(require_roles("admin"))):
+    oid = _admin_oid(azienda_id)
+    az = await db.aziende.find_one({"_id": oid})
+    if not az:
+        raise HTTPException(status_code=404, detail="Azienda non trovata")
+    az_id_str = str(oid)
+    await db.annunci.delete_many({"azienda_id": az_id_str})
+    await db.recensioni.delete_many({"azienda_id": az_id_str})
+    await db.preferiti.delete_many({"azienda_id": az_id_str})
+    await db.aziende.delete_one({"_id": oid})
+    # Rimuove anche l'account di login collegato, se presente.
+    owner_id = az.get("owner_id")
+    if owner_id:
+        try:
+            await db.users.delete_one({"_id": ObjectId(owner_id)})
+        except (InvalidId, TypeError):
+            pass
+    return {"ok": True}
+
+
+@router.put("/admin/annunci/{annuncio_id}")
+async def admin_modifica_annuncio(annuncio_id: str, inp: AdminAnnuncioUpdateIn, user: dict = Depends(require_roles("admin"))):
+    oid = _admin_oid(annuncio_id)
+    ann = await db.annunci.find_one({"_id": oid})
+    if not ann:
+        raise HTTPException(status_code=404, detail="Annuncio non trovato")
+    data = inp.model_dump(exclude_none=True)
+    update = {}
+    for k in ("titolo", "descrizione", "zona", "immagine_url"):
+        if k in data:
+            update[k] = (data[k] or "").strip()
+    if "prezzo" in data:
+        update["prezzo"] = float(data["prezzo"])
+    if "attivo" in data:
+        update["attivo"] = bool(data["attivo"])
+    categoria = data.get("categoria", ann.get("categoria"))
+    if "categoria" in data:
+        if categoria not in CATEGORIE_ANNUNCI:
+            raise HTTPException(status_code=400, detail="Categoria non valida")
+        update["categoria"] = categoria
+    if "sottocategoria" in data:
+        sotto = data["sottocategoria"] or None
+        if sotto and sotto not in CATEGORIE_ANNUNCI.get(categoria, []):
+            raise HTTPException(status_code=400, detail="Sottocategoria non valida")
+        update["sottocategoria"] = sotto
+    if ann.get("tipo") == "noleggio" and "unita" in data:
+        if data["unita"] not in UNITA:
+            raise HTTPException(status_code=400, detail="Unità non valida")
+        update["unita"] = data["unita"]
+    if ann.get("tipo") == "usato" and "stato" in data:
+        if data["stato"] and data["stato"] not in STATI_USATO:
+            raise HTTPException(status_code=400, detail="Stato non valido")
+        update["stato"] = data["stato"] or "Buono"
+    if update:
+        await db.annunci.update_one({"_id": oid}, {"$set": update})
+    fresh = await db.annunci.find_one({"_id": oid})
+    return clean_doc(fresh, drop=("owner_id",))
+
+
+@router.delete("/admin/annunci/{annuncio_id}")
+async def admin_elimina_annuncio(annuncio_id: str, user: dict = Depends(require_roles("admin"))):
+    oid = _admin_oid(annuncio_id)
+    ann = await db.annunci.find_one({"_id": oid})
+    if not ann:
+        raise HTTPException(status_code=404, detail="Annuncio non trovato")
+    for f in ann.get("foto", []):
+        await db.files.update_one({"path": f.get("path")}, {"$set": {"is_deleted": True}})
+    await db.annunci.delete_one({"_id": oid})
+    return {"ok": True}
+
+
+@router.post("/admin/annunci/{annuncio_id}/foto")
+async def admin_upload_foto_annuncio(annuncio_id: str, files: List[UploadFile] = File(...),
+                                     user: dict = Depends(require_roles("admin"))):
+    oid = _admin_oid(annuncio_id)
+    ann = await db.annunci.find_one({"_id": oid})
+    if not ann:
+        raise HTTPException(status_code=404, detail="Annuncio non trovato")
+    if EMERGENT_KEY is None:
+        raise HTTPException(status_code=503, detail="Storage non configurato")
+    existing = ann.get("foto", [])
+    if len(existing) + len(files) > MAX_FOTO_ANNUNCIO:
+        raise HTTPException(status_code=400, detail=f"Massimo {MAX_FOTO_ANNUNCIO} foto per annuncio")
+    uploaded = []
+    for file in files:
+        if file.content_type not in ALLOWED:
+            raise HTTPException(status_code=400, detail="Formato non supportato: usa JPG, PNG o WEBP")
+        data = await file.read()
+        if len(data) > MAX_SIZE:
+            raise HTTPException(status_code=400, detail="Immagine troppo grande (max 5 MB)")
+        opt_data, opt_ct, opt_ext = optimize_image(data)
+        path = f"{APP_NAME}/annunci/{oid}/{uuidlib.uuid4()}.{opt_ext}"
+        try:
+            result = _put_object(path, opt_data, opt_ct)
+        except Exception:
+            logger.exception("admin upload annuncio failed")
+            raise HTTPException(status_code=502, detail="Upload non riuscito, riprova")
+        entry = {"id": str(uuidlib.uuid4()), "path": result["path"], "filename": file.filename, "created_at": now()}
+        await db.files.insert_one({**entry, "owner_id": user["id"], "is_deleted": False,
+                                   "is_public": True, "content_type": opt_ct})
+        uploaded.append(entry)
+    await db.annunci.update_one({"_id": oid}, {"$push": {"foto": {"$each": uploaded}}})
+    fresh = await db.annunci.find_one({"_id": oid})
+    return clean_doc(fresh, drop=("owner_id",))
 
 
 @router.get("/admin/aziende")

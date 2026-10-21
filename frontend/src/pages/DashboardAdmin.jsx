@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
     ShieldCheck, Check, X, Users, Building2, Crown,
-    Search, Ban, TrendingUp, UserCog, Loader2, Sparkles, Truck,
+    Search, Ban, TrendingUp, UserCog, Loader2, Sparkles, Truck, Pencil, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,6 +147,17 @@ export default function DashboardAdmin() {
             toast.error(formatApiError(e));
         }
     }, []);
+
+    const delAzienda = async (id) => {
+        if (!window.confirm("Eliminare definitivamente questa azienda e i suoi dati collegati?")) return;
+        try { await api.delete(`/admin/aziende/${id}`); toast.success("Azienda eliminata."); loadBase(); loadAnnunci(); }
+        catch (e) { toast.error(formatApiError(e)); }
+    };
+    const delAnnuncio = async (id) => {
+        if (!window.confirm("Eliminare questo macchinario dal marketplace?")) return;
+        try { await api.delete(`/admin/annunci/${id}`); toast.success("Macchinario eliminato."); loadAnnunci(); }
+        catch (e) { toast.error(formatApiError(e)); }
+    };
 
     const loadUsers = useCallback(async (query = "") => {
         setSearching(true);
@@ -322,6 +333,17 @@ export default function DashboardAdmin() {
                                                 className="rounded-full border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300">
                                                 <X className="h-3.5 w-3.5 mr-1" /> Rifiuta
                                             </Button>
+                                            <CreaAziendaDialog record={a} onCreated={loadBase} trigger={
+                                                <Button size="sm" variant="outline" data-testid={`edit-azienda-${a.id}`}
+                                                    className="rounded-full border-white/20 text-slate-300 hover:bg-white/10">
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                            } />
+                                            <Button size="sm" variant="outline" data-testid={`delete-azienda-${a.id}`}
+                                                onClick={() => delAzienda(a.id)}
+                                                className="rounded-full border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
                                         </div>
                                     </td>
                                 </tr>
@@ -348,6 +370,7 @@ export default function DashboardAdmin() {
                                 <th className="text-left font-medium px-5 py-3">Prezzo</th>
                                 <th className="text-left font-medium px-5 py-3">Zona</th>
                                 <th className="text-left font-medium px-5 py-3 hidden md:table-cell">Azienda</th>
+                                <th className="text-right font-medium px-5 py-3">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -361,6 +384,21 @@ export default function DashboardAdmin() {
                                     <td className="px-5 py-4 text-brand font-semibold whitespace-nowrap">€{a.prezzo}{a.unita && a.unita !== "fisso" ? `/${a.unita}` : ""}</td>
                                     <td className="px-5 py-4 text-slate-400">{a.zona}</td>
                                     <td className="px-5 py-4 text-slate-400 hidden md:table-cell">{a.azienda_nome || "—"}</td>
+                                    <td className="px-5 py-4 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <CreaAnnuncioDialog aziende={aziende} record={a} onCreated={loadAnnunci} trigger={
+                                                <Button size="sm" variant="outline" data-testid={`edit-annuncio-${a.id}`}
+                                                    className="rounded-full border-white/20 text-slate-300 hover:bg-white/10">
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                            } />
+                                            <Button size="sm" variant="outline" data-testid={`delete-annuncio-${a.id}`}
+                                                onClick={() => delAnnuncio(a.id)}
+                                                className="rounded-full border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

@@ -114,6 +114,11 @@ export default function AnnuncioDettaglio() {
                                     {noleggio ? <Truck className="h-3 w-3" /> : <Recycle className="h-3 w-3" />}
                                     {noleggio ? "Noleggio" : `Usato · ${a.stato || "Buono"}`}
                                 </span>
+                                {a.venduto && (
+                                    <span data-testid="annuncio-venduto-badge" className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
+                                        Venduto
+                                    </span>
+                                )}
                                 <h1 className="mt-3 font-display font-black text-2xl sm:text-3xl text-white tracking-tight" data-testid="annuncio-titolo">{a.titolo}</h1>
                                 <p className="mt-3 font-display font-black text-3xl text-brand" data-testid="annuncio-prezzo">{prezzoLabel(a)}</p>
                                 {a.recensioni > 0 && (
@@ -131,29 +136,38 @@ export default function AnnuncioDettaglio() {
                                     <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-2">Pubblicato da</p>
                                     <ContattoAzienda a={a} />
                                 </div>
-                                <Button onClick={richiedi} data-testid="annuncio-richiedi-button"
-                                    className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/25 font-semibold">
-                                    <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Scegli le date e prenota" : "Contatta il venditore"}
-                                </Button>
-                                {privato && a.azienda_telefono && (
-                                    <Button asChild data-testid="annuncio-chiama-button"
-                                        className="mt-3 w-full rounded-xl bg-white/5 border border-brand/40 text-brand hover:bg-brand hover:text-white font-semibold">
-                                        <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`}><Phone className="h-4 w-4 mr-2" /> Chiama {a.azienda_telefono}</a>
-                                    </Button>
+                                {a.venduto ? (
+                                    <div data-testid="annuncio-venduto-note" className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center">
+                                        <p className="font-display font-bold text-red-400">Prodotto non più disponibile</p>
+                                        <p className="mt-1 text-xs text-slate-400">Questo articolo è stato segnalato come venduto dal venditore.</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Button onClick={richiedi} data-testid="annuncio-richiedi-button"
+                                            className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/25 font-semibold">
+                                            <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Scegli le date e prenota" : "Contatta il venditore"}
+                                        </Button>
+                                        {a.azienda_telefono && (
+                                            <Button asChild data-testid="annuncio-chiama-button"
+                                                className="mt-3 w-full rounded-xl bg-white/5 border border-brand/40 text-brand hover:bg-brand hover:text-white font-semibold">
+                                                <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`}><Phone className="h-4 w-4 mr-2" /> Chiama {a.azienda_telefono}</a>
+                                            </Button>
+                                        )}
+                                        {a.azienda_telefono && (
+                                            <Button asChild data-testid="annuncio-whatsapp-button"
+                                                className="mt-3 w-full rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold">
+                                                <a href={waLink(a.azienda_telefono, `Ciao, ho visto il tuo annuncio "${a.titolo}" su CasaLavoroPRO e sono interessato.`)} target="_blank" rel="noopener noreferrer">
+                                                    <MessageCircle className="h-4 w-4 mr-2" /> Scrivi su WhatsApp
+                                                </a>
+                                            </Button>
+                                        )}
+                                        <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">
+                                            <ShieldCheck className="h-3.5 w-3.5 text-brand" /> {privato
+                                                ? "Annuncio pubblicato da un privato. Contatta direttamente il venditore."
+                                                : "Annuncio pubblicato da un'azienda con Partita IVA iscritta."}
+                                        </p>
+                                    </>
                                 )}
-                                {a.azienda_telefono && (
-                                    <Button asChild data-testid="annuncio-whatsapp-button"
-                                        className="mt-3 w-full rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold">
-                                        <a href={waLink(a.azienda_telefono, `Ciao, ho visto il tuo annuncio "${a.titolo}" su CasaLavoroPRO e sono interessato.`)} target="_blank" rel="noopener noreferrer">
-                                            <MessageCircle className="h-4 w-4 mr-2" /> Scrivi su WhatsApp
-                                        </a>
-                                    </Button>
-                                )}
-                                <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">
-                                    <ShieldCheck className="h-3.5 w-3.5 text-brand" /> {privato
-                                        ? "Annuncio pubblicato da un privato. Contatta direttamente il venditore."
-                                        : "Annuncio pubblicato da un'azienda con Partita IVA iscritta."}
-                                </p>
                             </div>
                         </aside>
                     </div>

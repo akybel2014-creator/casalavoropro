@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Truck, Recycle, Trash2, ImagePlus, Loader2, Lock, Eye, EyeOff, MapPin, Pencil, CalendarDays, Sparkles } from "lucide-react";
+import { Plus, Truck, Recycle, Trash2, ImagePlus, Loader2, Lock, Eye, EyeOff, MapPin, Pencil, CalendarDays, Sparkles, CheckCircle2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -245,6 +245,16 @@ function AnnuncioRow({ a, meta, onChange, onDelete }) {
         }
     };
 
+    const toggleVenduto = async () => {
+        try {
+            const { data } = await api.put(`/annunci/${a.id}`, { venduto: !a.venduto });
+            onChange(data);
+            toast.success(data.venduto ? "Segnato come venduto: non appare più nel Mercatino" : "Rimesso in vendita");
+        } catch (err) {
+            toast.error(formatApiError(err));
+        }
+    };
+
     return (
         <div className={`rounded-3xl border p-5 sm:p-6 ${a.attivo ? "border-white/10 bg-navy-700/70" : "border-white/5 bg-navy-700/40 opacity-80"}`} data-testid={`my-annuncio-${a.id}`}>
             <div className="flex flex-col sm:flex-row gap-5">
@@ -255,6 +265,9 @@ function AnnuncioRow({ a, meta, onChange, onDelete }) {
                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${noleggio ? "bg-brand/15 text-brand" : "bg-emerald-500/15 text-emerald-400"}`}>
                                 {noleggio ? <Truck className="h-3 w-3" /> : <Recycle className="h-3 w-3" />} {noleggio ? "Noleggio" : `Usato · ${a.stato}`}
                             </span>
+                            {a.venduto && (
+                                <span data-testid={`my-annuncio-venduto-badge-${a.id}`} className="ml-2 inline-flex items-center rounded-full bg-red-500/20 text-red-400 border border-red-500/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide">Venduto</span>
+                            )}
                             <h3 className="mt-1.5 font-display font-bold text-white truncate">{a.titolo}</h3>
                             <p className="mt-1 text-xs text-slate-400 flex flex-wrap gap-x-3">
                                 <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-brand" /> {a.zona}</span>
@@ -264,6 +277,12 @@ function AnnuncioRow({ a, meta, onChange, onDelete }) {
                         </div>
                         <div className="flex items-center gap-3">
                             <AnnuncioDialog meta={meta} annuncio={a} onUpdated={onChange} />
+                            {!noleggio && (
+                                <Button size="sm" variant="outline" onClick={toggleVenduto} data-testid={`my-annuncio-venduto-${a.id}`}
+                                    className={`rounded-full h-8 ${a.venduto ? "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10" : "border-white/15 text-slate-300 hover:bg-white/10"}`}>
+                                    {a.venduto ? <><RotateCcw className="h-3.5 w-3.5 mr-1" /> Rimetti</> : <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Venduto</>}
+                                </Button>
+                            )}
                             <label className="flex items-center gap-2 text-xs text-slate-300">
                                 {a.attivo ? <Eye className="h-3.5 w-3.5 text-emerald-400" /> : <EyeOff className="h-3.5 w-3.5 text-slate-500" />}
                                 <Switch checked={!!a.attivo} onCheckedChange={toggleAttivo} data-testid={`my-annuncio-attivo-${a.id}`} className="data-[state=checked]:bg-brand" />

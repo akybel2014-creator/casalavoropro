@@ -58,6 +58,7 @@ class AnnuncioUpdateIn(BaseModel):
     stato: Optional[str] = None
     telefono: Optional[str] = Field(None, min_length=5, max_length=30)
     attivo: Optional[bool] = None
+    venduto: Optional[bool] = None
 
 
 class AnnuncioPrivatoIn(BaseModel):
@@ -139,7 +140,7 @@ async def lista_annunci(tipo: str = "", categoria: str = "", sottocategoria: str
                         prezzo_min: Optional[float] = Query(None, ge=0),
                         prezzo_max: Optional[float] = Query(None, ge=0),
                         limit: int = Query(60, ge=1, le=200)):
-    query = {"attivo": True}
+    query = {"attivo": True, "venduto": {"$ne": True}}
     if tipo.strip():
         query["tipo"] = tipo.strip()
     if categoria.strip():

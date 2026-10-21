@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Loader2, Upload, X, Link2, FileUp, Pencil, Trash2, Tag, Phone, MapPin } from "lucide-react";
+import { Plus, Loader2, Upload, X, Link2, FileUp, Pencil, Trash2, Tag, Phone, MapPin, CheckCircle2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -306,6 +306,14 @@ export function VenditePrivato() {
         } catch (e) { toast.error(formatApiError(e)); }
     };
 
+    const toggleVenduto = async (a) => {
+        try {
+            const { data } = await api.put(`/annunci/${a.id}`, { venduto: !a.venduto });
+            setItems((prev) => (prev || []).map((x) => (x.id === a.id ? data : x)));
+            toast.success(data.venduto ? "Segnato come venduto: non appare più nel Mercatino." : "Rimesso in vendita.");
+        } catch (e) { toast.error(formatApiError(e)); }
+    };
+
     return (
         <div className="space-y-5" data-testid="dashboard-vendite">
             <div className="flex items-center justify-between gap-3">
@@ -328,7 +336,12 @@ export function VenditePrivato() {
             <div className="grid sm:grid-cols-2 gap-4">
                 {(items || []).map((a) => (
                     <div key={a.id} className="rounded-2xl border border-white/10 bg-navy-700/60 overflow-hidden flex flex-col" data-testid={`vendita-card-${a.id}`}>
-                        <img src={annuncioImg(a)} alt={a.titolo} className="h-36 w-full object-cover" />
+                        <div className="relative">
+                            <img src={annuncioImg(a)} alt={a.titolo} className={`h-36 w-full object-cover ${a.venduto ? "opacity-50" : ""}`} />
+                            {a.venduto && (
+                                <span data-testid={`vendita-venduto-badge-${a.id}`} className="absolute top-2 right-2 rounded-full bg-red-500 text-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide shadow-lg">Venduto</span>
+                            )}
+                        </div>
                         <div className="p-4 flex flex-col flex-1">
                             <h4 className="font-display font-bold text-white">{a.titolo}</h4>
                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
@@ -336,7 +349,11 @@ export function VenditePrivato() {
                                 <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5">{a.categoria}</span>
                             </div>
                             <p className="mt-2 font-display font-black text-brand text-lg">{prezzoLabel(a)}</p>
-                            <div className="mt-auto pt-3 flex items-center gap-2">
+                            <div className="mt-auto pt-3 flex flex-wrap items-center gap-2">
+                                <Button size="sm" variant="outline" onClick={() => toggleVenduto(a)} data-testid={`vendita-venduto-${a.id}`}
+                                    className={`rounded-full ${a.venduto ? "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10" : "border-white/20 text-white hover:bg-white/10"}`}>
+                                    {a.venduto ? <><RotateCcw className="h-3.5 w-3.5 mr-1" /> Rimetti in vendita</> : <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Venduto</>}
+                                </Button>
                                 <VendiDialog meta={meta} record={a} onSaved={load} trigger={
                                     <Button size="sm" variant="outline" data-testid={`vendita-edit-${a.id}`} className="rounded-full border-white/20 text-white hover:bg-white/10">
                                         <Pencil className="h-3.5 w-3.5 mr-1" /> Modifica

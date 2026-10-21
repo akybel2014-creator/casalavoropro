@@ -44,6 +44,11 @@ export function AnnuncioCard({ a, index = 0 }) {
                     {noleggio ? <Truck className="h-3 w-3" /> : <Recycle className="h-3 w-3" />}
                     {noleggio ? a.categoria : `Usato · ${a.stato || "Buono"}`}
                 </span>
+                {a.venduto && (
+                    <span data-testid={`annuncio-venduto-${a.id}`} className="absolute top-3 right-3 inline-flex items-center rounded-full bg-red-500 text-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide shadow-lg">
+                        Venduto
+                    </span>
+                )}
             </Link>
             <div className="flex flex-col flex-1 p-5">
                 <h3 className="font-display font-bold text-white leading-snug">{a.titolo}</h3>

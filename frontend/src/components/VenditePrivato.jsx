@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, formatApiError } from "@/lib/api";
 import { annuncioImg, prezzoLabel, FILES_BASE } from "@/components/AnnuncioCard";
@@ -128,6 +128,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
             <DialogContent className="bg-navy-700 border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="font-display font-black text-xl">{edit ? "Modifica annuncio" : "Vendi un prodotto"}</DialogTitle>
+                    <DialogDescription className="text-slate-400 text-sm">Pubblica un prodotto usato nel Mercatino. Gli acquirenti ti chiameranno al numero indicato.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 mt-2">
                     <div className="space-y-1.5">

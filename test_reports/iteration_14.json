@@ -1,0 +1,54 @@
+{
+  "summary": "Validated the new 'Vendo' (privato publishes used product) module end-to-end plus admin seller-phone fields and regression on existing annunci flows. Backend: 4/4 pytest PASS (meta, privato CRUD + photo-url + ownership 403 + delete, azienda endpoint forbids privato, admin can create/update annuncio with azienda_nome/azienda_telefono). Frontend: full E2E PASS on area-privato -> tab Vendo -> dialog validation (empty title + short telefono blocked by toast) -> publish -> foto da URL (picsum) -> edit prezzo -> detail page shows 'Chiama' button + 'Annuncio pubblicato da un privato' note + 'Privato' badge next to seller name -> marketplace card (/mercatino) renders annuncio-call-{id} tel: button -> delete removes card. One minor UX gap: in list/card view (AnnuncioCard) the 'Privato' etichetta is NOT shown next to a.azienda_nome (line 51); only the detail page's ContattoAzienda shows it. User requirement said 'con il nome del venditore e l'etichetta Privato' also on the marketplace card.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AnnuncioCard (list)", "issue": "On marketplace card the 'Privato' etichetta/badge is not rendered next to seller name for annunci with venditore_privato=true. Only ContattoAzienda (detail page) renders it. Add a small 'Privato' chip near a.azienda_nome in AnnuncioCard when a.venditore_privato || !a.azienda_id.", "selector": "AnnuncioCard.jsx line 51", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dialog Vendi un prodotto", "issues": ["Radix warning in console: Missing Description or aria-describedby for DialogContent (accessibility, non-blocking)."]}
+    ]
+  },
+  "test_results": {
+    "backend_meta_available": "PASS",
+    "backend_privato_create_update_photo_url_delete": "PASS (POST /api/annunci/privato returns venditore_privato=true, azienda_telefono set, unita=fisso; appears in /annunci/mine and public /annunci?tipo=usato; telefono<5 chars -> 422; unauth -> 401; PUT prezzo+telefono persisted; ownership 403 on PUT/DELETE from other privato; POST /foto-url with picsum returned aggiunte>=1; DELETE foto OK; DELETE annuncio -> 404 on GET)",
+    "backend_privato_cannot_use_azienda_endpoint": "PASS (POST /api/annunci with privato role -> 403)",
+    "backend_admin_create_update_annuncio_with_telefono": "PASS (azienda_telefono='+39 02 1234567' saved on POST /api/admin/annunci and updated to '+39 06 9999' via PUT /api/admin/annunci/{id})",
+    "frontend_vendo_tab_visible_and_opens_dialog": "PASS",
+    "frontend_form_validation_empty_and_short_telefono_blocked": "PASS (sonner toasts: 'Inserisci un titolo (min 3 caratteri).' and 'Inserisci un numero di telefono per i contatti.')",
+    "frontend_publish_product_shows_foto_section": "PASS (currentId set, foto section visible, 'Prodotto pubblicato! Ora puoi aggiungere le foto.')",
+    "frontend_add_foto_via_url_picsum": "PASS ('1 foto aggiunte.' toast + 1 image rendered)",
+    "frontend_edit_price_persists": "PASS ('Annuncio aggiornato.' toast; detail page shows 150 €)",
+    "frontend_detail_page_privato_markup": "PASS (annuncio-chiama-button present, 'Annuncio pubblicato da un privato' note visible, Privato chip next to Luca Bianchi)",
+    "frontend_marketplace_card_has_call_button": "PASS (annuncio-call-{id} present on /mercatino card; venditore name 'Luca Bianchi' displayed)",
+    "frontend_marketplace_card_privato_badge": "MISSING (Privato chip not rendered on list card — see ui_bugs)",
+    "frontend_delete_annuncio_removes_card": "PASS (confirm dialog accepted, card gone)"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_annunci_privato.py",
+    "/app/test_reports/pytest/annunci_privato.xml"
+  ],
+  "action_items": [
+    "(Optional, minor UX) In /app/frontend/src/components/AnnuncioCard.jsx around line 51, when a.venditore_privato || !a.azienda_id, render a 'Privato' chip next to a.azienda_nome (same style used in ContattoAzienda) instead of VerifiedBadge. This matches the explicit requirement 'con il nome del venditore e l'etichetta Privato' on the Mercatino cards.",
+    "(Nice-to-have) Add DialogDescription (or aria-describedby) to the Vendi dialog to silence Radix a11y warning."
+  ],
+  "critical_code_review_comments": [
+    "routes_annunci.py: POST /annunci/privato correctly hardcodes tipo='usato' and unita='fisso' and uses require_roles('privato') — good. azienda_telefono is reused for the private phone number (schema-wise OK but semantically 'azienda_' prefix is misleading now that privati also use it; consider renaming to 'contatto_telefono' for v2).",
+    "routes_annunci.py _owned uses doc['owner_id'] == user['id'] — correct 403 enforcement for both roles. PUT accepts 'telefono' and maps to azienda_telefono — matches the frontend payload.",
+    "foto-url endpoint deduplicates URLs with urlparse scheme check and respects MAX_FOTO_ANNUNCIO (10). Good. However errori list includes 'download non riuscito' with 20s timeout per URL — if a user pastes 50 bad URLs the request can take up to 50*20=1000s. Consider capping total elapsed time or using asyncio.gather with a shorter per-URL timeout.",
+    "AnnuncioCard.jsx line 51 renders VerifiedBadge even for privati (always false). Replace with a conditional Privato chip when venditore_privato is true (small UX miss).",
+    "VenditePrivato.jsx submit() swallows the 'immagine_url' field on edit (payload sent to PUT does not include it). If the user set an URL on create but then edits, they cannot change immagine_url via the UI anymore. Minor.",
+    "VenditePrivato.jsx uses prezzo as 'number' but Input type='number' with min='1' — browser accepts decimals which is fine for prezzo. OK."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_annunci_privato.py (new pytest regression)"
+  ],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "95% (12/13 flows; Privato chip missing on list card)"},
+  "test_credentials": "privato@test.it/Privato2026! (owner of created annunci), mario.rossi@example.com/Demo2026! (ownership 403 counter-party), admin@casalavoripro.it/Admin2026! (admin annunci endpoint).",
+  "seed_data_creation": "All TEST_ prefixed annunci created during pytest + Playwright flow were deleted via DELETE /api/annunci/{id} at test end. No leftover test data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Vendo module validated end-to-end. Backend regression file: /app/backend/tests/test_annunci_privato.py (run: python -m pytest backend/tests/test_annunci_privato.py -o 'addopts=' -v). The only missing UI piece is the 'Privato' chip on marketplace cards (AnnuncioCard.jsx ~line 51) — not blocking, functional flow works. Public listing path is /mercatino (NOT /annunci). GET /api/annunci?tipo=usato correctly includes venditore_privato annunci. Previous iteration_13 async-bolletta tests still green.",
+  "rca of the issue": "N/A — new feature validation, no bug encountered. Minor UX note only."
+}

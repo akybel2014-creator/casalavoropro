@@ -48,7 +48,14 @@ export function AnnuncioCard({ a, index = 0 }) {
                         <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-slate-300" data-testid={`annuncio-sottocategoria-${a.id}`}>{a.sottocategoria}</span>
                     )}
                     <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-brand" /> {a.zona}</span>
-                    <span className="flex items-center gap-1.5 text-slate-300">{a.azienda_nome} <VerifiedBadge verified={a.azienda_verified} /></span>
+                    {(a.venditore_privato || !a.azienda_id) ? (
+                        <span className="flex items-center gap-1.5 text-slate-300" data-testid={`annuncio-card-venditore-${a.id}`}>
+                            {a.azienda_nome || "Venditore privato"}
+                            <span className="rounded-full bg-white/5 border border-white/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-300">Privato</span>
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-1.5 text-slate-300">{a.azienda_nome} <VerifiedBadge verified={a.azienda_verified} /></span>
+                    )}
                 </div>
                 <div className="mt-auto pt-4 flex flex-col gap-3">
                     <span className="font-display font-black text-brand text-lg whitespace-nowrap" data-testid={`annuncio-price-${a.id}`}>{prezzoLabel(a)}</span>

@@ -175,6 +175,8 @@ class AdminAnnuncioUpdateIn(BaseModel):
     unita: Optional[str] = None
     stato: Optional[str] = None
     immagine_url: Optional[str] = None
+    azienda_nome: Optional[str] = None
+    azienda_telefono: Optional[str] = None
     attivo: Optional[bool] = None
 
 
@@ -231,7 +233,7 @@ async def admin_modifica_annuncio(annuncio_id: str, inp: AdminAnnuncioUpdateIn, 
         raise HTTPException(status_code=404, detail="Annuncio non trovato")
     data = inp.model_dump(exclude_none=True)
     update = {}
-    for k in ("titolo", "descrizione", "zona", "immagine_url"):
+    for k in ("titolo", "descrizione", "zona", "immagine_url", "azienda_nome", "azienda_telefono"):
         if k in data:
             update[k] = (data[k] or "").strip()
     if "prezzo" in data:

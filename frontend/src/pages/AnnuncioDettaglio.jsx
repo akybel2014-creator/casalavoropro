@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart } from "lucide-react";
+import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart, Phone } from "lucide-react";
 import { Stars } from "@/components/StarRating";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ export default function AnnuncioDettaglio() {
 
     const images = a ? (a.foto?.length ? a.foto.map((f) => `${FILES_BASE}${f.path}`) : [annuncioImg(a)]) : [];
     const noleggio = a?.tipo === "noleggio";
+    const privato = !!a && (a.venditore_privato || !a.azienda_id);
     const back = noleggio ? "/noleggio" : "/mercatino";
 
     const richiedi = () => {
@@ -130,8 +131,16 @@ export default function AnnuncioDettaglio() {
                                     className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/25 font-semibold">
                                     <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Scegli le date e prenota" : "Contatta il venditore"}
                                 </Button>
+                                {privato && a.azienda_telefono && (
+                                    <Button asChild data-testid="annuncio-chiama-button"
+                                        className="mt-3 w-full rounded-xl bg-white/5 border border-brand/40 text-brand hover:bg-brand hover:text-white font-semibold">
+                                        <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`}><Phone className="h-4 w-4 mr-2" /> Chiama {a.azienda_telefono}</a>
+                                    </Button>
+                                )}
                                 <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">
-                                    <ShieldCheck className="h-3.5 w-3.5 text-brand" /> Annuncio pubblicato da un'azienda con Partita IVA iscritta.
+                                    <ShieldCheck className="h-3.5 w-3.5 text-brand" /> {privato
+                                        ? "Annuncio pubblicato da un privato. Contatta direttamente il venditore."
+                                        : "Annuncio pubblicato da un'azienda con Partita IVA iscritta."}
                                 </p>
                             </div>
                         </aside>

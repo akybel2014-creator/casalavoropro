@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart, CalendarDays, Zap } from "lucide-react";
+import { Plus, Bell, FileText, Clock, MapPin, Check, Handshake, MessageSquareHeart, Heart, CalendarDays, Zap, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,7 @@ import { Stars, StarInput } from "@/components/StarRating";
 import ChatDialog from "@/components/ChatDialog";
 import { PreferiteList } from "@/components/PreferiteList";
 import { PrenotazioniList } from "@/components/PrenotazioniList";
+import { VenditePrivato } from "@/components/VenditePrivato";
 
 const STATO_STYLES = {
     aperta: "bg-blue-500/15 text-blue-400",
@@ -173,6 +174,9 @@ export default function DashboardPrivato() {
                             <CalendarDays className="h-4 w-4 mr-1.5" /> Noleggi
                             {prenotazioni?.some((p) => p.stato === "richiesta") && <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
                         </TabsTrigger>
+                        <TabsTrigger value="vendo" data-testid="dashboard-privato-tab-vendo" className="data-[state=active]:text-white">
+                            <Tag className="h-4 w-4 mr-1.5" /> Vendo
+                        </TabsTrigger>
                         <TabsTrigger value="notifiche" data-testid="dashboard-privato-tab-notifications" className="data-[state=active]:text-white">
                             <Bell className="h-4 w-4 mr-1.5" /> Notifiche
                             {notifiche.some((n) => !n.letto) && <span className="ml-1.5 h-2 w-2 rounded-full bg-brand inline-block" />}
@@ -285,6 +289,10 @@ export default function DashboardPrivato() {
                     <TabsContent value="noleggi" className="mt-6" data-testid="dashboard-noleggi">
                         <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} onPagaCaparra={pagaCaparra} payingId={payingId}
                             onRecensita={(id, rec) => setPrenotazioni((prev) => (prev || []).map((x) => (x.id === id ? { ...x, recensione: rec } : x)))} />
+                    </TabsContent>
+
+                    <TabsContent value="vendo" className="mt-6" data-testid="dashboard-vendo">
+                        <VenditePrivato />
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">

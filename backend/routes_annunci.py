@@ -1,6 +1,8 @@
 import re
 import logging
 import uuid as uuidlib
+import httpx
+from urllib.parse import urlparse
 from typing import Optional, List
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -54,7 +56,24 @@ class AnnuncioUpdateIn(BaseModel):
     prezzo: Optional[float] = Field(None, gt=0, le=1_000_000)
     unita: Optional[str] = None
     stato: Optional[str] = None
+    telefono: Optional[str] = Field(None, min_length=5, max_length=30)
     attivo: Optional[bool] = None
+
+
+class AnnuncioPrivatoIn(BaseModel):
+    titolo: str = Field(min_length=3, max_length=120)
+    descrizione: str = Field(min_length=10, max_length=2000)
+    categoria: str
+    sottocategoria: Optional[str] = None
+    zona: str = Field(min_length=2, max_length=80)
+    prezzo: float = Field(gt=0, le=1_000_000)
+    stato: Optional[str] = None
+    telefono: str = Field(min_length=5, max_length=30)
+    immagine_url: Optional[str] = None
+
+
+class FotoUrlAnnuncioIn(BaseModel):
+    urls: List[str] = Field(..., min_length=1, max_length=50)
 
 
 def _validate(data: dict, tipo: str):
@@ -110,7 +129,7 @@ async def annunci_meta():
 
 
 @router.get("/annunci/mine")
-async def miei_annunci(user: dict = Depends(require_roles("azienda"))):
+async def miei_annunci(user: dict = Depends(require_roles("azienda", "privato"))):
     docs = await db.annunci.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(200)
     return [clean_doc(d) for d in docs]
 
@@ -169,11 +188,39 @@ async def get_annuncio(annuncio_id: str):
     return clean_doc(doc)
 
 
+@router.post("/annunci/privato")
+async def crea_annuncio_privato(inp: AnnuncioPrivatoIn, user: dict = Depends(require_roles("privato"))):
+    """Un utente privato pubblica un proprio prodotto usato in vendita nel Marketplace."""
+    if inp.categoria not in CATEGORIE_ANNUNCI:
+        raise HTTPException(status_code=400, detail="Categoria non valida")
+    sotto = inp.sottocategoria or None
+    if sotto and sotto not in CATEGORIE_ANNUNCI.get(inp.categoria, []):
+        raise HTTPException(status_code=400, detail="Sottocategoria non valida per la categoria scelta")
+    stato = inp.stato or "Buono"
+    if stato not in STATI_USATO:
+        raise HTTPException(status_code=400, detail="Stato dell'usato non valido")
+    doc = {
+        "tipo": "usato", "titolo": inp.titolo.strip(), "descrizione": inp.descrizione.strip(),
+        "categoria": inp.categoria, "sottocategoria": sotto, "zona": inp.zona.strip(),
+        "prezzo": float(inp.prezzo), "unita": "fisso", "stato": stato, "attivo": True,
+        "azienda_id": "", "azienda_nome": (user.get("name") or "Venditore privato"),
+        "azienda_verified": False, "azienda_telefono": inp.telefono.strip(),
+        "venditore_privato": True, "owner_id": user["id"],
+        "immagine_url": (inp.immagine_url or "").strip(), "foto": [], "created_at": now(),
+    }
+    res = await db.annunci.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return clean_doc(doc, drop=("owner_id",))
+
+
 @router.put("/annunci/{annuncio_id}")
-async def aggiorna_annuncio(annuncio_id: str, inp: AnnuncioUpdateIn, user: dict = Depends(require_roles("azienda"))):
+async def aggiorna_annuncio(annuncio_id: str, inp: AnnuncioUpdateIn, user: dict = Depends(require_roles("azienda", "privato"))):
     doc = await _owned(annuncio_id, user)
     updates = {k: v for k, v in inp.model_dump().items() if v is not None}
+    tel = updates.pop("telefono", None)
     updates = _validate(updates, doc["tipo"]) if updates else updates
+    if tel is not None:
+        updates["azienda_telefono"] = tel.strip()
     if updates:
         await db.annunci.update_one({"_id": doc["_id"]}, {"$set": updates})
     fresh = await db.annunci.find_one({"_id": doc["_id"]})
@@ -181,7 +228,7 @@ async def aggiorna_annuncio(annuncio_id: str, inp: AnnuncioUpdateIn, user: dict 
 
 
 @router.delete("/annunci/{annuncio_id}")
-async def elimina_annuncio(annuncio_id: str, user: dict = Depends(require_roles("azienda"))):
+async def elimina_annuncio(annuncio_id: str, user: dict = Depends(require_roles("azienda", "privato"))):
     doc = await _owned(annuncio_id, user)
     for f in doc.get("foto", []):
         await db.files.update_one({"path": f["path"]}, {"$set": {"is_deleted": True}})
@@ -191,7 +238,7 @@ async def elimina_annuncio(annuncio_id: str, user: dict = Depends(require_roles(
 
 @router.post("/annunci/{annuncio_id}/foto")
 async def upload_foto_annuncio(annuncio_id: str, files: List[UploadFile] = File(...),
-                               user: dict = Depends(require_roles("azienda"))):
+                               user: dict = Depends(require_roles("azienda", "privato"))):
     doc = await _owned(annuncio_id, user)
     if EMERGENT_KEY is None:
         raise HTTPException(status_code=503, detail="Storage non configurato")
@@ -221,8 +268,68 @@ async def upload_foto_annuncio(annuncio_id: str, files: List[UploadFile] = File(
     return clean_doc(fresh)
 
 
+@router.post("/annunci/{annuncio_id}/foto-url")
+async def upload_foto_annuncio_url(annuncio_id: str, inp: FotoUrlAnnuncioIn,
+                                   user: dict = Depends(require_roles("azienda", "privato"))):
+    """Aggiunge foto all'annuncio partendo da una lista di URL immagine (o estratti da CSV lato frontend)."""
+    doc = await _owned(annuncio_id, user)
+    if EMERGENT_KEY is None:
+        raise HTTPException(status_code=503, detail="Storage non configurato")
+    seen, urls = set(), []
+    for raw in inp.urls:
+        u = (raw or "").strip()
+        parsed = urlparse(u)
+        if parsed.scheme in ("http", "https") and parsed.netloc and u not in seen:
+            seen.add(u)
+            urls.append(u)
+    if not urls:
+        raise HTTPException(status_code=400, detail="Nessun URL valido (usa http/https)")
+    disponibili = MAX_FOTO_ANNUNCIO - len(doc.get("foto", []))
+    if disponibili <= 0:
+        raise HTTPException(status_code=400, detail=f"Limite di {MAX_FOTO_ANNUNCIO} foto gia raggiunto")
+    uploaded, errori = [], []
+    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
+        for u in urls:
+            if len(uploaded) >= disponibili:
+                errori.append({"url": u, "motivo": f"limite {MAX_FOTO_ANNUNCIO} foto raggiunto"})
+                continue
+            try:
+                resp = await client.get(u, headers={"User-Agent": "CasaLavoroPRO/1.0"})
+                resp.raise_for_status()
+                data = resp.content
+            except Exception:
+                errori.append({"url": u, "motivo": "download non riuscito"})
+                continue
+            if len(data) > MAX_SIZE:
+                errori.append({"url": u, "motivo": "immagine troppo grande (max 5 MB)"})
+                continue
+            opt_data, opt_ct, opt_ext = optimize_image(data)
+            if opt_ct not in ALLOWED:
+                errori.append({"url": u, "motivo": "formato non supportato"})
+                continue
+            path = f"{APP_NAME}/annunci/{doc['_id']}/{uuidlib.uuid4()}.{opt_ext}"
+            try:
+                result = _put_object(path, opt_data, opt_ct)
+            except Exception:
+                logger.exception("upload annuncio foto-url failed")
+                errori.append({"url": u, "motivo": "salvataggio non riuscito"})
+                continue
+            fname = (urlparse(u).path.rsplit("/", 1)[-1] or "foto")[:120]
+            entry = {"id": str(uuidlib.uuid4()), "path": result["path"], "filename": fname, "created_at": now()}
+            await db.files.insert_one({**entry, "owner_id": user["id"], "is_deleted": False,
+                                       "is_public": True, "content_type": opt_ct})
+            uploaded.append(entry)
+    if uploaded:
+        await db.annunci.update_one({"_id": doc["_id"]}, {"$push": {"foto": {"$each": uploaded}}})
+    fresh = await db.annunci.find_one({"_id": doc["_id"]})
+    out = clean_doc(fresh)
+    out["aggiunte"] = len(uploaded)
+    out["errori"] = errori
+    return out
+
+
 @router.delete("/annunci/{annuncio_id}/foto/{foto_id}")
-async def elimina_foto_annuncio(annuncio_id: str, foto_id: str, user: dict = Depends(require_roles("azienda"))):
+async def elimina_foto_annuncio(annuncio_id: str, foto_id: str, user: dict = Depends(require_roles("azienda", "privato"))):
     doc = await _owned(annuncio_id, user)
     foto = next((f for f in doc.get("foto", []) if f.get("id") == foto_id), None)
     if not foto:

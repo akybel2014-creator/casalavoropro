@@ -52,11 +52,20 @@ export function AnnuncioCard({ a, index = 0 }) {
                 </div>
                 <div className="mt-auto pt-4 flex flex-col gap-3">
                     <span className="font-display font-black text-brand text-lg whitespace-nowrap" data-testid={`annuncio-price-${a.id}`}>{prezzoLabel(a)}</span>
-                    <Button asChild size="sm" className="w-full rounded-full bg-white/5 border border-white/10 text-white hover:bg-brand hover:border-brand font-semibold">
-                        <Link to={`/annunci/${a.id}`} data-testid={`annuncio-cta-${a.id}`}>
-                            {noleggio ? "Richiedi disponibilità" : "Contatta il venditore"} <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button asChild size="sm" className="flex-1 rounded-full bg-white/5 border border-white/10 text-white hover:bg-brand hover:border-brand font-semibold">
+                            <Link to={`/annunci/${a.id}`} data-testid={`annuncio-cta-${a.id}`}>
+                                {noleggio ? "Richiedi disponibilità" : "Dettagli"} <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                            </Link>
+                        </Button>
+                        {a.azienda_telefono && (
+                            <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`} data-testid={`annuncio-call-${a.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand hover:bg-brand hover:text-white transition-colors whitespace-nowrap">
+                                <Phone className="h-3.5 w-3.5" /> Chiama
+                            </a>
+                        )}
+                    </div>
                 </div>
             </div>
         </article>
@@ -64,11 +73,19 @@ export function AnnuncioCard({ a, index = 0 }) {
 }
 
 export function ContattoAzienda({ a }) {
+    const privato = a.venditore_privato || !a.azienda_id;
     return (
         <div className="flex flex-col gap-2 text-sm">
-            <Link to={`/aziende/${a.azienda_id}`} data-testid="annuncio-azienda-link" className="flex items-center gap-2 text-white font-semibold hover:text-brand transition-colors">
-                {a.azienda_nome} <VerifiedBadge verified={a.azienda_verified} />
-            </Link>
+            {privato ? (
+                <span data-testid="annuncio-venditore-nome" className="flex items-center gap-2 text-white font-semibold">
+                    {a.azienda_nome || "Venditore privato"}
+                    <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-300">Privato</span>
+                </span>
+            ) : (
+                <Link to={`/aziende/${a.azienda_id}`} data-testid="annuncio-azienda-link" className="flex items-center gap-2 text-white font-semibold hover:text-brand transition-colors">
+                    {a.azienda_nome} <VerifiedBadge verified={a.azienda_verified} />
+                </Link>
+            )}
             {a.azienda_telefono && (
                 <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`} data-testid="annuncio-phone-link" className="flex items-center gap-2 text-slate-300 hover:text-brand transition-colors">
                     <Phone className="h-4 w-4 text-brand" /> {a.azienda_telefono}

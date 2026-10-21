@@ -127,7 +127,7 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
     const [meta, setMeta] = useState({ categorie: [], sottocategorie: {}, unita: [], stati_usato: [] });
     const [foto, setFoto] = useState([]);
     const [urlInput, setUrlInput] = useState("");
-    const [f, setF] = useState({ tipo: "noleggio", titolo: "", descrizione: "", categoria: "", sottocategoria: "", zona: "", prezzo: "", unita: "giorno", stato: "", immagine_url: "", azienda_id: "" });
+    const [f, setF] = useState({ tipo: "noleggio", titolo: "", descrizione: "", categoria: "", sottocategoria: "", zona: "", prezzo: "", unita: "giorno", stato: "", immagine_url: "", azienda_id: "", azienda_nome: "", azienda_telefono: "" });
     const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
 
     useEffect(() => {
@@ -139,6 +139,7 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
                 categoria: record.categoria || "", sottocategoria: record.sottocategoria || "", zona: record.zona || "",
                 prezzo: record.prezzo ?? "", unita: record.unita || "giorno", stato: record.stato || "",
                 immagine_url: record.immagine_url || "", azienda_id: record.azienda_id || "",
+                azienda_nome: record.azienda_nome || "", azienda_telefono: record.azienda_telefono || "",
             });
             setFoto(record.foto || []);
         }
@@ -153,7 +154,7 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
                     titolo: f.titolo, descrizione: f.descrizione, categoria: f.categoria,
                     sottocategoria: f.sottocategoria || null, zona: f.zona, prezzo: parseFloat(f.prezzo),
                     unita: f.tipo === "usato" ? undefined : f.unita, stato: f.tipo === "usato" ? (f.stato || "Buono") : undefined,
-                    immagine_url: f.immagine_url,
+                    immagine_url: f.immagine_url, azienda_nome: f.azienda_nome, azienda_telefono: f.azienda_telefono,
                 });
             } else {
                 await api.post("/admin/annunci", {
@@ -161,11 +162,12 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
                     sottocategoria: f.sottocategoria || null, zona: f.zona, prezzo: parseFloat(f.prezzo),
                     unita: f.tipo === "usato" ? "fisso" : f.unita, stato: f.tipo === "usato" ? (f.stato || "Buono") : null,
                     immagine_url: f.immagine_url, azienda_id: f.azienda_id || null,
+                    azienda_nome: f.azienda_nome, azienda_telefono: f.azienda_telefono,
                 });
             }
             toast.success(edit ? "Macchinario aggiornato." : "Macchinario aggiunto al marketplace.");
             setOpen(false);
-            if (!edit) setF({ tipo: "noleggio", titolo: "", descrizione: "", categoria: "", sottocategoria: "", zona: "", prezzo: "", unita: "giorno", stato: "", immagine_url: "", azienda_id: "" });
+            if (!edit) setF({ tipo: "noleggio", titolo: "", descrizione: "", categoria: "", sottocategoria: "", zona: "", prezzo: "", unita: "giorno", stato: "", immagine_url: "", azienda_id: "", azienda_nome: "", azienda_telefono: "" });
             onCreated?.();
         } catch (err) { toast.error(formatApiError(err)); }
         finally { setBusy(false); }
@@ -281,6 +283,12 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
                     </div>
                     <div className="space-y-1.5"><Label className="text-slate-300 text-xs">URL immagine (alternativa alle foto)</Label>
                         <Input data-testid="annuncio-immagine-input" value={f.immagine_url} onChange={set("immagine_url")} placeholder="https://.../foto.jpg" className={inputCls} /></div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5"><Label className="text-slate-300 text-xs">Nome venditore / azienda</Label>
+                            <Input data-testid="annuncio-venditore-nome-input" value={f.azienda_nome} onChange={set("azienda_nome")} placeholder="Es. Rossi Noleggi" className={inputCls} /></div>
+                        <div className="space-y-1.5"><Label className="text-slate-300 text-xs">Telefono (per chiamare)</Label>
+                            <Input data-testid="annuncio-telefono-input" value={f.azienda_telefono} onChange={set("azienda_telefono")} placeholder="+39 333 1234567" className={inputCls} /></div>
+                    </div>
                     {!edit && (
                         <div className="space-y-1.5"><Label className="text-slate-300 text-xs">Azienda (opzionale)</Label>
                             <select value={f.azienda_id} onChange={set("azienda_id")} data-testid="annuncio-azienda-input" className={selectCls}>

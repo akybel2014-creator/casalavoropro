@@ -33,6 +33,10 @@ export default function AnnuncioDettaglio() {
             document.querySelector('[data-testid="noleggio-calendar"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
             return;
         }
+        if (privato) {
+            document.querySelector('[data-testid="annuncio-whatsapp-button"], [data-testid="annuncio-chiama-button"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
         if (!user) return navigate("/login");
         if (user.role === "privato") {
             const q = new URLSearchParams({

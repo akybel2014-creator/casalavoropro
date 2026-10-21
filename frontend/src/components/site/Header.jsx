@@ -78,8 +78,9 @@ export default function Header() {
     }, [location.pathname]);
 
     const onNavClick = (e, to) => {
+        e.preventDefault();
+        setOpen(false);
         if (to.includes("#")) {
-            e.preventDefault();
             const hash = to.split("#")[1];
             if (location.pathname !== "/") {
                 navigate("/");
@@ -87,8 +88,9 @@ export default function Header() {
             } else {
                 scrollToSection(`#${hash}`);
             }
+        } else {
+            navigate(to);
         }
-        setOpen(false);
     };
 
     return (

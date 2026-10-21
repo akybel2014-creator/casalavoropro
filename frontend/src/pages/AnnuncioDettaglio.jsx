@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart, Phone, MessageCircle } from "lucide-react";
 import { Stars } from "@/components/StarRating";
 import { api, formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { annuncioImg, prezzoLabel, ContattoAzienda, FILES_BASE } from "@/components/AnnuncioCard";
+import { annuncioImg, prezzoLabel, ContattoAzienda, FILES_BASE, waLink } from "@/components/AnnuncioCard";
 import { BlurImage } from "@/components/BlurImage";
 import { NoleggioCalendar } from "@/components/NoleggioCalendar";
 
@@ -135,6 +135,14 @@ export default function AnnuncioDettaglio() {
                                     <Button asChild data-testid="annuncio-chiama-button"
                                         className="mt-3 w-full rounded-xl bg-white/5 border border-brand/40 text-brand hover:bg-brand hover:text-white font-semibold">
                                         <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`}><Phone className="h-4 w-4 mr-2" /> Chiama {a.azienda_telefono}</a>
+                                    </Button>
+                                )}
+                                {a.azienda_telefono && (
+                                    <Button asChild data-testid="annuncio-whatsapp-button"
+                                        className="mt-3 w-full rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold">
+                                        <a href={waLink(a.azienda_telefono, `Ciao, ho visto il tuo annuncio "${a.titolo}" su CasaLavoroPRO e sono interessato.`)} target="_blank" rel="noopener noreferrer">
+                                            <MessageCircle className="h-4 w-4 mr-2" /> Scrivi su WhatsApp
+                                        </a>
                                     </Button>
                                 )}
                                 <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">

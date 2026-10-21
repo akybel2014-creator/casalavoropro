@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Truck, Recycle, MapPin, Phone, ArrowRight, Star } from "lucide-react";
+import { Truck, Recycle, MapPin, Phone, ArrowRight, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "@/pages/Aziende";
 import { BlurImage } from "@/components/BlurImage";
@@ -17,6 +17,18 @@ export function prezzoLabel(a) {
     const n = Number(a.prezzo).toLocaleString("it-IT", { maximumFractionDigits: 2 });
     if (a.tipo === "usato" || a.unita === "fisso") return `${n} €`;
     return `da ${n} €/${a.unita}`;
+}
+
+// Costruisce un link WhatsApp wa.me dal numero (assume Italia se manca il prefisso internazionale).
+export function waLink(phone, text) {
+    if (!phone) return null;
+    let d = String(phone).replace(/[^\d]/g, "");
+    if (d.startsWith("00")) d = d.slice(2);
+    if (d.startsWith("0")) d = d.slice(1);
+    if (!d.startsWith("39") && d.length <= 10) d = "39" + d;
+    if (!d) return null;
+    const q = text ? `?text=${encodeURIComponent(text)}` : "";
+    return `https://wa.me/${d}${q}`;
 }
 
 export function AnnuncioCard({ a, index = 0 }) {
@@ -70,6 +82,14 @@ export function AnnuncioCard({ a, index = 0 }) {
                                 onClick={(e) => e.stopPropagation()}
                                 className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand hover:bg-brand hover:text-white transition-colors whitespace-nowrap">
                                 <Phone className="h-3.5 w-3.5" /> Chiama
+                            </a>
+                        )}
+                        {a.azienda_telefono && (
+                            <a href={waLink(a.azienda_telefono, `Ciao, ho visto il tuo annuncio "${a.titolo}" su CasaLavoroPRO e sono interessato.`)}
+                                target="_blank" rel="noopener noreferrer" data-testid={`annuncio-whatsapp-${a.id}`}
+                                onClick={(e) => e.stopPropagation()} aria-label="Contatta su WhatsApp"
+                                className="inline-flex items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors">
+                                <MessageCircle className="h-3.5 w-3.5" />
                             </a>
                         )}
                     </div>

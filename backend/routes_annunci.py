@@ -29,7 +29,7 @@ CATEGORIE_ANNUNCI = {
     "Altro": ["Altro"],
 }
 ALL_SOTTOCATEGORIE = {s for subs in CATEGORIE_ANNUNCI.values() for s in subs}
-MAX_FOTO_ANNUNCIO = 4
+MAX_FOTO_ANNUNCIO = 10
 
 
 class AnnuncioIn(BaseModel):

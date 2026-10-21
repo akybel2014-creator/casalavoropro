@@ -1,6 +1,8 @@
 import re
 import logging
 import uuid as uuidlib
+import httpx
+from urllib.parse import urlparse
 from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -305,6 +307,83 @@ async def admin_upload_foto_annuncio(annuncio_id: str, files: List[UploadFile] =
     await db.annunci.update_one({"_id": oid}, {"$push": {"foto": {"$each": uploaded}}})
     fresh = await db.annunci.find_one({"_id": oid})
     return clean_doc(fresh, drop=("owner_id",))
+
+
+class FotoUrlIn(BaseModel):
+    urls: List[str] = Field(..., min_length=1, max_length=50)
+
+
+@router.post("/admin/annunci/{annuncio_id}/foto-url")
+async def admin_add_foto_annuncio_url(annuncio_id: str, inp: FotoUrlIn,
+                                      user: dict = Depends(require_roles("admin"))):
+    """Aggiunge foto a un macchinario partendo da una lista di URL immagine
+    (incollati manualmente o estratti da un CSV lato frontend). Scarica, ottimizza
+    in WebP e salva nello storage, come l'upload diretto di file."""
+    oid = _admin_oid(annuncio_id)
+    ann = await db.annunci.find_one({"_id": oid})
+    if not ann:
+        raise HTTPException(status_code=404, detail="Annuncio non trovato")
+    if EMERGENT_KEY is None:
+        raise HTTPException(status_code=503, detail="Storage non configurato")
+
+    # Pulizia/deduplica degli URL preservando l'ordine
+    seen, urls = set(), []
+    for raw in inp.urls:
+        u = (raw or "").strip()
+        parsed = urlparse(u)
+        if parsed.scheme in ("http", "https") and parsed.netloc and u not in seen:
+            seen.add(u)
+            urls.append(u)
+    if not urls:
+        raise HTTPException(status_code=400, detail="Nessun URL valido (usa http/https)")
+
+    existing = ann.get("foto", [])
+    disponibili = MAX_FOTO_ANNUNCIO - len(existing)
+    if disponibili <= 0:
+        raise HTTPException(status_code=400, detail=f"Limite di {MAX_FOTO_ANNUNCIO} foto gia raggiunto")
+
+    uploaded, errori = [], []
+    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
+        for u in urls:
+            if len(uploaded) >= disponibili:
+                errori.append({"url": u, "motivo": f"limite {MAX_FOTO_ANNUNCIO} foto raggiunto"})
+                continue
+            try:
+                resp = await client.get(u, headers={"User-Agent": "CasaLavoroPRO/1.0"})
+                resp.raise_for_status()
+                data = resp.content
+            except Exception:
+                errori.append({"url": u, "motivo": "download non riuscito"})
+                continue
+            if len(data) > MAX_SIZE:
+                errori.append({"url": u, "motivo": "immagine troppo grande (max 5 MB)"})
+                continue
+            opt_data, opt_ct, opt_ext = optimize_image(data)
+            if opt_ct not in ALLOWED:
+                errori.append({"url": u, "motivo": "formato non supportato"})
+                continue
+            path = f"{APP_NAME}/annunci/{oid}/{uuidlib.uuid4()}.{opt_ext}"
+            try:
+                result = _put_object(path, opt_data, opt_ct)
+            except Exception:
+                logger.exception("admin add foto-url failed")
+                errori.append({"url": u, "motivo": "salvataggio non riuscito"})
+                continue
+            fname = (urlparse(u).path.rsplit("/", 1)[-1] or "foto")[:120]
+            entry = {"id": str(uuidlib.uuid4()), "path": result["path"],
+                     "filename": fname, "created_at": now()}
+            await db.files.insert_one({**entry, "owner_id": user["id"], "is_deleted": False,
+                                       "is_public": True, "content_type": opt_ct})
+            uploaded.append(entry)
+
+    if uploaded:
+        await db.annunci.update_one({"_id": oid}, {"$push": {"foto": {"$each": uploaded}}})
+    fresh = await db.annunci.find_one({"_id": oid})
+    out = clean_doc(fresh, drop=("owner_id",))
+    out["aggiunte"] = len(uploaded)
+    out["errori"] = errori
+    return out
+
 
 
 @router.get("/admin/aziende")

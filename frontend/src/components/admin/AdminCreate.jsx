@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Loader2, Building2, Truck, Upload, X } from "lucide-react";
+import { Plus, Loader2, Building2, Truck, Upload, X, Link2, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,6 +126,7 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
     const [uploading, setUploading] = useState(false);
     const [meta, setMeta] = useState({ categorie: [], sottocategorie: {}, unita: [], stati_usato: [] });
     const [foto, setFoto] = useState([]);
+    const [urlInput, setUrlInput] = useState("");
     const [f, setF] = useState({ tipo: "noleggio", titolo: "", descrizione: "", categoria: "", sottocategoria: "", zona: "", prezzo: "", unita: "giorno", stato: "", immagine_url: "", azienda_id: "" });
     const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
 
@@ -183,6 +184,35 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
             onCreated?.();
         } catch (err) { toast.error(formatApiError(err)); }
         finally { setUploading(false); e.target.value = ""; }
+    };
+
+    const addFotoUrls = async (list) => {
+        const urls = (list || []).map((u) => String(u).trim().replace(/^["']|["']$/g, "")).filter((u) => /^https?:\/\//i.test(u));
+        if (!urls.length) { toast.error("Nessun URL valido trovato (usa http/https)."); return; }
+        setUploading(true);
+        try {
+            const { data } = await api.post(`/admin/annunci/${record.id}/foto-url`, { urls });
+            setFoto(data.foto || []);
+            const n = data.aggiunte || 0;
+            const errs = (data.errori || []).length;
+            if (n) toast.success(`${n} foto aggiunte da URL${errs ? ` · ${errs} ignorate` : ""}.`);
+            else toast.error(`Nessuna foto aggiunta${errs ? ` · ${errs} errori` : ""}.`);
+            setUrlInput("");
+            onCreated?.();
+        } catch (err) { toast.error(formatApiError(err)); }
+        finally { setUploading(false); }
+    };
+
+    const addFromTextarea = () => addFotoUrls(urlInput.split(/[\r\n,;]+/));
+
+    const onCsv = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => addFotoUrls(String(reader.result || "").split(/[\r\n,;]+/));
+        reader.onerror = () => toast.error("Impossibile leggere il CSV.");
+        reader.readAsText(file);
+        e.target.value = "";
     };
 
     const delFoto = async (fid) => {
@@ -259,8 +289,8 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
                             </select></div>
                     )}
                     {edit && (
-                        <div className="space-y-2 rounded-xl border border-white/10 p-3" data-testid="annuncio-foto-section">
-                            <Label className="text-slate-300 text-xs">Foto (max 4) — caricamento diretto</Label>
+                        <div className="space-y-3 rounded-xl border border-white/10 p-3" data-testid="annuncio-foto-section">
+                            <Label className="text-slate-300 text-xs">Foto (max 10) — {foto.length}/10</Label>
                             <div className="flex flex-wrap gap-2">
                                 {foto.map((p) => (
                                     <div key={p.id} className="relative">
@@ -269,12 +299,28 @@ export function CreaAnnuncioDialog({ aziende, record, trigger, onCreated }) {
                                             className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center"><X className="h-3 w-3" /></button>
                                     </div>
                                 ))}
-                                {foto.length < 4 && (
+                                {foto.length < 10 && (
                                     <label className="h-16 w-16 rounded-lg border border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-brand" data-testid="annuncio-foto-upload">
                                         {uploading ? <Loader2 className="h-5 w-5 animate-spin text-brand" /> : <Upload className="h-5 w-5 text-slate-400" />}
                                         <input type="file" accept="image/*" multiple hidden onChange={uploadFoto} disabled={uploading} />
                                     </label>
                                 )}
+                            </div>
+                            <div className="space-y-1.5 border-t border-white/10 pt-3">
+                                <Label className="text-slate-300 text-xs flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5 text-brand" /> Aggiungi da URL (uno per riga o separati da virgola)</Label>
+                                <Textarea data-testid="annuncio-foto-url-input" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} rows={2}
+                                    placeholder={"https://.../foto1.jpg\nhttps://.../foto2.jpg"} className={inputCls} disabled={uploading || foto.length >= 10} />
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Button type="button" size="sm" onClick={addFromTextarea} disabled={uploading || !urlInput.trim() || foto.length >= 10}
+                                        data-testid="annuncio-foto-url-add" className="rounded-full bg-brand hover:bg-brand-dark text-white font-semibold">
+                                        {uploading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />} Aggiungi URL
+                                    </Button>
+                                    <label className={`inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-slate-300 cursor-pointer hover:border-brand hover:text-white ${(uploading || foto.length >= 10) ? "opacity-50 pointer-events-none" : ""}`} data-testid="annuncio-foto-csv-upload">
+                                        <FileUp className="h-4 w-4" /> Carica CSV di foto
+                                        <input type="file" accept=".csv,text/csv,text/plain" hidden onChange={onCsv} disabled={uploading || foto.length >= 10} />
+                                    </label>
+                                </div>
+                                <p className="text-[11px] text-slate-500">Il CSV deve contenere un URL immagine per riga (o separati da virgola). Vengono scaricate e ottimizzate automaticamente.</p>
                             </div>
                         </div>
                     )}

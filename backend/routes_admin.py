@@ -1,12 +1,14 @@
 import re
 import logging
+from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from core import db, now, clean_doc, require_roles, notify
 from subscription import PRO_ACTIVE_STATES, TRIAL_STATES
 from emailer import send_verification_result
+from routes_annunci import TIPI, UNITA, STATI_USATO, CATEGORIE_ANNUNCI
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -32,6 +34,110 @@ class RoleIn(BaseModel):
 
 class SuspendIn(BaseModel):
     suspended: bool
+
+
+class AdminAziendaIn(BaseModel):
+    nome: str = Field(min_length=2, max_length=120)
+    categorie: List[str] = []
+    zone: List[str] = []
+    piva: Optional[str] = ""
+    descrizione: Optional[str] = ""
+    telefono: Optional[str] = ""
+    sito: Optional[str] = ""
+    logo: Optional[str] = ""
+    rating: float = Field(0.0, ge=0, le=5)
+    recensioni: int = Field(0, ge=0)
+    verified: bool = True
+
+
+class AdminAnnuncioIn(BaseModel):
+    tipo: str
+    titolo: str = Field(min_length=3, max_length=120)
+    descrizione: str = Field(min_length=10, max_length=2000)
+    categoria: str
+    sottocategoria: Optional[str] = None
+    zona: str = Field(min_length=2, max_length=80)
+    prezzo: float = Field(gt=0, le=1_000_000)
+    unita: str = "giorno"
+    stato: Optional[str] = None
+    immagine_url: Optional[str] = ""
+    azienda_id: Optional[str] = None
+    azienda_nome: Optional[str] = ""
+    azienda_telefono: Optional[str] = ""
+
+
+@router.post("/admin/aziende")
+async def admin_crea_azienda(inp: AdminAziendaIn, user: dict = Depends(require_roles("admin"))):
+    """Inserimento manuale di un'azienda nella directory/marketplace (senza account di login)."""
+    verified = bool(inp.verified)
+    doc = {
+        "owner_id": "", "nome": inp.nome.strip(), "categorie": inp.categorie, "zone": inp.zone,
+        "piva": (inp.piva or "").strip(), "descrizione": (inp.descrizione or "").strip(),
+        "telefono": (inp.telefono or "").strip(), "sito": (inp.sito or "").strip(),
+        "logo": (inp.logo or "").strip(), "durc_number": "", "docs": [],
+        "verified": verified, "verification_status": "verificata" if verified else "none",
+        "verified_at": now() if verified else None,
+        "plan": "free", "subscription_status": "none", "founder50": False,
+        "trial_used": False, "trial_ends_at": None,
+        "emergenze": False, "emergenze_weekend": False, "emergenze_notturno": False, "emergenze_telefono": "",
+        "rating": float(inp.rating), "recensioni": int(inp.recensioni),
+        "created_by_admin": True, "created_at": now(),
+    }
+    res = await db.aziende.insert_one(doc)
+    out = clean_doc(doc)
+    out["id"] = str(res.inserted_id)
+    return out
+
+
+@router.post("/admin/annunci")
+async def admin_crea_annuncio(inp: AdminAnnuncioIn, user: dict = Depends(require_roles("admin"))):
+    """Inserimento manuale di un annuncio/macchinario nel marketplace (noleggio o usato)."""
+    if inp.tipo not in TIPI:
+        raise HTTPException(status_code=400, detail="Tipo annuncio non valido (noleggio/usato)")
+    if inp.categoria not in CATEGORIE_ANNUNCI:
+        raise HTTPException(status_code=400, detail="Categoria non valida")
+    sotto = inp.sottocategoria or None
+    if sotto and sotto not in CATEGORIE_ANNUNCI.get(inp.categoria, []):
+        raise HTTPException(status_code=400, detail="Sottocategoria non valida per la categoria scelta")
+    unita = inp.unita
+    stato = inp.stato
+    if inp.tipo == "usato":
+        unita = "fisso"
+        if stato and stato not in STATI_USATO:
+            raise HTTPException(status_code=400, detail="Stato dell'usato non valido")
+        stato = stato or "Buono"
+    else:
+        if unita not in UNITA:
+            raise HTTPException(status_code=400, detail="Unità di prezzo non valida")
+        stato = None
+
+    azienda_nome = (inp.azienda_nome or "").strip()
+    azienda_telefono = (inp.azienda_telefono or "").strip()
+    azienda_verified = False
+    azienda_id = (inp.azienda_id or "").strip()
+    if azienda_id:
+        try:
+            az = await db.aziende.find_one({"_id": ObjectId(azienda_id)})
+        except (InvalidId, TypeError):
+            az = None
+        if az:
+            azienda_nome = azienda_nome or az.get("nome", "")
+            azienda_verified = bool(az.get("verified"))
+            azienda_telefono = azienda_telefono or az.get("telefono", "")
+
+    doc = {
+        "tipo": inp.tipo, "titolo": inp.titolo.strip(), "descrizione": inp.descrizione.strip(),
+        "categoria": inp.categoria, "sottocategoria": sotto, "zona": inp.zona.strip(),
+        "prezzo": float(inp.prezzo), "unita": unita, "stato": stato, "attivo": True,
+        "azienda_id": azienda_id, "azienda_nome": azienda_nome,
+        "azienda_verified": azienda_verified, "azienda_telefono": azienda_telefono,
+        "owner_id": "", "immagine_url": (inp.immagine_url or "").strip(), "foto": [],
+        "created_by_admin": True, "created_at": now(),
+    }
+    res = await db.annunci.insert_one(doc)
+    out = clean_doc(doc, drop=("owner_id",))
+    out["id"] = str(res.inserted_id)
+    return out
 
 
 @router.get("/admin/aziende")
@@ -75,8 +181,13 @@ async def admin_verifica_azienda(azienda_id: str, inp: VerificaIn,
                   if verificata else
                   f"La verifica di {azienda.get('nome', '')} non e stata superata. "
                   f"Controlla i documenti e riprova."),
-                 link="/dashboard/azienda")
-    owner = await db.users.find_one({"_id": ObjectId(azienda["owner_id"])})
+                 link="/dashboard/azienda") if azienda.get("owner_id") else None
+    owner = None
+    if azienda.get("owner_id"):
+        try:
+            owner = await db.users.find_one({"_id": ObjectId(azienda["owner_id"])})
+        except (InvalidId, TypeError):
+            owner = None
     if owner:
         try:
             await send_verification_result(owner["email"], azienda.get("nome", ""), verificata)

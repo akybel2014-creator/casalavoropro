@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
     ShieldCheck, Check, X, Users, Building2, Crown,
-    Search, Ban, TrendingUp, UserCog, Loader2, Sparkles,
+    Search, Ban, TrendingUp, UserCog, Loader2, Sparkles, Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { AziendaAvatar } from "@/pages/Aziende";
+import { CreaAziendaDialog, CreaAnnuncioDialog } from "@/components/admin/AdminCreate";
 
 const STATUS_STYLES = {
     none: "bg-white/5 text-slate-400",
@@ -124,6 +125,7 @@ export default function DashboardAdmin() {
     const [aziende, setAziende] = useState(null);
     const [metrics, setMetrics] = useState(null);
     const [users, setUsers] = useState(null);
+    const [annunci, setAnnunci] = useState(null);
     const [q, setQ] = useState("");
     const [searching, setSearching] = useState(false);
 
@@ -132,6 +134,15 @@ export default function DashboardAdmin() {
             const [a, m] = await Promise.all([api.get("/admin/aziende"), api.get("/admin/metrics")]);
             setAziende(a.data);
             setMetrics(m.data);
+        } catch (e) {
+            toast.error(formatApiError(e));
+        }
+    }, []);
+
+    const loadAnnunci = useCallback(async () => {
+        try {
+            const { data } = await api.get("/annunci?limit=200");
+            setAnnunci(data);
         } catch (e) {
             toast.error(formatApiError(e));
         }
@@ -149,7 +160,7 @@ export default function DashboardAdmin() {
         }
     }, []);
 
-    useEffect(() => { loadBase(); loadUsers(); }, [loadBase, loadUsers]);
+    useEffect(() => { loadBase(); loadUsers(); loadAnnunci(); }, [loadBase, loadUsers, loadAnnunci]);
 
     const verifica = async (id, azione) => {
         try {
@@ -260,9 +271,12 @@ export default function DashboardAdmin() {
                 </div>
 
                 {/* Verifiche aziende */}
-                <h2 className="mt-12 font-display font-bold text-xl text-white flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-brand" /> Verifiche aziende
-                </h2>
+                <div className="mt-12 flex items-center justify-between gap-3 flex-wrap">
+                    <h2 className="font-display font-bold text-xl text-white flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 text-brand" /> Verifiche aziende
+                    </h2>
+                    <CreaAziendaDialog onCreated={loadBase} />
+                </div>
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10" data-testid="admin-verification-table">
                     <table className="w-full text-sm">
                         <thead className="bg-navy-700/80 text-slate-400">
@@ -315,6 +329,43 @@ export default function DashboardAdmin() {
                         </tbody>
                     </table>
                     {aziende && aziende.length === 0 && <p className="p-6 text-slate-400 text-sm">Nessuna azienda registrata.</p>}
+                </div>
+
+                {/* Marketplace — Macchinari */}
+                <div className="mt-12 flex items-center justify-between gap-3 flex-wrap">
+                    <h2 className="font-display font-bold text-xl text-white flex items-center gap-2">
+                        <Truck className="h-5 w-5 text-brand" /> Marketplace · Macchinari
+                    </h2>
+                    <CreaAnnuncioDialog aziende={aziende} onCreated={loadAnnunci} />
+                </div>
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10" data-testid="admin-annunci-table">
+                    <table className="w-full text-sm">
+                        <thead className="bg-navy-700/80 text-slate-400">
+                            <tr>
+                                <th className="text-left font-medium px-5 py-3">Titolo</th>
+                                <th className="text-left font-medium px-5 py-3 hidden md:table-cell">Tipo</th>
+                                <th className="text-left font-medium px-5 py-3 hidden md:table-cell">Categoria</th>
+                                <th className="text-left font-medium px-5 py-3">Prezzo</th>
+                                <th className="text-left font-medium px-5 py-3">Zona</th>
+                                <th className="text-left font-medium px-5 py-3 hidden md:table-cell">Azienda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {annunci && annunci.map((a) => (
+                                <tr key={a.id} className="border-t border-white/5 bg-navy-700/30 hover:bg-navy-700/60 transition-colors" data-testid={`admin-annuncio-row-${a.id}`}>
+                                    <td className="px-5 py-4 font-semibold text-white">{a.titolo}</td>
+                                    <td className="px-5 py-4 hidden md:table-cell">
+                                        <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-slate-300 capitalize">{a.tipo}</span>
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-400 hidden md:table-cell">{a.categoria}</td>
+                                    <td className="px-5 py-4 text-brand font-semibold whitespace-nowrap">€{a.prezzo}{a.unita && a.unita !== "fisso" ? `/${a.unita}` : ""}</td>
+                                    <td className="px-5 py-4 text-slate-400">{a.zona}</td>
+                                    <td className="px-5 py-4 text-slate-400 hidden md:table-cell">{a.azienda_nome || "—"}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {annunci && annunci.length === 0 && <p className="p-6 text-slate-400 text-sm">Nessun macchinario pubblicato. Aggiungine uno con il pulsante qui sopra.</p>}
                 </div>
             </div>
         </div>

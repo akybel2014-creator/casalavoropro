@@ -56,3 +56,49 @@ async def rimuovi_preferito(azienda_id: str, user: dict = Depends(require_roles(
     oid = _oid(azienda_id)
     await db.preferiti.delete_one({"user_id": user["id"], "azienda_id": str(oid)})
     return {"ok": True, "saved": False}
+
+
+# ---- Preferiti ANNUNCI (noleggio/usato) per le aziende ----
+
+def _ann_oid(annuncio_id: str) -> ObjectId:
+    try:
+        return ObjectId(annuncio_id)
+    except (InvalidId, TypeError):
+        raise HTTPException(status_code=404, detail="Annuncio non trovato")
+
+
+@router.get("/preferiti-annunci/ids")
+async def preferiti_annunci_ids(user: dict = Depends(require_roles("azienda"))):
+    docs = await db.preferiti_annunci.find({"user_id": user["id"]}, {"annuncio_id": 1}).to_list(500)
+    return [d["annuncio_id"] for d in docs]
+
+
+@router.get("/preferiti-annunci")
+async def lista_preferiti_annunci(user: dict = Depends(require_roles("azienda"))):
+    prefs = await db.preferiti_annunci.find({"user_id": user["id"]}).sort("created_at", -1).to_list(500)
+    if not prefs:
+        return []
+    oids = [ObjectId(p["annuncio_id"]) for p in prefs]
+    annunci = await db.annunci.find({"_id": {"$in": oids}}).to_list(500)
+    by_id = {str(a["_id"]): clean_doc(a, drop=("owner_id",)) for a in annunci}
+    return [by_id[p["annuncio_id"]] for p in prefs if p["annuncio_id"] in by_id]
+
+
+@router.put("/preferiti-annunci/{annuncio_id}")
+async def aggiungi_preferito_annuncio(annuncio_id: str, user: dict = Depends(require_roles("azienda"))):
+    oid = _ann_oid(annuncio_id)
+    if not await db.annunci.find_one({"_id": oid}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Annuncio non trovato")
+    await db.preferiti_annunci.update_one(
+        {"user_id": user["id"], "annuncio_id": str(oid)},
+        {"$setOnInsert": {"user_id": user["id"], "annuncio_id": str(oid), "created_at": now()}},
+        upsert=True,
+    )
+    return {"ok": True, "saved": True}
+
+
+@router.delete("/preferiti-annunci/{annuncio_id}")
+async def rimuovi_preferito_annuncio(annuncio_id: str, user: dict = Depends(require_roles("azienda"))):
+    oid = _ann_oid(annuncio_id)
+    await db.preferiti_annunci.delete_one({"user_id": user["id"], "annuncio_id": str(oid)})
+    return {"ok": True, "saved": False}

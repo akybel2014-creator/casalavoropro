@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { Search, MapPin, SearchX, Truck, Recycle, Euro, ArrowRight } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +29,8 @@ const inputCls = "border-0 bg-transparent h-auto p-0 focus-visible:ring-0 text-w
 
 export default function Annunci({ tipo }) {
     const [params, setParams] = useSearchParams();
+    const { user } = useAuth();
+    const isAzienda = user?.role === "azienda";
     const c = COPY[tipo];
     const [q, setQ] = useState(params.get("q") || "");
     const [zona, setZona] = useState(params.get("zona") || "");
@@ -37,6 +41,24 @@ export default function Annunci({ tipo }) {
     const [meta, setMeta] = useState({ categorie: [], sottocategorie: {} });
     const [items, setItems] = useState(null);
     const [error, setError] = useState("");
+    const [savedIds, setSavedIds] = useState(new Set());
+
+    useEffect(() => {
+        if (!isAzienda) { setSavedIds(new Set()); return; }
+        api.get("/preferiti-annunci/ids").then(({ data }) => setSavedIds(new Set(data))).catch(() => {});
+    }, [isAzienda]);
+
+    const toggleFav = async (a) => {
+        const saved = savedIds.has(a.id);
+        setSavedIds((prev) => { const n = new Set(prev); saved ? n.delete(a.id) : n.add(a.id); return n; });
+        try {
+            if (saved) await api.delete(`/preferiti-annunci/${a.id}`);
+            else { await api.put(`/preferiti-annunci/${a.id}`); toast.success("Salvato nei preferiti."); }
+        } catch (e) {
+            setSavedIds((prev) => { const n = new Set(prev); saved ? n.add(a.id) : n.delete(a.id); return n; });
+            toast.error(formatApiError(e));
+        }
+    };
 
     useEffect(() => {
         api.get("/annunci/meta").then(({ data }) => setMeta(data)).catch(() => {});
@@ -163,7 +185,8 @@ export default function Annunci({ tipo }) {
                                 {items.length} {items.length === 1 ? "annuncio" : "annunci"}
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-testid="annunci-grid">
-                                {items.map((a, i) => <AnnuncioCard key={a.id} a={a} index={i} />)}
+                                {items.map((a, i) => <AnnuncioCard key={a.id} a={a} index={i}
+                                    fav={isAzienda ? { active: true, saved: savedIds.has(a.id), onToggle: toggleFav } : null} />)}
                             </div>
                         </>
                     )}

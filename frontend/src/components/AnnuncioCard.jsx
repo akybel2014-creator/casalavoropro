@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Truck, Recycle, MapPin, Phone, ArrowRight, Star, MessageCircle } from "lucide-react";
+import { Truck, Recycle, MapPin, Phone, ArrowRight, Star, MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "@/pages/Aziende";
 import { BlurImage } from "@/components/BlurImage";
@@ -31,7 +31,7 @@ export function waLink(phone, text) {
     return `https://wa.me/${d}${q}`;
 }
 
-export function AnnuncioCard({ a, index = 0 }) {
+export function AnnuncioCard({ a, index = 0, fav = null }) {
     const noleggio = a.tipo === "noleggio";
     return (
         <article data-testid={`annuncio-card-${a.id}`}
@@ -44,8 +44,16 @@ export function AnnuncioCard({ a, index = 0 }) {
                     {noleggio ? <Truck className="h-3 w-3" /> : <Recycle className="h-3 w-3" />}
                     {noleggio ? a.categoria : `Usato · ${a.stato || "Buono"}`}
                 </span>
+                {fav?.active && (
+                    <button type="button" data-testid={`annuncio-fav-${a.id}`} aria-pressed={fav.saved}
+                        aria-label={fav.saved ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); fav.onToggle(a); }}
+                        className={`absolute top-3 right-3 inline-flex items-center justify-center h-9 w-9 rounded-full border transition-colors active:scale-90 ${fav.saved ? "bg-brand/90 border-brand text-white" : "bg-navy/70 border-white/15 text-slate-200 hover:text-brand hover:border-brand/50"}`}>
+                        <Heart className={`h-4 w-4 ${fav.saved ? "fill-current" : ""}`} />
+                    </button>
+                )}
                 {a.venduto && (
-                    <span data-testid={`annuncio-venduto-${a.id}`} className="absolute top-3 right-3 inline-flex items-center rounded-full bg-red-500 text-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide shadow-lg">
+                    <span data-testid={`annuncio-venduto-${a.id}`} className="absolute bottom-3 left-3 inline-flex items-center rounded-full bg-red-500 text-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide shadow-lg">
                         Venduto
                     </span>
                 )}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Zap, ArrowLeft, Plus } from "lucide-react";
+import { Briefcase, Building2, ShieldCheck, CreditCard, MapPin, Send, Check, Loader2, Siren, ImagePlus, Trash2, Camera, Truck, Megaphone, Zap, ArrowLeft, Plus, Heart, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
 import ChatDialog from "@/components/ChatDialog";
 import { AnnunciPanel } from "@/components/AnnunciPanel";
+import { AnnuncioCard } from "@/components/AnnuncioCard";
 import { OfferteLavoroPanel } from "@/components/OfferteLavoroPanel";
 import { InterventiPanel } from "@/components/InterventiPanel";
 
@@ -103,10 +104,10 @@ export default function DashboardAzienda() {
     const { user, azienda, refreshMe } = useAuth();
     const [mine, setMine] = useState(azienda);
     const [feed, setFeed] = useState(null);
+    const [preferiti, setPreferiti] = useState(null);
     const [unreadChat, setUnreadChat] = useState({});
     const [busy, setBusy] = useState(false);
     const [geoBusy, setGeoBusy] = useState(false);
-    const [checkingOut, setCheckingOut] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [logoBusy, setLogoBusy] = useState(false);
     const fileRef = useRef(null);
@@ -128,6 +129,23 @@ export default function DashboardAzienda() {
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    const loadPreferiti = useCallback(async () => {
+        try {
+            const { data } = await api.get("/preferiti-annunci");
+            setPreferiti(data);
+        } catch (e) { toast.error(formatApiError(e)); }
+    }, []);
+
+    useEffect(() => { if (section === "preferiti") loadPreferiti(); }, [section, loadPreferiti]);
+
+    const rimuoviPreferito = async (a) => {
+        try {
+            await api.delete(`/preferiti-annunci/${a.id}`);
+            setPreferiti((prev) => (prev || []).filter((x) => x.id !== a.id));
+            toast.success("Rimosso dai preferiti.");
+        } catch (e) { toast.error(formatApiError(e)); }
+    };
 
     const saveProfile = async (e) => {
         e.preventDefault();
@@ -253,30 +271,6 @@ export default function DashboardAzienda() {
 
     const toggleCat = (c) => setMine((m) => ({ ...m, categorie: m.categorie?.includes(c) ? m.categorie.filter((x) => x !== c) : [...(m.categorie || []), c] }));
 
-    const checkout = async (lookupKey) => {
-        setCheckingOut(true);
-        try {
-            const { data } = await api.post("/payments/checkout", {
-                lookup_key: lookupKey, origin_url: window.location.origin,
-            });
-            window.location.href = data.checkout_url;
-        } catch (err) {
-            toast.error(formatApiError(err));
-            setCheckingOut(false);
-        }
-    };
-
-    const openPortal = async () => {
-        setCheckingOut(true);
-        try {
-            const { data } = await api.post("/billing/portal", { origin_url: window.location.origin });
-            window.location.href = data.portal_url;
-        } catch (err) {
-            toast.error(formatApiError(err));
-            setCheckingOut(false);
-        }
-    };
-
     const VER_STYLES = {
         none: ["bg-white/5 text-slate-400", "Non richiesta"],
         in_attesa: ["bg-amber-500/15 text-amber-400", "In attesa di revisione"],
@@ -286,7 +280,7 @@ export default function DashboardAzienda() {
 
     const foto = mine?.foto || [];
     const isPro = mine?.plan === "pro" && ["active", "trialing", "active_trial"].includes(mine?.subscription_status);
-    const KNOWN_SECTIONS = ["nuovo-intervento", "cerca-operai", "profilo", "annunci", "richieste"];
+    const KNOWN_SECTIONS = ["nuovo-intervento", "cerca-operai", "profilo", "annunci", "richieste", "abbonamento", "preferiti"];
     if (section === "analisi-energetica") return <Navigate to="/analisi-energetica" replace />;
     if (section && !KNOWN_SECTIONS.includes(section)) return <Navigate to="/dashboard" replace />;
 
@@ -311,9 +305,10 @@ export default function DashboardAzienda() {
                         <HubBox to="/dashboard/nuovo-intervento" testid="box-nuovo-intervento" Icon={Plus} title="Nuovo Intervento" desc="Registra un nuovo lavoro o cantiere" />
                         <HubBox to="/analisi-energetica" testid="box-scansione-ai" Icon={Zap} title="Scansione Energetica AI" desc="Analizza una bolletta" />
                         <HubBox to="/dashboard/cerca-operai" testid="box-cerca-operai" Icon={Megaphone} title="Cerca Operai" desc="Trova personale qualificato per la tua ditta" />
-                        <HubBox to="/dashboard/profilo" testid="box-abbonamento" Icon={CreditCard} title="Abbonamento PRO" desc="Gestisci il tuo piano e la fatturazione" />
-                        <HubBox to="/dashboard/profilo" testid="box-profilo" Icon={Building2} title="Profilo Aziendale" desc="Dati ditta, galleria foto, verifica, abbonamento ed emergenze" />
+                        <HubBox to="/dashboard/abbonamento" testid="box-abbonamento" Icon={CreditCard} title="Abbonamento PRO" desc="Gestisci il tuo piano e la fatturazione (in arrivo)" />
+                        <HubBox to="/dashboard/profilo" testid="box-profilo" Icon={Building2} title="Profilo Aziendale" desc="Dati ditta, galleria foto, verifica ed emergenze" />
                         <HubBox to="/dashboard/annunci" testid="box-annunci" Icon={Truck} title="I Miei Annunci" desc="Gestisci le tue inserzioni di lavoro, usato e noleggio" />
+                        <HubBox to="/dashboard/preferiti" testid="box-preferiti" Icon={Heart} title="Preferiti" desc="Gli annunci di noleggio e usato che hai salvato" />
                     </div>
                 )}
 
@@ -641,89 +636,47 @@ export default function DashboardAzienda() {
                         )}
                     </div>)}
 
-                    {section === "profilo" && (<div className="mt-6" data-testid="subscription-panel">
-                        {isPro ? (
-                            <div className="rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 sm:p-10">
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <h3 className="font-display font-bold text-white text-xl">Piano Pro</h3>
-                                    {mine?.founder50 ? (
-                                        <span className="rounded-full bg-brand px-3 py-1 text-xs font-bold text-white uppercase tracking-wide" data-testid="subscription-founder-badge">
-                                            Fondatore · gratis per sempre
-                                        </span>
-                                    ) : ["trialing", "active_trial"].includes(mine?.subscription_status) && (
-                                        <span className="rounded-full bg-brand px-3 py-1 text-xs font-bold text-white uppercase tracking-wide" data-testid="subscription-trial-badge">
-                                            Prova gratuita
-                                        </span>
-                                    )}
-                                </div>
-                                <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
-                                    {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Cantieri, annunci noleggio/usato e offerte di lavoro illimitati", "Priorità nelle ricerche dei privati"].map((f) => (
-                                        <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
-                                    ))}
-                                </ul>
-                                {mine?.founder50 ? (
-                                    <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
-                                        <Check className="h-4 w-4" /> PRO Fondatore attivo · gratis per sempre
-                                    </p>
-                                ) : ["trialing", "active_trial"].includes(mine?.subscription_status) && mine?.trial_ends_at ? (
-                                    <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
-                                        <Check className="h-4 w-4" /> Prova PRO attiva · {Math.max(0, Math.ceil((new Date(mine.trial_ends_at) - Date.now()) / 86400000))} giorni rimanenti
-                                    </p>
-                                ) : (
-                                    <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-2" data-testid="subscription-active-badge">
-                                        <Check className="h-4 w-4" /> Abbonamento attivo
-                                    </p>
-                                )}
-                                {mine?.founder50 ? (
-                                    <p className="mt-6 text-xs text-slate-500">Fai parte delle prime 50 aziende: il tuo piano PRO è gratuito per sempre, nessun pagamento richiesto.</p>
-                                ) : (
-                                    <div className="mt-6 border-t border-white/10 pt-5">
-                                        <Button onClick={openPortal} disabled={checkingOut} variant="outline" data-testid="manage-subscription-button"
-                                            className="rounded-xl border-white/20 text-white hover:bg-white/10 font-semibold">
-                                            {checkingOut ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
-                                            Gestisci / Annulla abbonamento
-                                        </Button>
-                                        <p className="mt-2 text-xs text-slate-500">Aggiorna il metodo di pagamento, scarica le fatture o annulla il rinnovo dal portale Stripe.</p>
-                                    </div>
-                                )}
+                    {section === "abbonamento" && (<div className="mt-6" data-testid="subscription-panel">
+                        <div data-testid="subscription-locked" className="rounded-3xl border-2 border-brand/40 bg-gradient-to-b from-brand/10 to-navy-700/70 p-7 sm:p-10 text-center">
+                            <div className="mx-auto h-14 w-14 rounded-2xl bg-brand/15 flex items-center justify-center">
+                                <Lock className="h-7 w-7 text-brand" />
                             </div>
-                        ) : (
-                            <div data-testid="subscription-paid-plans">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="rounded-3xl border border-white/10 bg-navy-700/70 p-7">
-                                        <h3 className="font-display font-bold text-white text-xl">Base</h3>
-                                        <p className="mt-1 font-display font-black text-3xl text-white">Gratis</p>
-                                        <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
-                                            {["Profilo azienda nella directory", "Ricevi richieste della tua categoria", "Invia fino a 2 preventivi al mese"].map((f) => (
-                                                <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-slate-500" /> {f}</li>
-                                            ))}
-                                        </ul>
-                                        <p className="mt-6 text-xs text-slate-500">Il tuo piano attuale</p>
-                                    </div>
+                            <div className="mt-5 flex items-center justify-center gap-2 flex-wrap">
+                                <h3 className="font-display font-bold text-white text-2xl">Gestione Abbonamento PRO</h3>
+                                <span className="rounded-full bg-brand px-3 py-1 text-xs font-bold text-white uppercase tracking-wide" data-testid="subscription-coming-soon-badge">In arrivo</span>
+                            </div>
+                            <p className="mt-3 text-sm text-slate-300 max-w-xl mx-auto">
+                                Al momento CasaLavoroPRO è <strong className="text-white">gratuito al 100%</strong>: hai accesso a tutte le funzioni PRO senza alcun costo.
+                                La gestione dell'abbonamento e delle fatture sarà disponibile prossimamente.
+                            </p>
+                            <ul className="mt-6 max-w-sm mx-auto space-y-2.5 text-sm text-slate-300 text-left">
+                                {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Annunci noleggio/usato e offerte di lavoro", "Priorità nelle ricerche dei privati"].map((f) => (
+                                    <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
+                                ))}
+                            </ul>
+                            <Button type="button" disabled data-testid="manage-subscription-locked-button"
+                                className="mt-7 rounded-xl bg-white/5 border border-white/10 text-slate-400 font-semibold cursor-not-allowed">
+                                <Lock className="h-4 w-4 mr-2" /> Gestisci abbonamento (presto)
+                            </Button>
+                        </div>
+                    </div>)}
 
-                                    <div className="relative rounded-3xl border-2 border-brand bg-gradient-to-b from-brand/15 to-navy-700/70 p-7 shadow-2xl shadow-brand/10">
-                                        <span className="absolute -top-3 right-6 rounded-full bg-brand px-3 py-1 text-xs font-bold text-white">14 GIORNI GRATIS</span>
-                                        <h3 className="font-display font-bold text-white text-xl">Pro</h3>
-                                        <p className="mt-1 font-display font-black text-3xl text-white" data-testid="pro-price-monthly">€4,99<span className="text-base font-semibold text-slate-400">/mese</span></p>
-                                        <p className="text-xs text-slate-400" data-testid="pro-price-yearly">oppure €49,99/anno (2 mesi gratis)</p>
-                                        <p className="mt-3 text-sm font-semibold text-brand" data-testid="pro-trial-note">Prova gratis per 14 giorni, poi si rinnova automaticamente. Annulli quando vuoi.</p>
-                                        <ul className="mt-4 space-y-2.5 text-sm text-slate-300">
-                                            {["Badge PRO e posizionamento in evidenza", "Preventivi illimitati", "Cantieri, annunci noleggio/usato e offerte di lavoro", "Priorità nelle ricerche dei privati"].map((f) => (
-                                                <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-brand" /> {f}</li>
-                                            ))}
-                                        </ul>
-                                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                                            <Button onClick={() => checkout("pro_monthly")} disabled={checkingOut} data-testid="checkout-monthly-button"
-                                                className="flex-1 rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-semibold shadow-lg shadow-orange-500/25">
-                                                {checkingOut && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Inizia prova · mensile
-                                            </Button>
-                                            <Button onClick={() => checkout("pro_yearly")} disabled={checkingOut} data-testid="checkout-yearly-button" variant="outline"
-                                                className="flex-1 rounded-xl border-brand text-brand hover:bg-brand hover:text-navy font-semibold">
-                                                Inizia prova · annuale
-                                            </Button>
-                                        </div>
-                                    </div>
+                    {section === "preferiti" && (<div className="mt-6" data-testid="azienda-preferiti">
+                        {!preferiti && <p className="text-slate-400" data-testid="preferiti-loading">Caricamento preferiti…</p>}
+                        {preferiti && preferiti.length === 0 && (
+                            <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="preferiti-empty">
+                                <Heart className="h-10 w-10 text-slate-500 mx-auto" />
+                                <h3 className="mt-4 font-display font-bold text-white text-lg">Nessun annuncio salvato</h3>
+                                <p className="mt-1 text-sm text-slate-400">Nel Noleggio e nel Mercatino tocca il cuore su un annuncio per salvarlo qui.</p>
+                                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                                    <Button asChild className="rounded-full bg-brand hover:bg-brand-dark text-white font-semibold"><Link to="/noleggio">Vai al Noleggio</Link></Button>
+                                    <Button asChild variant="outline" className="rounded-full border-white/20 text-white hover:bg-white/10"><Link to="/mercatino">Vai al Mercatino</Link></Button>
                                 </div>
+                            </div>
+                        )}
+                        {preferiti && preferiti.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" data-testid="preferiti-grid">
+                                {preferiti.map((a, i) => <AnnuncioCard key={a.id} a={a} index={i} fav={{ active: true, saved: true, onToggle: rimuoviPreferito }} />)}
                             </div>
                         )}
                     </div>)}

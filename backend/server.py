@@ -65,7 +65,7 @@ app.include_router(api_router)
 async def health():
     return {"status": "healthy"}
 
-cors_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+cors_origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', '*').split(',') if o.strip()]
 if "*" in cors_origins:
     app.add_middleware(
         CORSMiddleware,
@@ -76,9 +76,19 @@ if "*" in cors_origins:
         allow_headers=["*"],
     )
 else:
+    # Auto-include the www / apex counterpart of each configured origin so that
+    # requests keep working regardless of whether the canonical host is www or apex.
+    expanded = set()
+    for origin in cors_origins:
+        expanded.add(origin)
+        if "://www." in origin:
+            expanded.add(origin.replace("://www.", "://", 1))
+        elif "://" in origin:
+            scheme, host = origin.split("://", 1)
+            expanded.add(f"{scheme}://www.{host}")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins,
+        allow_origins=sorted(expanded),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -316,10 +316,10 @@ export function VenditePrivato() {
 
     return (
         <div className="space-y-5" data-testid="dashboard-vendite">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <p className="text-sm text-slate-400">Vendi i tuoi prodotti usati. Gli acquirenti ti contatteranno al numero che indichi.</p>
                 <VendiDialog meta={meta} onSaved={load} trigger={
-                    <Button data-testid="vendi-nuovo-button" className="rounded-full bg-brand hover:bg-brand-dark text-white font-semibold shrink-0">
+                    <Button data-testid="vendi-nuovo-button" className="w-full sm:w-auto justify-center rounded-full bg-brand hover:bg-brand-dark text-white font-semibold shrink-0">
                         <Plus className="h-4 w-4 mr-1.5" /> Vendi un prodotto
                     </Button>
                 } />

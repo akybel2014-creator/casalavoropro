@@ -162,22 +162,22 @@ export default function DashboardPrivato() {
                 </div>
 
                 <Tabs defaultValue="richieste" className="mt-8">
-                    <TabsList className="bg-navy-700 border border-white/10">
-                        <TabsTrigger value="richieste" data-testid="dashboard-privato-tab-requests" className="data-[state=active]:text-white">
+                    <TabsList className="bg-navy-700 border border-white/10 max-w-full overflow-x-auto justify-start">
+                        <TabsTrigger value="richieste" data-testid="dashboard-privato-tab-requests" className="shrink-0 data-[state=active]:text-white">
                             <FileText className="h-4 w-4 mr-1.5" /> Le mie richieste
                         </TabsTrigger>
-                        <TabsTrigger value="preferite" data-testid="dashboard-privato-tab-preferite" className="data-[state=active]:text-white">
+                        <TabsTrigger value="preferite" data-testid="dashboard-privato-tab-preferite" className="shrink-0 data-[state=active]:text-white">
                             <Heart className="h-4 w-4 mr-1.5" /> Preferite
                             {preferite?.length > 0 && <span className="ml-1.5 rounded-full bg-brand/20 text-brand text-[11px] font-bold px-1.5">{preferite.length}</span>}
                         </TabsTrigger>
-                        <TabsTrigger value="noleggi" data-testid="dashboard-privato-tab-noleggi" className="data-[state=active]:text-white">
+                        <TabsTrigger value="noleggi" data-testid="dashboard-privato-tab-noleggi" className="shrink-0 data-[state=active]:text-white">
                             <CalendarDays className="h-4 w-4 mr-1.5" /> Noleggi
                             {prenotazioni?.some((p) => p.stato === "richiesta") && <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
                         </TabsTrigger>
-                        <TabsTrigger value="vendo" data-testid="dashboard-privato-tab-vendo" className="data-[state=active]:text-white">
+                        <TabsTrigger value="vendo" data-testid="dashboard-privato-tab-vendo" className="shrink-0 data-[state=active]:text-white">
                             <Tag className="h-4 w-4 mr-1.5" /> Vendo
                         </TabsTrigger>
-                        <TabsTrigger value="notifiche" data-testid="dashboard-privato-tab-notifications" className="data-[state=active]:text-white">
+                        <TabsTrigger value="notifiche" data-testid="dashboard-privato-tab-notifications" className="shrink-0 data-[state=active]:text-white">
                             <Bell className="h-4 w-4 mr-1.5" /> Notifiche
                             {notifiche.some((n) => !n.letto) && <span className="ml-1.5 h-2 w-2 rounded-full bg-brand inline-block" />}
                         </TabsTrigger>

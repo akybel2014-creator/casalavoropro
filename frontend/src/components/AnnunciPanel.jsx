@@ -303,10 +303,10 @@ function AnnuncioRow({ a, meta, onChange, onDelete }) {
                             </div>
                         ))}
                         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={upload} data-testid={`my-annuncio-upload-input-${a.id}`} />
-                        <Button type="button" size="sm" variant="outline" disabled={uploading || (a.foto?.length || 0) >= 4} onClick={() => fileRef.current?.click()} data-testid={`my-annuncio-upload-button-${a.id}`}
+                        <Button type="button" size="sm" variant="outline" disabled={uploading || (a.foto?.length || 0) >= 10} onClick={() => fileRef.current?.click()} data-testid={`my-annuncio-upload-button-${a.id}`}
                             className="rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
                             {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5 mr-1.5" />}
-                            {uploading ? "Caricamento…" : `Foto (${a.foto?.length || 0}/4)`}
+                            {uploading ? "Caricamento…" : `Foto (${a.foto?.length || 0}/10)`}
                         </Button>
                     </div>
                 </div>

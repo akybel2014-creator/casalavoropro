@@ -1,11 +1,35 @@
-<div align="center">
+# CasaLavoroPRO
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+CasaLavoroPRO è il marketplace italiano che unisce privati, aziende e professionisti verificati per lavori in casa, noleggio attrezzatura edile, mercatino dell'usato, registro interventi con foto certificate, offerte di lavoro nel settore edile e analisi energetica delle bollette con AI.
 
-  <h1>Built with AI Studio</h2>
+## Architettura
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+- **Frontend**: React 19 + Vite 6 + Tailwind CSS + Radix UI (`src/`)
+- **Backend**: Express + TypeScript (`server.ts`, `server/routes.ts`, `server/store.ts`, `server/gemini.ts`)
+- **AI (Server-Side)**: `@google/genai` (`gemini-3.8-flash`) per estrazione strutturata da bollette luce/gas e valutazione valore macchinari usati
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Avvio locale
 
-</div>
+1. Installa le dipendenze:
+   ```bash
+   npm install
+   ```
+2. Configura le variabili d'ambiente (vedi `.env.example`):
+   - `GEMINI_API_KEY`: chiave API Gemini per analisi bollette e macchinari
+   - `JWT_SECRET`: segreto per la firma dei token di sessione (opzionale in sviluppo)
+   - `VITE_MAPBOX_TOKEN`: token Mapbox opzionale per geocoding (fallback automatico su OpenStreetMap Nominatim)
+3. Avvia il server di sviluppo (porta `3000`):
+   ```bash
+   npm run dev
+   ```
+4. Build di produzione:
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## Account Demo Pre-caricati
+
+- **Privato**: `mario.rossi@demo.it` / `Demo2026!`
+- **Azienda (Idraulica)**: `info@rossiidraulica.demo.it` / `Demo2026!`
+- **Admin**: `admin@casalavoripro.it` / `Demo2026!`

@@ -1,0 +1,52 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "CasaLavoroPRO",
+    "identifier": "did:web:casalavoropro.com",
+    "documentationUrl": "https://casalavoropro.com",
+    "logoUrl": "https://casalavoropro.com/favicon.svg"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:casalavoropro:marketplace:directory",
+      "displayName": "Directory artigiani e aziende di servizi per la casa",
+      "description": "Marketplace italiano che collega privati e aziende con Partita IVA per lavori in casa: idraulica, elettricità, edilizia, climatizzazione, imbiancatura, giardinaggio, pavimenti e altri servizi. Ricerca per zona, profili verificati e richiesta di preventivo gratuito.",
+      "type": "text/html",
+      "url": "https://casalavoropro.com/aziende",
+      "representativeQueries": [
+        "Trova un idraulico verificato nella mia zona in Italia",
+        "Aziende di ristrutturazione ed edilizia con preventivo gratuito",
+        "Elettricisti e tecnici di climatizzazione vicino a me",
+        "Noleggio di attrezzature e mezzi da cantiere tra imprese"
+      ],
+      "tags": ["marketplace", "home-services", "italia", "artigiani", "preventivi"],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-20T00:00:00Z"
+    },
+    {
+      "identifier": "urn:air:casalavoropro:marketplace:service-categories",
+      "displayName": "Categorie di servizi disponibili",
+      "description": "Elenco delle categorie di servizi per la casa coperte dal marketplace CasaLavoroPRO.",
+      "type": "application/json",
+      "representativeQueries": [
+        "Quali categorie di servizi per la casa sono disponibili",
+        "Elenco dei mestieri e professionisti presenti sulla piattaforma"
+      ],
+      "data": {
+        "categorie": [
+          "Idraulica",
+          "Termoidraulica",
+          "Elettricità",
+          "Edilizia",
+          "Imbiancatura",
+          "Giardinaggio",
+          "Pavimenti",
+          "Altri Servizi"
+        ]
+      },
+      "tags": ["categories", "home-services", "italia"],
+      "version": "1.0.0",
+      "updatedAt": "2026-10-20T00:00:00Z"
+    }
+  ]
+}

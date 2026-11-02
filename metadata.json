@@ -1,0 +1,11 @@
+{
+  "name": "CasaLavoroPRO",
+  "description": "CasaLavoroPRO è il marketplace italiano che unisce privati, aziende e professionisti verificati per lavori in casa: idraulica, elettricità, ristrutturazioni, imbianchino, noleggio attrezzatura e mercatino dell'usato. Preventivi gratuiti in 2 minuti, aziende controllate.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

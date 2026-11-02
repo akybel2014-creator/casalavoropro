@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/azienda
+Disallow: /dashboard/admin
+Disallow: /payment/
+
+Sitemap: https://casalavoropro.com/sitemap.xml

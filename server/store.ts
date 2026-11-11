@@ -65,7 +65,7 @@ export interface UserDoc {
   password_hash: string;
   extra_passwords?: string[];
   name: string;
-  role: "privato" | "azienda" | "admin";
+  role: "privato" | "azienda";
   suspended?: boolean;
   telefono?: string;
   created_at: string;
@@ -368,7 +368,7 @@ export function proStatus(user: { id: string; role: string }) {
   if (user.role !== "azienda") {
     return {
       plan: null,
-      pro_active: user.role === "admin",
+      pro_active: false,
       subscription_status: null,
       trial: false,
       trial_days_left: 0,
@@ -406,12 +406,8 @@ export function notify(userId: string, titolo: string, messaggio: string, link =
   });
 }
 
-export function notifyAdmins(titolo: string, messaggio: string, link = "/admin") {
-  for (const u of db.users) {
-    if (u.role === "admin") {
-      notify(u.id, titolo, messaggio, link);
-    }
-  }
+export function notifyAdmins(_titolo: string, _messaggio: string, _link = "") {
+  // no-op: sezione admin rimossa, gestione tramite Supabase
 }
 
 export function createAuthTokens(userId: string, email: string) {
@@ -470,7 +466,7 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
   next();
 }
 
-export function requireRoles(...roles: Array<"privato" | "azienda" | "admin">) {
+export function requireRoles(...roles: Array<"privato" | "azienda">) {
   return (req: AuthedRequest, res: Response, next: NextFunction) => {
     const u = getUserFromRequest(req);
     if (!u) {
@@ -750,18 +746,6 @@ export function seedDemoData() {
   if (db.aziende.length > 0) return;
 
   const demoHash = hashPassword("Demo2026!");
-  const adminAltHash = hashPassword("Admin2026!");
-
-  // Admin account (accepts Demo2026! from Login demo button as well as Admin2026!)
-  db.users.push({
-    id: newId(),
-    email: "admin@casalavoripro.it",
-    password_hash: demoHash,
-    extra_passwords: [adminAltHash],
-    name: "Admin CasaLavoroPRO",
-    role: "admin",
-    created_at: nowIso(),
-  });
 
   // Demo companies
   for (const a of DEMO_AZIENDE) {

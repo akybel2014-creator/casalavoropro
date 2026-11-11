@@ -12,7 +12,6 @@ import { api, formatApiError } from "@/lib/api";
 const DEMO = [
     { label: "Privato demo", email: "mario.rossi@example.com", testid: "demo-login-privato" },
     { label: "Azienda demo", email: "info@caloreeclima.it", testid: "demo-login-azienda" },
-    { label: "Admin demo", email: "admin@casalavoripro.it", testid: "demo-login-admin" },
 ];
 
 export default function Login() {

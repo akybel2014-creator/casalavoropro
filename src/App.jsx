@@ -21,7 +21,6 @@ const NuovaRichiesta = lazy(() => import("@/pages/NuovaRichiesta"));
 const DashboardPrivato = lazy(() => import("@/pages/DashboardPrivato"));
 const DashboardAzienda = lazy(() => import("@/pages/DashboardAzienda"));
 const AnalisiEnergetica = lazy(() => import("@/pages/AnalisiEnergetica"));
-const DashboardAdmin = lazy(() => import("@/pages/DashboardAdmin"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const ReportPubblico = lazy(() => import("@/pages/ReportPubblico"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
@@ -121,9 +120,6 @@ function ProtectedRoute({ roles, children }) {
         return <Navigate to="/login" state={{ from: location.pathname }} replace />;
     }
     if (roles && !roles.includes(user.role)) {
-        if (roles.includes("admin")) {
-            return <RedirectWithMessage to="/" message="Accesso negato: area riservata all'amministratore." />;
-        }
         return <Navigate to={dashboardPathFor(user.role)} replace />;
     }
     return children;
@@ -197,8 +193,6 @@ function App() {
                         <Route path="/dashboard/azienda" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/dashboard/:section" element={<ProtectedRoute roles={["azienda"]}><DashLayout><DashboardAzienda /></DashLayout></ProtectedRoute>} />
                         <Route path="/analisi-energetica" element={<ProtectedRoute roles={["privato", "azienda"]}><DashLayout><AnalisiEnergetica /></DashLayout></ProtectedRoute>} />
-                        <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><DashLayout><DashboardAdmin /></DashLayout></ProtectedRoute>} />
-                        <Route path="/dashboard/admin" element={<Navigate to="/admin" replace />} />
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancel" element={<PaymentCancel />} />
                     </Routes>

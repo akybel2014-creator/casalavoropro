@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Sparkles, ArrowRight } from "lucide-react";
 
-const HIDDEN_PREFIXES = ["/dashboard", "/area-privato", "/admin"];
+const HIDDEN_PREFIXES = ["/dashboard", "/area-privato"];
 
 // Barra fissa globale: iscrizione gratuita per tutti (aziende e privati). Nascosta nelle aree private.
 export default function LaunchBanner() {

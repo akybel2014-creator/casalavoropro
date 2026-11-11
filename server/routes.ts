@@ -342,8 +342,7 @@ apiRouter.post("/aziende/mine/verifica", requireRoles("azienda"), (req: AuthedRe
   az.docs_uploaded_at = nowIso();
   notifyAdmins(
     "Nuova richiesta di verifica",
-    `L'azienda ${az.nome} ha inviato i documenti per la verifica PRO.`,
-    "/admin"
+    `L'azienda ${az.nome} ha inviato i documenti per la verifica PRO.`
   );
   res.json({ ok: true, verification_status: "in_attesa" });
 });
@@ -444,7 +443,6 @@ apiRouter.get("/files/*", (req, res) => {
     }
 
     const isOwner = rec.owner_id === u.id;
-    const isAdmin = u.role === "admin";
     let isAuthorizedAzienda = false;
 
     if (u.role === "azienda") {
@@ -460,7 +458,7 @@ apiRouter.get("/files/*", (req, res) => {
       }
     }
 
-    if (!isOwner && !isAdmin && !isAuthorizedAzienda) {
+    if (!isOwner && !isAuthorizedAzienda) {
       res.status(403).json({ detail: "Accesso non autorizzato a questo file protetto" });
       return;
     }
@@ -753,13 +751,13 @@ apiRouter.post("/richieste/:richiesta_id/risposte", requireRoles("azienda"), (re
   res.json(doc);
 });
 
-apiRouter.get("/richieste/:richiesta_id/risposte", requireRoles("privato", "admin"), (req: AuthedRequest, res) => {
+apiRouter.get("/richieste/:richiesta_id/risposte", requireRoles("privato"), (req: AuthedRequest, res) => {
   const r = db.richieste.find((x) => x.id === req.params.richiesta_id);
   if (!r) {
     res.status(404).json({ detail: "Richiesta non trovata" });
     return;
   }
-  if (req.user!.role !== "admin" && r.client_id !== req.user!.id) {
+  if (r.client_id !== req.user!.id) {
     res.status(403).json({ detail: "Permesso negato" });
     return;
   }
@@ -1848,317 +1846,6 @@ apiRouter.get("/payments/status/:session_id", (req, res) => {
     payment_status: rec.payment_status,
     kind: rec.kind,
   });
-});
-
-// ---------- ADMIN ----------
-
-apiRouter.get("/admin/aziende", requireRoles("admin"), (_req, res) => {
-  const out = db.aziende
-    .slice()
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map((a) => {
-      const owner = db.users.find((u) => u.id === a.owner_id);
-      return { ...cleanAzienda(a), owner_email: owner?.email || "" };
-    });
-  res.json(out);
-});
-
-apiRouter.post("/admin/aziende", requireRoles("admin"), (req, res) => {
-  const b = req.body || {};
-  const verified = b.verified !== false;
-  const doc = {
-    id: newId(),
-    owner_id: "",
-    nome: String(b.nome || "").trim(),
-    categorie: Array.isArray(b.categorie) ? b.categorie : [],
-    zone: Array.isArray(b.zone) ? b.zone : [],
-    piva: String(b.piva || "").trim(),
-    durc_number: "",
-    descrizione: String(b.descrizione || "").trim(),
-    telefono: String(b.telefono || "").trim(),
-    sito: String(b.sito || "").trim(),
-    logo: String(b.logo || "").trim(),
-    foto: [],
-    docs: [],
-    verified,
-    verification_status: verified ? ("verificata" as const) : ("none" as const),
-    verified_at: verified ? nowIso() : null,
-    plan: "free" as const,
-    subscription_status: "none",
-    founder50: false,
-    rating: Number(b.rating || 0),
-    recensioni: Number(b.recensioni || 0),
-    created_by_admin: true,
-    created_at: nowIso(),
-  };
-  db.aziende.unshift(doc);
-  res.json(doc);
-});
-
-apiRouter.put("/admin/aziende/:id", requireRoles("admin"), (req, res) => {
-  const az = db.aziende.find((a) => a.id === req.params.id);
-  if (!az) {
-    res.status(404).json({ detail: "Azienda non trovata" });
-    return;
-  }
-  const b = req.body || {};
-  for (const k of ["nome", "piva", "descrizione", "telefono", "sito", "logo"] as const) {
-    if (b[k] !== undefined && b[k] !== null) (az as any)[k] = String(b[k]).trim();
-  }
-  if (Array.isArray(b.categorie)) az.categorie = b.categorie;
-  if (Array.isArray(b.zone)) az.zone = b.zone;
-  if (b.rating !== undefined) az.rating = Number(b.rating);
-  if (b.recensioni !== undefined) az.recensioni = Number(b.recensioni);
-  if (b.verified !== undefined) {
-    az.verified = Boolean(b.verified);
-    az.verification_status = az.verified ? "verificata" : "none";
-    az.verified_at = az.verified ? nowIso() : null;
-  }
-  res.json(cleanAzienda(az));
-});
-
-apiRouter.delete("/admin/aziende/:id", requireRoles("admin"), (req, res) => {
-  const az = db.aziende.find((a) => a.id === req.params.id);
-  if (!az) {
-    res.status(404).json({ detail: "Azienda non trovata" });
-    return;
-  }
-  db.annunci = db.annunci.filter((x) => x.azienda_id !== az.id);
-  db.recensioni = db.recensioni.filter((x) => x.azienda_id !== az.id);
-  db.preferiti = db.preferiti.filter((x) => x.azienda_id !== az.id);
-  db.aziende = db.aziende.filter((x) => x.id !== az.id);
-  if (az.owner_id) {
-    db.users = db.users.filter((u) => u.id !== az.owner_id);
-  }
-  res.json({ ok: true });
-});
-
-apiRouter.post("/admin/aziende/:id/verifica", requireRoles("admin"), (req, res) => {
-  const az = db.aziende.find((a) => a.id === req.params.id);
-  if (!az) {
-    res.status(404).json({ detail: "Azienda non trovata" });
-    return;
-  }
-  const azione = req.body?.azione;
-  if (azione !== "verificata" && azione !== "rifiutata") {
-    res.status(400).json({ detail: "Azione non valida" });
-    return;
-  }
-  az.verification_status = azione;
-  az.verified = azione === "verificata";
-  az.verified_at = az.verified ? nowIso() : null;
-  if (az.owner_id) {
-    notify(
-      az.owner_id,
-      az.verified ? "Azienda verificata" : "Verifica non superata",
-      az.verified
-        ? `Complimenti: ${az.nome} e ora un'Azienda Verificata PRO.`
-        : `La verifica di ${az.nome} non e stata superata. Controlla i documenti e riprova.`,
-      "/dashboard"
-    );
-  }
-  res.json({ ok: true, verification_status: azione });
-});
-
-apiRouter.post("/admin/annunci", requireRoles("admin"), (req, res) => {
-  const b = req.body || {};
-  const tipo = b.tipo as "noleggio" | "usato";
-  if (!(TIPI_ANNUNCI as readonly string[]).includes(tipo)) {
-    res.status(400).json({ detail: "Tipo annuncio non valido (noleggio/usato)" });
-    return;
-  }
-  if (!CATEGORIE_ANNUNCI[b.categoria]) {
-    res.status(400).json({ detail: "Categoria non valida" });
-    return;
-  }
-  let azienda_nome = String(b.azienda_nome || "").trim();
-  let azienda_telefono = String(b.azienda_telefono || "").trim();
-  let azienda_verified = false;
-  const azienda_id = String(b.azienda_id || "").trim();
-  if (azienda_id) {
-    const az = db.aziende.find((x) => x.id === azienda_id);
-    if (az) {
-      azienda_nome = azienda_nome || az.nome;
-      azienda_verified = az.verified;
-      azienda_telefono = azienda_telefono || az.telefono;
-    }
-  }
-  const doc = {
-    id: newId(),
-    tipo,
-    titolo: String(b.titolo || "").trim(),
-    descrizione: String(b.descrizione || "").trim(),
-    categoria: String(b.categoria),
-    sottocategoria: b.sottocategoria || null,
-    zona: String(b.zona || "").trim(),
-    prezzo: Number(b.prezzo),
-    unita: tipo === "usato" ? "fisso" : b.unita || "giorno",
-    stato: tipo === "usato" ? b.stato || "Buono" : null,
-    attivo: true,
-    azienda_id,
-    azienda_nome,
-    azienda_verified,
-    azienda_telefono,
-    owner_id: "",
-    immagine_url: String(b.immagine_url || "").trim(),
-    foto: [] as FotoEntry[],
-    created_by_admin: true,
-    created_at: nowIso(),
-  };
-  db.annunci.unshift(doc);
-  const { owner_id, ...out } = doc;
-  res.json(out);
-});
-
-apiRouter.put("/admin/annunci/:id", requireRoles("admin"), (req, res) => {
-  const ann = db.annunci.find((x) => x.id === req.params.id);
-  if (!ann) {
-    res.status(404).json({ detail: "Annuncio non trovato" });
-    return;
-  }
-  const b = req.body || {};
-  for (const k of ["titolo", "descrizione", "zona", "immagine_url", "azienda_nome", "azienda_telefono"] as const) {
-    if (b[k] !== undefined && b[k] !== null) (ann as any)[k] = String(b[k]).trim();
-  }
-  if (b.prezzo !== undefined) ann.prezzo = Number(b.prezzo);
-  if (b.attivo !== undefined) ann.attivo = Boolean(b.attivo);
-  if (b.categoria !== undefined && CATEGORIE_ANNUNCI[b.categoria]) ann.categoria = b.categoria;
-  if (b.sottocategoria !== undefined) ann.sottocategoria = b.sottocategoria || null;
-  if (ann.tipo === "noleggio" && b.unita !== undefined) ann.unita = b.unita;
-  if (ann.tipo === "usato" && b.stato !== undefined) ann.stato = b.stato || "Buono";
-  const { owner_id, ...out } = ann;
-  res.json(out);
-});
-
-apiRouter.delete("/admin/annunci/:id", requireRoles("admin"), (req, res) => {
-  const ann = db.annunci.find((x) => x.id === req.params.id);
-  if (!ann) {
-    res.status(404).json({ detail: "Annuncio non trovato" });
-    return;
-  }
-  for (const f of ann.foto) {
-    if (db.files.has(f.path)) db.files.get(f.path)!.is_deleted = true;
-  }
-  db.annunci = db.annunci.filter((x) => x.id !== ann.id);
-  res.json({ ok: true });
-});
-
-apiRouter.post("/admin/annunci/:id/foto", requireRoles("admin"), upload.array("files", 10), (req: AuthedRequest, res) => {
-  const ann = db.annunci.find((x) => x.id === req.params.id);
-  if (!ann) {
-    res.status(404).json({ detail: "Annuncio non trovato" });
-    return;
-  }
-  const files = (req.files as Express.Multer.File[]) || [];
-  if (ann.foto.length + files.length > 10) {
-    res.status(400).json({ detail: "Massimo 10 foto per annuncio" });
-    return;
-  }
-  for (const f of files) {
-    if (!ALLOWED_IMG_MIMES[f.mimetype]) {
-      res.status(400).json({ detail: "Formato non supportato: usa JPG, PNG o WEBP" });
-      return;
-    }
-    ann.foto.push(storeUploadedFile(req.user!.id, `annunci/${ann.id}`, f.buffer, f.mimetype, f.originalname));
-  }
-  const { owner_id, ...out } = ann;
-  res.json(out);
-});
-
-apiRouter.post("/admin/annunci/:id/foto-url", requireRoles("admin"), async (req: AuthedRequest, res) => {
-  const ann = db.annunci.find((x) => x.id === req.params.id);
-  if (!ann) {
-    res.status(404).json({ detail: "Annuncio non trovato" });
-    return;
-  }
-  const { uploaded, errori } = await addPhotosFromUrls(req.user!.id, ann.id, ann.foto, req.body?.urls || []);
-  const { owner_id, ...out } = ann;
-  res.json({ ...out, aggiunte: uploaded.length, errori });
-});
-
-apiRouter.get("/admin/stats", requireRoles("admin"), (_req, res) => {
-  res.json({
-    utenti: db.users.length,
-    aziende: db.aziende.length,
-    aziende_verificate: db.aziende.filter((a) => a.verified).length,
-    richieste: db.richieste.length,
-    risposte: db.risposte.length,
-    abbonamenti_pro: db.aziende.filter((a) => a.plan === "pro").length,
-  });
-});
-
-apiRouter.get("/admin/metrics", requireRoles("admin"), (_req, res) => {
-  const activeSubs = db.aziende.filter(
-    (a) => a.owner_id && (PRO_ACTIVE_STATES as readonly string[]).includes(a.subscription_status)
-  ).length;
-  const mrrCents = activeSubs * 399;
-  const trialSubs = db.aziende.filter((a) => (TRIAL_STATES as readonly string[]).includes(a.subscription_status)).length;
-  const proSubs = db.aziende.filter((a) => a.subscription_status === "active").length;
-  const privati = db.users.filter((u) => u.role === "privato").length;
-  const aziendeTot = db.users.filter((u) => u.role === "azienda").length;
-  const aziendeFree = Math.max(0, aziendeTot - proSubs - trialSubs);
-
-  res.json({
-    mrr_cents: mrrCents,
-    mrr_eur: Math.round(mrrCents) / 100,
-    active_subscriptions: activeSubs,
-    trial_subscriptions: trialSubs,
-    counts: {
-      privati,
-      aziende_pro: proSubs,
-      aziende_trial: trialSubs,
-      aziende_free: aziendeFree,
-      aziende_totali: aziendeTot,
-      totale: db.users.length,
-    },
-  });
-});
-
-apiRouter.get("/admin/users", requireRoles("admin"), (req, res) => {
-  const q = String(req.query.q || "").trim().toLowerCase();
-  const list = db.users
-    .filter((u) => !q || u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q))
-    .slice(0, 100)
-    .map((u) => {
-      const az = aziendaForUser(u.id);
-      return {
-        ...cleanUser(u),
-        azienda_nome: az?.nome || null,
-        plan: az?.plan || null,
-        subscription_status: az?.subscription_status || null,
-        suspended: Boolean(u.suspended),
-      };
-    });
-  res.json(list);
-});
-
-apiRouter.patch("/admin/users/:id/role", requireRoles("admin"), (req, res) => {
-  const target = db.users.find((u) => u.id === req.params.id);
-  if (!target) {
-    res.status(404).json({ detail: "Utente non trovato" });
-    return;
-  }
-  const role = req.body?.role;
-  if (!["privato", "azienda", "admin"].includes(role)) {
-    res.status(400).json({ detail: "Ruolo non valido" });
-    return;
-  }
-  target.role = role;
-  res.json({ ok: true, role });
-});
-
-apiRouter.patch("/admin/users/:id/suspend", requireRoles("admin"), (req, res) => {
-  const target = db.users.find((u) => u.id === req.params.id);
-  if (!target) {
-    res.status(404).json({ detail: "Utente non trovato" });
-    return;
-  }
-  if (target.role === "admin") {
-    res.status(400).json({ detail: "Non puoi sospendere un amministratore" });
-    return;
-  }
-  target.suspended = Boolean(req.body?.suspended);
-  res.json({ ok: true, suspended: target.suspended });
 });
 
 // ---------- GEMINI AI ROUTES ----------

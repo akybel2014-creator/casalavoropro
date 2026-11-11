@@ -38,12 +38,12 @@ export default function Header() {
     const location = useLocation();
 
     // L'analisi energetica compare nel menu solo per privati/aziende loggati (dopo l'iscrizione).
-    const navItems = user && user.role !== "admin"
+    const navItems = user
         ? [...NAV_ITEMS.slice(0, 5), ANALISI_ITEM, ...NAV_ITEMS.slice(5)]
         : NAV_ITEMS;
 
     useEffect(() => {
-        if (!user || user.role === "admin") {
+        if (!user) {
             setUnread(0);
             return undefined;
         }
@@ -132,7 +132,7 @@ export default function Header() {
                                     onClick={() => navigate(dashboardPathFor(user.role))}
                                 >
                                     <LayoutDashboard className="h-4 w-4 mr-2" />
-                                    {user.role === "azienda" ? "Area Aziende" : user.role === "admin" ? "Admin" : "Area Privati"}
+                                    {user.role === "azienda" ? "Area Aziende" : "Area Privati"}
                                     {unread > 0 && (
                                         <span data-testid="unread-badge-header" className="ml-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-brand text-white text-[11px] font-bold">
                                             {unread}
@@ -205,7 +205,7 @@ export default function Header() {
                                     data-testid="header-dashboard-button-mobile"
                                     onClick={() => navigate(dashboardPathFor(user.role))}
                                 >
-                                    {user.role === "azienda" ? "Area Aziende" : user.role === "admin" ? "Admin" : "Area Privati"}
+                                    {user.role === "azienda" ? "Area Aziende" : "Area Privati"}
                                     {unread > 0 && (
                                         <span data-testid="unread-badge-header-mobile" className="ml-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-white/20 text-white text-[11px] font-bold">
                                             {unread}

@@ -16,6 +16,16 @@ export function cleanSupabaseUrl(rawUrl) {
     if (!rawUrl) return "";
     let u = String(rawUrl).trim().replace(/^["']|["']$/g, "");
     if (!u) return "";
+
+    // Se è stata incollata per errore la stringa di connessione PostgreSQL diretta o del pooler:
+    if (u.startsWith("postgres://") || u.startsWith("postgresql://")) {
+        const match = u.match(/postgres(?:ql)?:\/\/postgres\.([a-zA-Z0-9_-]+):/);
+        if (match && match[1]) {
+            return `https://${match[1]}.supabase.co`;
+        }
+        return "";
+    }
+
     if (!u.startsWith("http://") && !u.startsWith("https://")) {
         u = "https://" + u;
     }
@@ -67,10 +77,21 @@ function getStoredOrEnvCredentials() {
     }
 
     if (!url) {
-        url = cleanSupabaseUrl(readEnv("VITE_SUPABASE_URL") || readEnv("SUPABASE_URL"));
+        url = cleanSupabaseUrl(
+            readEnv("VITE_SUPABASE_URL") ||
+            readEnv("SUPABASE_URL") ||
+            readEnv("VITE_PUBLIC_SUPABASE_URL") ||
+            readEnv("NEXT_PUBLIC_SUPABASE_URL")
+        );
     }
     if (!key) {
-        key = cleanSupabaseKey(readEnv("VITE_SUPABASE_ANON_KEY") || readEnv("SUPABASE_ANON_KEY"));
+        key = cleanSupabaseKey(
+            readEnv("VITE_SUPABASE_ANON_KEY") ||
+            readEnv("SUPABASE_ANON_KEY") ||
+            readEnv("VITE_SUPABASE_KEY") ||
+            readEnv("SUPABASE_KEY") ||
+            readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+        );
     }
 
     return { url, key };
@@ -79,21 +100,58 @@ function getStoredOrEnvCredentials() {
 let { url: activeUrl, key: activeKey } = getStoredOrEnvCredentials();
 
 export function isSupabaseConfiguredNow() {
-    return Boolean(activeUrl && activeKey && !activeUrl.includes("placeholder-project"));
+    return Boolean(
+        activeUrl &&
+        activeKey &&
+        !activeUrl.includes("placeholder-project") &&
+        activeUrl.startsWith("https://")
+    );
 }
 
 export let isSupabaseConfigured = isSupabaseConfiguredNow();
 
-export let supabase = createClient(
-    activeUrl || "https://placeholder-project.supabase.co",
-    activeKey || "placeholder-anon-key",
-    {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-        },
+export function safeCreateClient(url, key) {
+    const fallbackUrl = "https://placeholder-project.supabase.co";
+    const fallbackKey = "placeholder-anon-key";
+    try {
+        const targetUrl = cleanSupabaseUrl(url) || fallbackUrl;
+        const targetKey = cleanSupabaseKey(key) || fallbackKey;
+        // Valida la sintassi dell'URL per prevenire TypeError all'avvio
+        new URL(targetUrl);
+        return createClient(targetUrl, targetKey, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+            },
+        });
+    } catch (e) {
+        console.warn("[CasaLavoroPRO] Inizializzazione sicura Supabase con fallback dummy:", e);
+        try {
+            return createClient(fallbackUrl, fallbackKey, {
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false,
+                },
+            });
+        } catch {
+            return {
+                from: () => ({
+                    select: () => ({
+                        order: () => Promise.resolve({ data: [], error: null }),
+                        eq: () => ({
+                            order: () => ({
+                                limit: () => Promise.resolve({ data: [], error: null }),
+                            }),
+                        }),
+                    }),
+                }),
+                auth: { getSession: () => Promise.resolve({ data: { session: null } }) },
+            };
+        }
     }
-);
+}
+
+export let supabase = safeCreateClient(activeUrl, activeKey);
 
 /**
  * Consente di riconfigurare il client a runtime pulendo eventuali spazi/virgolette
@@ -105,7 +163,7 @@ export function configureSupabase(newUrl, newKey, saveToStorage = true) {
 
     activeUrl = cleanedUrl;
     activeKey = cleanedKey;
-    isSupabaseConfigured = true;
+    isSupabaseConfigured = isSupabaseConfiguredNow();
 
     if (saveToStorage && typeof window !== "undefined") {
         try {
@@ -116,12 +174,7 @@ export function configureSupabase(newUrl, newKey, saveToStorage = true) {
         }
     }
 
-    supabase = createClient(activeUrl, activeKey, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-        },
-    });
+    supabase = safeCreateClient(activeUrl, activeKey);
 
     if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("supabase-configured", { detail: { url: activeUrl } }));
@@ -142,16 +195,7 @@ export function resetSupabaseCredentials() {
     activeUrl = envCreds.url;
     activeKey = envCreds.key;
     isSupabaseConfigured = isSupabaseConfiguredNow();
-    supabase = createClient(
-        activeUrl || "https://placeholder-project.supabase.co",
-        activeKey || "placeholder-anon-key",
-        {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-            },
-        }
-    );
+    supabase = safeCreateClient(activeUrl, activeKey);
     if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("supabase-configured", { detail: { url: activeUrl } }));
     }

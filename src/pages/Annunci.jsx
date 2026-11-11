@@ -195,29 +195,29 @@ export default function Annunci({ tipo = "noleggio" }) {
                         // Fallback trasparente per non mostrare una pagina bianca o rotta
                         const query = new URLSearchParams({ tipo });
                         const { data: fallbackRows } = await api.get(`/annunci?${query.toString()}`);
-                        const fb = fallbackRows || [];
-                        setRawCount(fb.length);
-                        setItems(fb);
+                        const listaSicura = Array.isArray(fallbackRows) ? fallbackRows : [];
+                        setRawCount(listaSicura.length);
+                        setItems(listaSicura);
                         return;
                     }
                     throw supaErr;
                 }
 
                 setAuthKeyError(null);
-                const allRows = data || [];
-                setRawCount(allRows.length);
+                const listaSicura = Array.isArray(data) ? data : [];
+                setRawCount(listaSicura.length);
 
                 // Mostra tutti i record che non sono esplicitamente impostati su disponibile = false
-                const available = allRows.filter((r) => r.disponibile !== false);
+                const available = listaSicura.filter((r) => r && r.disponibile !== false);
                 setItems(available);
             } else {
                 setAuthKeyError(null);
                 // Fallback ad API locale/mock quando le variabili d'ambiente non sono ancora passate
                 const query = new URLSearchParams({ tipo });
                 const { data } = await api.get(`/annunci?${query.toString()}`);
-                const fallbackRows = data || [];
-                setRawCount(fallbackRows.length);
-                setItems(fallbackRows);
+                const listaSicura = Array.isArray(data) ? data : [];
+                setRawCount(listaSicura.length);
+                setItems(listaSicura);
             }
         } catch (err) {
             console.error("Errore fetch Supabase marketplace:", err);
@@ -225,10 +225,12 @@ export default function Annunci({ tipo = "noleggio" }) {
             try {
                 const query = new URLSearchParams({ tipo });
                 const { data: fb } = await api.get(`/annunci?${query.toString()}`);
-                setItems(fb || []);
-                setRawCount((fb || []).length);
+                const listaSicura = Array.isArray(fb) ? fb : [];
+                setItems(listaSicura);
+                setRawCount(listaSicura.length);
             } catch {
-                /* ignora */
+                setItems([]);
+                setRawCount(0);
             }
             setError(
                 err.message ||
@@ -263,8 +265,9 @@ export default function Annunci({ tipo = "noleggio" }) {
     // Categorie dinamiche
     const availableCategories = useMemo(() => {
         const set = new Set();
-        (items || []).forEach((item) => {
-            if (item.categoria && typeof item.categoria === "string") {
+        const listaSicura = Array.isArray(items) ? items : [];
+        listaSicura.forEach((item) => {
+            if (item?.categoria && typeof item.categoria === "string") {
                 const cTrim = item.categoria.trim();
                 if (cTrim) set.add(cTrim);
             }
@@ -281,7 +284,10 @@ export default function Annunci({ tipo = "noleggio" }) {
 
     // Filtraggio dinamico degli elementi
     const filteredItems = useMemo(() => {
-        return (items || []).filter((item) => {
+        const listaSicura = Array.isArray(items) ? items : [];
+        return listaSicura.filter((item) => {
+            if (!item) return false;
+
             // Filtro per tipologia: se l'annuncio specifica un tipo ('noleggio' o 'vendita'/'usato')
             if (item.tipo) {
                 const tLower = String(item.tipo).toLowerCase();
@@ -295,7 +301,7 @@ export default function Annunci({ tipo = "noleggio" }) {
 
             // Filtro categoria dinamico
             if (categoria && categoria !== "Tutti") {
-                const itemCat = (item.categoria || "").toLowerCase();
+                const itemCat = String(item.categoria || "").toLowerCase();
                 const targetCat = categoria.toLowerCase();
                 if (!itemCat.includes(targetCat) && !targetCat.includes(itemCat)) {
                     return false;
@@ -305,7 +311,7 @@ export default function Annunci({ tipo = "noleggio" }) {
             // Filtro comune / zona di ritiro
             if (comune) {
                 const searchComune = comune.toLowerCase();
-                const itemComune = (item.comune || item.zona || "").toLowerCase();
+                const itemComune = String(item.comune || item.zona || "").toLowerCase();
                 if (!itemComune.includes(searchComune)) {
                     return false;
                 }
@@ -314,10 +320,10 @@ export default function Annunci({ tipo = "noleggio" }) {
             // Filtro testuale di ricerca (titolo, descrizione, comune, categoria)
             if (q) {
                 const queryText = q.toLowerCase();
-                const matchTitle = (item.titolo || "").toLowerCase().includes(queryText);
-                const matchDesc = (item.descrizione || "").toLowerCase().includes(queryText);
-                const matchCat = (item.categoria || "").toLowerCase().includes(queryText);
-                const matchCom = (item.comune || item.zona || "").toLowerCase().includes(queryText);
+                const matchTitle = String(item.titolo || "").toLowerCase().includes(queryText);
+                const matchDesc = String(item.descrizione || "").toLowerCase().includes(queryText);
+                const matchCat = String(item.categoria || "").toLowerCase().includes(queryText);
+                const matchCom = String(item.comune || item.zona || "").toLowerCase().includes(queryText);
                 if (!matchTitle && !matchDesc && !matchCat && !matchCom) {
                     return false;
                 }
@@ -326,7 +332,7 @@ export default function Annunci({ tipo = "noleggio" }) {
             // Filtro prezzo min
             if (min) {
                 const minVal = parseFloat(min);
-                if (!isNaN(minVal) && Number(item.prezzo) < minVal) {
+                if (!isNaN(minVal) && Number(item.prezzo || 0) < minVal) {
                     return false;
                 }
             }
@@ -334,7 +340,7 @@ export default function Annunci({ tipo = "noleggio" }) {
             // Filtro prezzo max
             if (max) {
                 const maxVal = parseFloat(max);
-                if (!isNaN(maxVal) && Number(item.prezzo) > maxVal) {
+                if (!isNaN(maxVal) && Number(item.prezzo || 0) > maxVal) {
                     return false;
                 }
             }
@@ -650,66 +656,73 @@ export default function Annunci({ tipo = "noleggio" }) {
                     )}
 
                     {/* Stato vuoto */}
-                    {!loading && filteredItems.length === 0 && (
-                        <div
-                            className="rounded-2xl border border-white/10 bg-navy-700/60 p-10 text-center max-w-xl mx-auto"
-                            data-testid="annunci-empty"
-                        >
-                            <SearchX className="h-10 w-10 text-slate-500 mx-auto" />
-                            <h3 className="mt-4 font-display font-bold text-white text-lg">
-                                {c.empty}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-400">
-                                Prova a selezionare un'altra categoria o ad azzerare i filtri di ricerca.
-                            </p>
-                            {hasFilters && (
-                                <Button
-                                    onClick={resetFilters}
-                                    variant="outline"
-                                    className="mt-5 rounded-full border-white/20 text-white hover:bg-white/10"
+                    {(() => {
+                        const listaSicura = Array.isArray(filteredItems) ? filteredItems : [];
+                        if (!loading && listaSicura.length === 0) {
+                            return (
+                                <div
+                                    className="rounded-2xl border border-white/10 bg-navy-700/60 p-10 text-center max-w-xl mx-auto"
+                                    data-testid="annunci-empty"
                                 >
-                                    Mostra tutti gli annunci
-                                </Button>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Risultati filtrati */}
-                    {!loading && filteredItems.length > 0 && (
-                        <>
-                            <div className="flex items-center justify-between gap-4 mb-6">
-                                <p className="text-sm text-slate-400" data-testid="annunci-count">
-                                    <span className="font-semibold text-white">{filteredItems.length}</span>{" "}
-                                    {filteredItems.length === 1 ? "attrezzo disponibile" : "attrezzi disponibili"}
-                                    {categoria && categoria !== "Tutti" && (
-                                        <span> per <strong className="text-brand">{categoria}</strong></span>
+                                    <SearchX className="h-10 w-10 text-slate-500 mx-auto" />
+                                    <h3 className="mt-4 font-display font-bold text-white text-lg">
+                                        {c.empty}
+                                    </h3>
+                                    <p className="mt-1 text-sm text-slate-400">
+                                        Prova a selezionare un'altra categoria o ad azzerare i filtri di ricerca.
+                                    </p>
+                                    {hasFilters && (
+                                        <Button
+                                            onClick={resetFilters}
+                                            variant="outline"
+                                            className="mt-5 rounded-full border-white/20 text-white hover:bg-white/10"
+                                        >
+                                            Mostra tutti gli annunci
+                                        </Button>
                                     )}
-                                </p>
-                            </div>
+                                </div>
+                            );
+                        }
 
-                            <div
-                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
-                                data-testid="annunci-grid"
-                            >
-                                {filteredItems.map((a, i) => (
-                                    <AnnuncioCard
-                                        key={a.id}
-                                        a={a}
-                                        index={i}
-                                        fav={
-                                            isAzienda
-                                                ? {
-                                                      active: true,
-                                                      saved: savedIds.has(a.id),
-                                                      onToggle: toggleFav,
-                                                  }
-                                                : null
-                                        }
-                                    />
-                                ))}
-                            </div>
-                        </>
-                    )}
+                        if (!loading && listaSicura.length > 0) {
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between gap-4 mb-6">
+                                        <p className="text-sm text-slate-400" data-testid="annunci-count">
+                                            <span className="font-semibold text-white">{listaSicura.length}</span>{" "}
+                                            {listaSicura.length === 1 ? "attrezzo disponibile" : "attrezzi disponibili"}
+                                            {categoria && categoria !== "Tutti" && (
+                                                <span> per <strong className="text-brand">{categoria}</strong></span>
+                                            )}
+                                        </p>
+                                    </div>
+
+                                    <div
+                                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+                                        data-testid="annunci-grid"
+                                    >
+                                        {listaSicura.map((a, i) => (
+                                            <AnnuncioCard
+                                                key={a?.id || i}
+                                                a={a}
+                                                index={i}
+                                                fav={
+                                                    isAzienda
+                                                        ? {
+                                                              active: true,
+                                                              saved: savedIds.has(a?.id),
+                                                              onToggle: toggleFav,
+                                                          }
+                                                        : null
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            );
+                        }
+                        return null;
+                    })()}
                 </div>
             </section>
 

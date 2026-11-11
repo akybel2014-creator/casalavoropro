@@ -40,10 +40,13 @@ function BlockHeader({ eyebrow, title, text, perks, to, linkLabel }) {
 
 function Grid({ items, emptyText }) {
     if (items === null) return <p className="mt-10 text-sm text-slate-500">Caricamento annunci…</p>;
-    if (items.length === 0) return <p className="mt-10 text-sm text-slate-500 border border-dashed border-white/10 rounded-2xl p-8 text-center">{emptyText}</p>;
+    const listaSicura = Array.isArray(items) ? items : [];
+    if (listaSicura.length === 0) return <p className="mt-10 text-sm text-slate-500 border border-dashed border-white/10 rounded-2xl p-8 text-center">{emptyText}</p>;
     return (
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {items.map((a, i) => <AnnuncioCard key={a.id} a={a} index={i} />)}
+            {listaSicura.map((a, i) => (
+                <AnnuncioCard key={a?.id || i} a={a} index={i} />
+            ))}
         </div>
     );
 }
@@ -64,12 +67,15 @@ export default function NoleggioUsato() {
                         .order("created_at", { ascending: false })
                         .limit(8);
 
-                    if (allItems && allItems.length > 0 && alive) {
-                        const n = allItems.filter((item) => {
+                    const listaSicura = Array.isArray(allItems) ? allItems : [];
+                    if (listaSicura.length > 0 && alive) {
+                        const n = listaSicura.filter((item) => {
+                            if (!item) return false;
                             const t = String(item.tipo || "").toLowerCase().trim();
                             return t === "noleggio" || !t;
                         });
-                        const u = allItems.filter((item) => {
+                        const u = listaSicura.filter((item) => {
+                            if (!item) return false;
                             const t = String(item.tipo || "").toLowerCase().trim();
                             return t === "vendita" || t === "usato" || t === "marketplace";
                         });
@@ -81,8 +87,27 @@ export default function NoleggioUsato() {
                     /* fallback api */
                 }
             }
-            api.get("/annunci?tipo=noleggio&limit=4").then(({ data }) => { if (alive) setNoleggio(data); }).catch(() => { if (alive) setNoleggio([]); });
-            api.get("/annunci?tipo=usato&limit=4").then(({ data }) => { if (alive) setUsato(data); }).catch(() => { if (alive) setUsato([]); });
+            api.get("/annunci?tipo=noleggio&limit=4")
+                .then(({ data }) => {
+                    if (alive) {
+                        const listaSicura = Array.isArray(data) ? data : [];
+                        setNoleggio(listaSicura);
+                    }
+                })
+                .catch(() => {
+                    if (alive) setNoleggio([]);
+                });
+
+            api.get("/annunci?tipo=usato&limit=4")
+                .then(({ data }) => {
+                    if (alive) {
+                        const listaSicura = Array.isArray(data) ? data : [];
+                        setUsato(listaSicura);
+                    }
+                })
+                .catch(() => {
+                    if (alive) setUsato([]);
+                });
         };
         load();
         return () => { alive = false; };

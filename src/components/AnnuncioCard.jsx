@@ -9,25 +9,28 @@ export const FILES_BASE = "/api/files/";
 const PLACEHOLDER = "https://images.unsplash.com/photo-1581092160607-ee22621dd758?crop=entropy&cs=srgb&auto=format&q=70&w=700";
 
 export function annuncioImg(a) {
-    if (a?.immagine_url) {
+    if (!a) return PLACEHOLDER;
+    if (a.immagine_url) {
         return optimizeRemoteImg(a.immagine_url, 700);
     }
-    if (a?.foto?.length) {
-        return `${FILES_BASE}${a.foto[0].path}`;
+    const fotoLista = Array.isArray(a.foto) ? a.foto : [];
+    if (fotoLista.length && fotoLista[0]?.path) {
+        return `${FILES_BASE}${fotoLista[0].path}`;
     }
     return PLACEHOLDER;
 }
 
 export function prezzoLabel(a) {
-    if (a?.prezzo === undefined || a?.prezzo === null) return "Trattativa privata";
-    const n = Number(a.prezzo).toLocaleString("it-IT", { maximumFractionDigits: 2 });
+    if (!a || a.prezzo === undefined || a.prezzo === null) return "Trattativa privata";
+    const n = Number(a.prezzo);
+    const nStr = isNaN(n) ? "0" : n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
     const isVendita = a.tipo === "vendita" || a.tipo === "usato";
     const unita = a.unita_misura || a.unita;
 
     if (isVendita || unita === "fisso" || (!unita && isVendita)) {
-        return `${n} €`;
+        return `${nStr} €`;
     }
-    return `da ${n} €/${unita || "giorno"}`;
+    return `da ${nStr} €/${unita || "giorno"}`;
 }
 
 // Costruisce un link WhatsApp wa.me dal numero (assume Italia se manca il prefisso internazionale).
@@ -43,21 +46,23 @@ export function waLink(phone, text) {
 }
 
 export function AnnuncioCard({ a, index = 0, fav = null }) {
+    if (!a) return null;
     const isNoleggio = a.tipo !== "vendita" && a.tipo !== "usato";
     const telefono = a.contatto_telefono || a.azienda_telefono || a.telefono;
     const comuneRitiro = a.comune || a.zona;
     const haCauzione = a.cauzione !== undefined && a.cauzione !== null && Number(a.cauzione) > 0;
+    const itemId = a.id || `item-${index}`;
 
     return (
         <article
-            data-testid={`annuncio-card-${a.id}`}
+            data-testid={`annuncio-card-${itemId}`}
             style={{ animationDelay: `${(index % 4) * 70}ms` }}
             className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/10 bg-navy-700/60 hover:-translate-y-1.5 hover:border-brand/50 hover:shadow-xl hover:shadow-brand/10 transition-[transform,border-color,box-shadow] duration-300 animate-in fade-in slide-in-from-bottom-4"
         >
             <Link
-                to={`/annunci/${a.id}`}
+                to={`/annunci/${itemId}`}
                 className="relative block h-48 overflow-hidden bg-navy-900"
-                data-testid={`annuncio-img-link-${a.id}`}
+                data-testid={`annuncio-img-link-${itemId}`}
             >
                 <BlurImage
                     src={annuncioImg(a)}

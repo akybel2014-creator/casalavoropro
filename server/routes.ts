@@ -38,6 +38,16 @@ import { analyzeBollettaFiles, analyzeMacchinarioImage } from "./gemini.ts";
 
 export const apiRouter = express.Router();
 
+apiRouter.get("/config/supabase", (_req, res) => {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  res.json({
+    configured: Boolean(url && anonKey),
+    url,
+    anonKey,
+  });
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 },

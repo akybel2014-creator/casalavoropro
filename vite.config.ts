@@ -15,4 +15,5 @@ export default defineConfig({
     host: "0.0.0.0",
     hmr: false,
   },
+  envPrefix: ["VITE_", "SUPABASE_"],
 });

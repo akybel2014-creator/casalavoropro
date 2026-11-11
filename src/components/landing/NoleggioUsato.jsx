@@ -65,10 +65,16 @@ export default function NoleggioUsato() {
                         .limit(8);
 
                     if (allItems && allItems.length > 0 && alive) {
-                        const n = allItems.filter((item) => !item.tipo || item.tipo === "noleggio");
-                        const u = allItems.filter((item) => item.tipo === "vendita" || item.tipo === "usato");
-                        setNoleggio(n.length > 0 ? n.slice(0, 4) : allItems.slice(0, 4));
-                        setUsato(u.length > 0 ? u.slice(0, 4) : allItems.slice(0, 4));
+                        const n = allItems.filter((item) => {
+                            const t = String(item.tipo || "").toLowerCase().trim();
+                            return t === "noleggio" || !t;
+                        });
+                        const u = allItems.filter((item) => {
+                            const t = String(item.tipo || "").toLowerCase().trim();
+                            return t === "vendita" || t === "usato" || t === "marketplace";
+                        });
+                        setNoleggio(n.slice(0, 4));
+                        setUsato(u.slice(0, 4));
                         return;
                     }
                 } catch {

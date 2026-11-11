@@ -24,15 +24,19 @@ export default function AnnuncioDettaglio() {
         const load = async () => {
             try {
                 if (isSupabaseConfigured) {
-                    const { data: supaItem } = await supabase
-                        .from("marketplace")
-                        .select("*")
-                        .eq("id", id)
-                        .maybeSingle();
+                    try {
+                        const { data: supaItem, error: supaErr } = await supabase
+                            .from("marketplace")
+                            .select("*")
+                            .eq("id", id)
+                            .maybeSingle();
 
-                    if (supaItem && alive) {
-                        setA(supaItem);
-                        return;
+                        if (!supaErr && supaItem && alive) {
+                            setA(supaItem);
+                            return;
+                        }
+                    } catch {
+                        /* ignora e passa al fallback api */
                     }
                 }
                 const { data } = await api.get(`/annunci/${id}`);

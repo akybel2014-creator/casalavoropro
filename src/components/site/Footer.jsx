@@ -6,7 +6,7 @@ const SOCIALS = [
     { id: "facebook", label: "Facebook", href: import.meta.env.VITE_SOCIAL_FACEBOOK || "https://www.facebook.com/casalavoropro", Icon: Facebook },
     { id: "instagram", label: "Instagram", href: import.meta.env.VITE_SOCIAL_INSTAGRAM || "https://www.instagram.com/casalavoropro", Icon: Instagram },
     { id: "linkedin", label: "LinkedIn", href: import.meta.env.VITE_SOCIAL_LINKEDIN || "https://www.linkedin.com/company/casalavoropro", Icon: Linkedin },
-    { id: "tiktok", label: "TikTok", href: import.meta.env.VITE_SOCIAL_TIKTOK || "https://www.tiktok.com/@casalavoropro", Icon: TikTokIcon },
+    { id: "tiktok", label: "TikTok", href: import.meta.env.VITE_SOCIAL_TIKTOK || "https://www.tiktok.com/@www.casalavoropro.com", Icon: TikTokIcon },
 ];
 
 function TikTokIcon({ className = "" }) {

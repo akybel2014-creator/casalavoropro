@@ -1,192 +1,574 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, MapPin, SearchX, Truck, Recycle, Euro, ArrowRight } from "lucide-react";
+import {
+    Search,
+    MapPin,
+    SearchX,
+    Truck,
+    Recycle,
+    Euro,
+    ArrowRight,
+    Loader2,
+    RefreshCw,
+    AlertCircle,
+    CheckCircle2,
+    Database,
+} from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AnnuncioCard } from "@/components/AnnuncioCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const COPY = {
     noleggio: {
-        eyebrow: "Noleggio Attrezzi", icon: Truck,
+        eyebrow: "Noleggio Attrezzi",
+        icon: Truck,
         title: "Macchinari e attrezzature a noleggio",
-        text: "Mezzi delle aziende con Partita IVA iscritte: prenoti per i giorni che servono, consegna in cantiere e tariffe trasparenti.",
-        empty: "Nessun mezzo a noleggio con questi filtri.",
+        text: "Catalogo in tempo reale sincronizzato con Supabase: attrezzature professionali verificate, noleggio a giornata e tariffe trasparenti.",
+        empty: "Nessun attrezzo disponibile con i filtri selezionati.",
     },
     usato: {
-        eyebrow: "Marketplace", icon: Recycle,
+        eyebrow: "Marketplace",
+        icon: Recycle,
         title: "Attrezzatura professionale di seconda mano",
-        text: "Utensili e macchinari venduti da imprese verificate: stato dichiarato, foto reali e prezzi onesti.",
-        empty: "Nessun articolo usato con questi filtri.",
+        text: "Utensili e macchinari venduti da imprese verificate: disponibilità in tempo reale, stato dichiarato e ritiro rapido.",
+        empty: "Nessun articolo del marketplace con questi filtri.",
     },
 };
+
+export const PRESET_CATEGORIES = [
+    "Tutti",
+    "Demolizione & Carotaggio",
+    "Termoidraulica & Clima",
+    "Elettroutensili & Scanalatura",
+    "Lavori in Quota & Ponteggi",
+    "Diagnostica & Strumenti di Misura",
+    "Movimentazione & Generatori",
+];
 
 const inputWrap = "flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-navy/80 border border-white/10";
 const inputCls = "border-0 bg-transparent h-auto p-0 focus-visible:ring-0 text-white placeholder:text-slate-500";
 
-export default function Annunci({ tipo }) {
+function CardSkeleton() {
+    return (
+        <div className="flex flex-col h-full overflow-hidden rounded-2xl border border-white/10 bg-navy-700/60 p-0">
+            <Skeleton className="h-48 w-full bg-white/5" />
+            <div className="p-5 space-y-3 flex-1 flex flex-col">
+                <Skeleton className="h-5 w-3/4 bg-white/10" />
+                <Skeleton className="h-3 w-full bg-white/5" />
+                <div className="flex gap-2 pt-2">
+                    <Skeleton className="h-4 w-20 bg-white/5 rounded-full" />
+                    <Skeleton className="h-4 w-24 bg-white/5 rounded-full" />
+                </div>
+                <div className="mt-auto pt-4 space-y-2">
+                    <Skeleton className="h-6 w-24 bg-white/10" />
+                    <div className="flex gap-2">
+                        <Skeleton className="h-8 flex-1 bg-white/5 rounded-full" />
+                        <Skeleton className="h-8 w-20 bg-white/5 rounded-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default function Annunci({ tipo = "noleggio" }) {
     const [params, setParams] = useSearchParams();
     const { user } = useAuth();
     const isAzienda = user?.role === "azienda";
-    const c = COPY[tipo];
+    const c = COPY[tipo] || COPY.noleggio;
+
     const [q, setQ] = useState(params.get("q") || "");
-    const [zona, setZona] = useState(params.get("zona") || "");
-    const [categoria, setCategoria] = useState(params.get("categoria") || "");
-    const [sottocategoria, setSottocategoria] = useState(params.get("sottocategoria") || "");
+    const [comune, setComune] = useState(params.get("comune") || params.get("zona") || "");
+    const [categoria, setCategoria] = useState(params.get("categoria") || "Tutti");
     const [min, setMin] = useState(params.get("min") || "");
     const [max, setMax] = useState(params.get("max") || "");
-    const [meta, setMeta] = useState({ categorie: [], sottocategorie: {} });
-    const [items, setItems] = useState(null);
-    const [error, setError] = useState("");
+
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [savedIds, setSavedIds] = useState(new Set());
 
+    // Caricamento preferiti se utente loggato
     useEffect(() => {
-        if (!isAzienda) { setSavedIds(new Set()); return; }
-        api.get("/preferiti-annunci/ids").then(({ data }) => setSavedIds(new Set(data))).catch(() => {});
+        if (!isAzienda) {
+            setSavedIds(new Set());
+            return;
+        }
+        api.get("/preferiti-annunci/ids")
+            .then(({ data }) => setSavedIds(new Set(data)))
+            .catch(() => {});
     }, [isAzienda]);
 
     const toggleFav = async (a) => {
         const saved = savedIds.has(a.id);
-        setSavedIds((prev) => { const n = new Set(prev); saved ? n.delete(a.id) : n.add(a.id); return n; });
+        setSavedIds((prev) => {
+            const n = new Set(prev);
+            saved ? n.delete(a.id) : n.add(a.id);
+            return n;
+        });
         try {
             if (saved) await api.delete(`/preferiti-annunci/${a.id}`);
-            else { await api.put(`/preferiti-annunci/${a.id}`); toast.success("Salvato nei preferiti."); }
+            else {
+                await api.put(`/preferiti-annunci/${a.id}`);
+                toast.success("Salvato nei preferiti.");
+            }
         } catch (e) {
-            setSavedIds((prev) => { const n = new Set(prev); saved ? n.add(a.id) : n.delete(a.id); return n; });
+            setSavedIds((prev) => {
+                const n = new Set(prev);
+                saved ? n.add(a.id) : n.delete(a.id);
+                return n;
+            });
             toast.error(formatApiError(e));
         }
     };
 
-    useEffect(() => {
-        api.get("/annunci/meta").then(({ data }) => setMeta(data)).catch(() => {});
-    }, []);
+    // Query in tempo reale da Supabase: select('*') con disponibile = true e ordinata per created_at desc
+    const fetchSupabaseItems = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            if (isSupabaseConfigured) {
+                // Esegue la query su Supabase con filtro disponibile = true e ordinamento decrescente
+                let query = supabase
+                    .from("marketplace")
+                    .select("*")
+                    .eq("disponibile", true)
+                    .order("created_at", { ascending: false });
+
+                const { data, error: supaErr } = await query;
+
+                if (supaErr) {
+                    throw supaErr;
+                }
+
+                setItems(data || []);
+            } else {
+                // Fallback ad API locale/mock nel caso in cui le variabili d'ambiente Supabase
+                // non siano ancora state configurate nel pannello Render / .env
+                const query = new URLSearchParams({ tipo });
+                const { data } = await api.get(`/annunci?${query.toString()}`);
+                setItems(data || []);
+            }
+        } catch (err) {
+            console.error("Errore fetch Supabase marketplace:", err);
+            setError(
+                err.message ||
+                "Impossibile caricare il catalogo attrezzi da Supabase. Verifica la connessione o i parametri di accesso."
+            );
+        } finally {
+            setLoading(false);
+        }
+    }, [tipo]);
 
     useEffect(() => {
+        fetchSupabaseItems();
+    }, [fetchSupabaseItems]);
+
+    // Sincronizza i parametri URL
+    useEffect(() => {
         setQ(params.get("q") || "");
-        setZona(params.get("zona") || "");
-        setCategoria(params.get("categoria") || "");
-        setSottocategoria(params.get("sottocategoria") || "");
+        setComune(params.get("comune") || params.get("zona") || "");
+        setCategoria(params.get("categoria") || "Tutti");
         setMin(params.get("min") || "");
         setMax(params.get("max") || "");
     }, [params]);
 
-    const fetchItems = useMemo(() => async () => {
-        try {
-            const query = new URLSearchParams({ tipo });
-            if (params.get("q")) query.set("q", params.get("q"));
-            if (params.get("zona")) query.set("zona", params.get("zona"));
-            if (params.get("categoria")) query.set("categoria", params.get("categoria"));
-            if (params.get("sottocategoria")) query.set("sottocategoria", params.get("sottocategoria"));
-            if (params.get("min")) query.set("prezzo_min", params.get("min"));
-            if (params.get("max")) query.set("prezzo_max", params.get("max"));
-            const { data } = await api.get(`/annunci?${query.toString()}`);
-            setItems(data);
-        } catch (e) {
-            setError(formatApiError(e));
-        }
-    }, [tipo, params]);
+    // Categorie dinamiche: unione ordinata tra preset richiesti e categorie reali presenti nel database Supabase
+    const availableCategories = useMemo(() => {
+        const set = new Set();
+        (items || []).forEach((item) => {
+            if (item.categoria && typeof item.categoria === "string") {
+                const cTrim = item.categoria.trim();
+                if (cTrim) set.add(cTrim);
+            }
+        });
 
-    useEffect(() => { setItems(null); fetchItems(); }, [fetchItems]);
+        const list = [...PRESET_CATEGORIES];
+        set.forEach((cat) => {
+            if (!list.some((p) => p.toLowerCase() === cat.toLowerCase())) {
+                list.push(cat);
+            }
+        });
+        return list;
+    }, [items]);
+
+    // Filtraggio dinamico degli elementi
+    const filteredItems = useMemo(() => {
+        return (items || []).filter((item) => {
+            // Filtro per tipologia: se l'annuncio specifica un tipo ('noleggio' o 'vendita'/'usato')
+            if (item.tipo) {
+                const tLower = String(item.tipo).toLowerCase();
+                if (tipo === "noleggio" && (tLower === "vendita" || tLower === "usato")) {
+                    return false;
+                }
+                if (tipo === "usato" && tLower === "noleggio") {
+                    return false;
+                }
+            }
+
+            // Filtro categoria dinamico
+            if (categoria && categoria !== "Tutti") {
+                const itemCat = (item.categoria || "").toLowerCase();
+                const targetCat = categoria.toLowerCase();
+                if (!itemCat.includes(targetCat) && !targetCat.includes(itemCat)) {
+                    return false;
+                }
+            }
+
+            // Filtro comune / zona di ritiro
+            if (comune) {
+                const searchComune = comune.toLowerCase();
+                const itemComune = (item.comune || item.zona || "").toLowerCase();
+                if (!itemComune.includes(searchComune)) {
+                    return false;
+                }
+            }
+
+            // Filtro testuale di ricerca (titolo, descrizione, comune, categoria)
+            if (q) {
+                const queryText = q.toLowerCase();
+                const matchTitle = (item.titolo || "").toLowerCase().includes(queryText);
+                const matchDesc = (item.descrizione || "").toLowerCase().includes(queryText);
+                const matchCat = (item.categoria || "").toLowerCase().includes(queryText);
+                const matchCom = (item.comune || item.zona || "").toLowerCase().includes(queryText);
+                if (!matchTitle && !matchDesc && !matchCat && !matchCom) {
+                    return false;
+                }
+            }
+
+            // Filtro prezzo min
+            if (min) {
+                const minVal = parseFloat(min);
+                if (!isNaN(minVal) && Number(item.prezzo) < minVal) {
+                    return false;
+                }
+            }
+
+            // Filtro prezzo max
+            if (max) {
+                const maxVal = parseFloat(max);
+                if (!isNaN(maxVal) && Number(item.prezzo) > maxVal) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }, [items, tipo, categoria, comune, q, min, max]);
 
     const applyFilters = (e) => {
         e?.preventDefault();
         const query = new URLSearchParams();
         if (q) query.set("q", q);
-        if (zona) query.set("zona", zona);
-        if (categoria) query.set("categoria", categoria);
-        if (sottocategoria) query.set("sottocategoria", sottocategoria);
+        if (comune) query.set("comune", comune);
+        if (categoria && categoria !== "Tutti") query.set("categoria", categoria);
         if (min) query.set("min", min);
         if (max) query.set("max", max);
         setParams(query);
     };
 
-    const reset = () => setParams(new URLSearchParams());
-    const hasFilters = [...params.keys()].length > 0;
+    const handleSelectCategory = (cat) => {
+        setCategoria(cat);
+        const query = new URLSearchParams(params);
+        if (cat === "Tutti" || !cat) {
+            query.delete("categoria");
+        } else {
+            query.set("categoria", cat);
+        }
+        setParams(query);
+    };
+
+    const resetFilters = () => {
+        setQ("");
+        setComune("");
+        setCategoria("Tutti");
+        setMin("");
+        setMax("");
+        setParams(new URLSearchParams());
+    };
+
+    const hasFilters = [...params.keys()].length > 0 || (categoria && categoria !== "Tutti");
 
     return (
         <div className="bg-navy min-h-screen" data-testid={`annunci-page-${tipo}`}>
+            {/* Header di sezione con filtri */}
             <section className="relative border-b border-white/10 bg-navy-600/30 pt-28 sm:pt-32 pb-10 overflow-hidden">
                 <div className="absolute inset-0 grid-pattern opacity-50" aria-hidden="true" />
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand flex items-center gap-2"><c.icon className="h-4 w-4" /> {c.eyebrow}</p>
-                    <h1 className="mt-2 font-display font-black tracking-tight text-3xl sm:text-4xl text-white">{c.title}</h1>
-                    <p className="mt-3 max-w-2xl text-sm sm:text-base text-slate-400">{c.text}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.24em] font-semibold text-brand flex items-center gap-2">
+                                <c.icon className="h-4 w-4" /> {c.eyebrow}
+                            </p>
+                            <h1 className="mt-2 font-display font-black tracking-tight text-3xl sm:text-4xl text-white">
+                                {c.title}
+                            </h1>
+                            <p className="mt-3 max-w-2xl text-sm sm:text-base text-slate-400">
+                                {c.text}
+                            </p>
+                        </div>
 
-                    <form onSubmit={applyFilters} data-testid="annunci-filters" className="mt-6 grid grid-cols-1 md:grid-cols-12 gap-2">
+                        {/* Badge stato Supabase */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
+                            <Database className="h-3.5 w-3.5 text-emerald-400" />
+                            <span>
+                                {isSupabaseConfigured ? "Database Supabase live" : "Dati catalogo attivi"}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Filtri a bottoni dinamici per Categoria (accesso rapido) */}
+                    <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+                        <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px] shrink-0 mr-1">
+                            Categorie:
+                        </span>
+                        {availableCategories.map((cat) => {
+                            const isSelected = categoria === cat;
+                            return (
+                                <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => handleSelectCategory(cat)}
+                                    data-testid={`category-filter-${cat}`}
+                                    className={`px-3.5 py-1.5 rounded-full font-semibold whitespace-nowrap transition-all duration-200 border ${
+                                        isSelected
+                                            ? "bg-brand text-white border-brand shadow-md shadow-brand/20"
+                                            : "bg-navy-800/80 text-slate-300 border-white/10 hover:border-brand/40 hover:text-white"
+                                    }`}
+                                >
+                                    {cat}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Form di ricerca avanzata */}
+                    <form
+                        onSubmit={applyFilters}
+                        data-testid="annunci-filters"
+                        className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2"
+                    >
                         <label className={`${inputWrap} md:col-span-4`}>
                             <Search className="h-4 w-4 text-brand shrink-0" />
-                            <Input value={q} onChange={(e) => setQ(e.target.value)} data-testid="annunci-q-input" placeholder="Cerca attrezzo, marca o azienda" className={inputCls} />
+                            <Input
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                                data-testid="annunci-q-input"
+                                placeholder="Cerca per attrezzo, modello o marca"
+                                className={inputCls}
+                            />
                         </label>
-                        <label className={`${inputWrap} md:col-span-2`}>
+
+                        <label className={`${inputWrap} md:col-span-3`}>
                             <MapPin className="h-4 w-4 text-brand shrink-0" />
-                            <Input value={zona} onChange={(e) => setZona(e.target.value)} data-testid="annunci-zona-input" placeholder="Zona" className={inputCls} />
+                            <Input
+                                value={comune}
+                                onChange={(e) => setComune(e.target.value)}
+                                data-testid="annunci-zona-input"
+                                placeholder="Comune di ritiro"
+                                className={inputCls}
+                            />
                         </label>
-                        <div className="md:col-span-2">
-                            <Select value={categoria || "all"} onValueChange={(v) => { const nc = v === "all" ? "" : v; setCategoria(nc); setSottocategoria(""); }}>
-                                <SelectTrigger data-testid="annunci-categoria-select" className="w-full h-full rounded-xl bg-navy/80 border-white/10 text-white">
+
+                        <div className="md:col-span-3">
+                            <Select
+                                value={categoria || "Tutti"}
+                                onValueChange={(v) => handleSelectCategory(v)}
+                            >
+                                <SelectTrigger
+                                    data-testid="annunci-categoria-select"
+                                    className="w-full h-full rounded-xl bg-navy/80 border-white/10 text-white"
+                                >
                                     <SelectValue placeholder="Categoria" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-navy-700 border-white/10">
-                                    <SelectItem value="all">Tutte le categorie</SelectItem>
-                                    {meta.categorie.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}
+                                <SelectContent className="bg-navy-700 border-white/10 text-white">
+                                    {availableCategories.map((x) => (
+                                        <SelectItem key={x} value={x}>
+                                            {x}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="md:col-span-2">
-                            <Select value={sottocategoria || "all"} onValueChange={(v) => setSottocategoria(v === "all" ? "" : v)} disabled={!categoria}>
-                                <SelectTrigger data-testid="annunci-sottocategoria-select" className="w-full h-full rounded-xl bg-navy/80 border-white/10 text-white disabled:opacity-50">
-                                    <SelectValue placeholder={categoria ? "Sottocategoria" : "Tutte"} />
-                                </SelectTrigger>
-                                <SelectContent className="bg-navy-700 border-white/10">
-                                    <SelectItem value="all">Tutte</SelectItem>
-                                    {(meta.sottocategorie?.[categoria] || []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+
                         <label className={`${inputWrap} md:col-span-1`}>
                             <Euro className="h-4 w-4 text-brand shrink-0" />
-                            <Input type="number" min="0" value={min} onChange={(e) => setMin(e.target.value)} data-testid="annunci-min-input" placeholder="Min" className={inputCls} />
+                            <Input
+                                type="number"
+                                min="0"
+                                value={min}
+                                onChange={(e) => setMin(e.target.value)}
+                                data-testid="annunci-min-input"
+                                placeholder="Min"
+                                className={inputCls}
+                            />
                         </label>
+
                         <label className={`${inputWrap} md:col-span-1`}>
                             <Euro className="h-4 w-4 text-brand shrink-0" />
-                            <Input type="number" min="0" value={max} onChange={(e) => setMax(e.target.value)} data-testid="annunci-max-input" placeholder="Max" className={inputCls} />
+                            <Input
+                                type="number"
+                                min="0"
+                                value={max}
+                                onChange={(e) => setMax(e.target.value)}
+                                data-testid="annunci-max-input"
+                                placeholder="Max"
+                                className={inputCls}
+                            />
                         </label>
-                        <div className="md:col-span-12 flex flex-wrap gap-2">
-                            <Button type="submit" data-testid="annunci-filter-button" className="rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold px-6">Filtra</Button>
+
+                        <div className="md:col-span-12 flex flex-wrap items-center gap-2 pt-2">
+                            <Button
+                                type="submit"
+                                data-testid="annunci-filter-button"
+                                className="rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold px-6 shadow-md shadow-brand/20"
+                            >
+                                Filtra
+                            </Button>
+
                             {hasFilters && (
-                                <Button type="button" variant="ghost" onClick={reset} data-testid="annunci-reset-button" className="rounded-xl text-slate-300 hover:text-white hover:bg-white/5">Azzera filtri</Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={resetFilters}
+                                    data-testid="annunci-reset-button"
+                                    className="rounded-xl text-slate-300 hover:text-white hover:bg-white/5"
+                                >
+                                    Azzera filtri
+                                </Button>
                             )}
-                            <Link to={tipo === "noleggio" ? "/mercatino" : "/noleggio"} data-testid="annunci-switch-link"
-                                className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-white transition-colors">
-                                {tipo === "noleggio" ? "Vai al Marketplace" : "Vai al Noleggio Attrezzi"} <ArrowRight className="h-4 w-4" />
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={fetchSupabaseItems}
+                                disabled={loading}
+                                className="rounded-xl border-white/10 text-slate-300 hover:text-white hover:bg-white/5 gap-1.5"
+                                title="Aggiorna da Supabase"
+                            >
+                                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+                                Ricarica
+                            </Button>
+
+                            <Link
+                                to={tipo === "noleggio" ? "/mercatino" : "/noleggio"}
+                                data-testid="annunci-switch-link"
+                                className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-white transition-colors"
+                            >
+                                {tipo === "noleggio" ? "Vai al Marketplace Usato" : "Vai al Noleggio Attrezzi"}
+                                <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
                     </form>
                 </div>
             </section>
 
+            {/* Griglia annunci / Stati di Caricamento ed Errore */}
             <section className="py-10 sm:py-14">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {error && <p className="text-red-400" data-testid="annunci-error">{error}</p>}
-                    {!items && !error && <p className="text-slate-400" data-testid="annunci-loading">Caricamento annunci…</p>}
-                    {items && items.length === 0 && (
-                        <div className="rounded-2xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="annunci-empty">
-                            <SearchX className="h-10 w-10 text-slate-500 mx-auto" />
-                            <h3 className="mt-4 font-display font-bold text-white text-lg">{c.empty}</h3>
-                            <p className="mt-1 text-sm text-slate-400">Prova ad allargare la zona o a rimuovere qualche filtro.</p>
+                    {/* Stato di Errore */}
+                    {error && (
+                        <div
+                            className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 sm:p-8 text-center max-w-xl mx-auto mb-10"
+                            data-testid="annunci-error"
+                        >
+                            <AlertCircle className="h-10 w-10 text-red-400 mx-auto" />
+                            <h3 className="mt-3 font-display font-bold text-white text-lg">
+                                Errore di caricamento
+                            </h3>
+                            <p className="mt-2 text-sm text-red-300 leading-relaxed">
+                                {error}
+                            </p>
+                            <Button
+                                onClick={fetchSupabaseItems}
+                                className="mt-5 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold gap-2"
+                            >
+                                <RefreshCw className="h-4 w-4" /> Riprova connessione
+                            </Button>
                         </div>
                     )}
-                    {items && items.length > 0 && (
-                        <>
-                            <p className="text-sm text-slate-400 mb-6" data-testid="annunci-count">
-                                {items.length} {items.length === 1 ? "annuncio" : "annunci"}
+
+                    {/* Stato di Caricamento (Skeleton) */}
+                    {loading && (
+                        <div data-testid="annunci-loading">
+                            <div className="flex items-center gap-2 mb-6 text-slate-400 text-sm">
+                                <Loader2 className="h-4 w-4 animate-spin text-brand" />
+                                <span>Caricamento attrezzi in tempo reale da Supabase…</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                                <CardSkeleton />
+                                <CardSkeleton />
+                                <CardSkeleton />
+                                <CardSkeleton />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Stato vuoto */}
+                    {!loading && !error && filteredItems.length === 0 && (
+                        <div
+                            className="rounded-2xl border border-white/10 bg-navy-700/60 p-10 text-center max-w-xl mx-auto"
+                            data-testid="annunci-empty"
+                        >
+                            <SearchX className="h-10 w-10 text-slate-500 mx-auto" />
+                            <h3 className="mt-4 font-display font-bold text-white text-lg">
+                                {c.empty}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-400">
+                                Prova a selezionare un'altra categoria o ad azzerare i filtri di ricerca.
                             </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-testid="annunci-grid">
-                                {items.map((a, i) => <AnnuncioCard key={a.id} a={a} index={i}
-                                    fav={isAzienda ? { active: true, saved: savedIds.has(a.id), onToggle: toggleFav } : null} />)}
+                            {hasFilters && (
+                                <Button
+                                    onClick={resetFilters}
+                                    variant="outline"
+                                    className="mt-5 rounded-full border-white/20 text-white hover:bg-white/10"
+                                >
+                                    Mostra tutti gli annunci
+                                </Button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Risultati filtrati */}
+                    {!loading && !error && filteredItems.length > 0 && (
+                        <>
+                            <div className="flex items-center justify-between gap-4 mb-6">
+                                <p className="text-sm text-slate-400" data-testid="annunci-count">
+                                    <span className="font-semibold text-white">{filteredItems.length}</span>{" "}
+                                    {filteredItems.length === 1 ? "attrezzo disponibile" : "attrezzi disponibili"}
+                                    {categoria && categoria !== "Tutti" && (
+                                        <span> per <strong className="text-brand">{categoria}</strong></span>
+                                    )}
+                                </p>
+                            </div>
+
+                            <div
+                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+                                data-testid="annunci-grid"
+                            >
+                                {filteredItems.map((a, i) => (
+                                    <AnnuncioCard
+                                        key={a.id}
+                                        a={a}
+                                        index={i}
+                                        fav={
+                                            isAzienda
+                                                ? {
+                                                      active: true,
+                                                      saved: savedIds.has(a.id),
+                                                      onToggle: toggleFav,
+                                                  }
+                                                : null
+                                        }
+                                    />
+                                ))}
                             </div>
                         </>
                     )}

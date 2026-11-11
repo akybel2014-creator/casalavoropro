@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart, Phone, MessageCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Truck, Recycle, Tag, ShieldCheck, MessageSquare, Star, MessageSquareHeart, Phone, MessageCircle, ShieldAlert } from "lucide-react";
 import { Stars } from "@/components/StarRating";
 import { api, formatApiError } from "@/lib/api";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { annuncioImg, prezzoLabel, ContattoAzienda, FILES_BASE, waLink } from "@/components/AnnuncioCard";
@@ -19,13 +20,39 @@ export default function AnnuncioDettaglio() {
     const [recensioni, setRecensioni] = useState([]);
 
     useEffect(() => {
-        api.get(`/annunci/${id}`).then(({ data }) => setA(data)).catch((e) => setError(formatApiError(e)));
-        api.get(`/annunci/${id}/recensioni`).then(({ data }) => setRecensioni(data)).catch(() => {});
+        let alive = true;
+        const load = async () => {
+            try {
+                if (isSupabaseConfigured) {
+                    const { data: supaItem } = await supabase
+                        .from("marketplace")
+                        .select("*")
+                        .eq("id", id)
+                        .maybeSingle();
+
+                    if (supaItem && alive) {
+                        setA(supaItem);
+                        return;
+                    }
+                }
+                const { data } = await api.get(`/annunci/${id}`);
+                if (alive) setA(data);
+            } catch (e) {
+                if (alive) setError(formatApiError(e));
+            }
+        };
+        load();
+        api.get(`/annunci/${id}/recensioni`).then(({ data }) => {
+            if (alive) setRecensioni(data || []);
+        }).catch(() => {});
+        return () => { alive = false; };
     }, [id]);
 
     const images = a ? (a.foto?.length ? a.foto.map((f) => `${FILES_BASE}${f.path}`) : [annuncioImg(a)]) : [];
-    const noleggio = a?.tipo === "noleggio";
-    const privato = !!a && (a.venditore_privato || !a.azienda_id);
+    const noleggio = a?.tipo === "noleggio" || a?.tipo !== "vendita" && a?.tipo !== "usato";
+    const telefono = a ? (a.contatto_telefono || a.azienda_telefono || a.telefono) : null;
+    const comuneRitiro = a ? (a.comune || a.zona) : null;
+    const privato = !!a && (a.venditore_privato || (!a.azienda_id && !a.azienda_nome));
     const back = noleggio ? "/noleggio" : "/mercatino";
 
     const richiedi = () => {
@@ -129,8 +156,17 @@ export default function AnnuncioDettaglio() {
                                     </p>
                                 )}
                                 <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-300">
-                                    <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> {a.zona}</span>
-                                    <span className="flex items-center gap-1.5"><Tag className="h-4 w-4 text-brand" /> {a.categoria}</span>
+                                    {comuneRitiro && (
+                                        <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> {comuneRitiro}</span>
+                                    )}
+                                    {a.categoria && (
+                                        <span className="flex items-center gap-1.5"><Tag className="h-4 w-4 text-brand" /> {a.categoria}</span>
+                                    )}
+                                    {a.cauzione !== undefined && a.cauzione !== null && Number(a.cauzione) > 0 && (
+                                        <span className="flex items-center gap-1.5 text-amber-300 font-medium">
+                                            <ShieldAlert className="h-4 w-4 text-amber-400" /> Cauzione: {Number(a.cauzione).toLocaleString("it-IT")} €
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="mt-6 border-t border-white/10 pt-5">
                                     <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-2">Pubblicato da</p>
@@ -147,16 +183,16 @@ export default function AnnuncioDettaglio() {
                                             className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-lg shadow-orange-500/25 font-semibold">
                                             <MessageSquare className="h-4 w-4 mr-2" /> {noleggio ? "Scegli le date e prenota" : "Contatta il venditore"}
                                         </Button>
-                                        {a.azienda_telefono && (
+                                        {telefono && (
                                             <Button asChild data-testid="annuncio-chiama-button"
                                                 className="mt-3 w-full rounded-xl bg-white/5 border border-brand/40 text-brand hover:bg-brand hover:text-white font-semibold">
-                                                <a href={`tel:${a.azienda_telefono.replace(/\s/g, "")}`}><Phone className="h-4 w-4 mr-2" /> Chiama {a.azienda_telefono}</a>
+                                                <a href={`tel:${telefono.replace(/\s/g, "")}`}><Phone className="h-4 w-4 mr-2" /> Chiama {telefono}</a>
                                             </Button>
                                         )}
-                                        {a.azienda_telefono && (
+                                        {telefono && (
                                             <Button asChild data-testid="annuncio-whatsapp-button"
                                                 className="mt-3 w-full rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold">
-                                                <a href={waLink(a.azienda_telefono, `Ciao, ho visto il tuo annuncio "${a.titolo}" su CasaLavoroPRO e sono interessato.`)} target="_blank" rel="noopener noreferrer">
+                                                <a href={waLink(telefono, `Ciao, ho visto il tuo annuncio "${a.titolo}" su CasaLavoroPRO e sono interessato.`)} target="_blank" rel="noopener noreferrer">
                                                     <MessageCircle className="h-4 w-4 mr-2" /> Scrivi su WhatsApp
                                                 </a>
                                             </Button>

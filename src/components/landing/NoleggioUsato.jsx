@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Recycle, ShieldCheck, Clock, Tag, ArrowRight, BadgeCheck, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { AnnuncioCard } from "@/components/AnnuncioCard";
 
 const fade = {
@@ -52,8 +53,33 @@ export default function NoleggioUsato() {
     const [usato, setUsato] = useState(null);
 
     useEffect(() => {
-        api.get("/annunci?tipo=noleggio&limit=4").then(({ data }) => setNoleggio(data)).catch(() => setNoleggio([]));
-        api.get("/annunci?tipo=usato&limit=4").then(({ data }) => setUsato(data)).catch(() => setUsato([]));
+        let alive = true;
+        const load = async () => {
+            if (isSupabaseConfigured) {
+                try {
+                    const { data: allItems } = await supabase
+                        .from("marketplace")
+                        .select("*")
+                        .eq("disponibile", true)
+                        .order("created_at", { ascending: false })
+                        .limit(8);
+
+                    if (allItems && allItems.length > 0 && alive) {
+                        const n = allItems.filter((item) => !item.tipo || item.tipo === "noleggio");
+                        const u = allItems.filter((item) => item.tipo === "vendita" || item.tipo === "usato");
+                        setNoleggio(n.length > 0 ? n.slice(0, 4) : allItems.slice(0, 4));
+                        setUsato(u.length > 0 ? u.slice(0, 4) : allItems.slice(0, 4));
+                        return;
+                    }
+                } catch {
+                    /* fallback api */
+                }
+            }
+            api.get("/annunci?tipo=noleggio&limit=4").then(({ data }) => { if (alive) setNoleggio(data); }).catch(() => { if (alive) setNoleggio([]); });
+            api.get("/annunci?tipo=usato&limit=4").then(({ data }) => { if (alive) setUsato(data); }).catch(() => { if (alive) setUsato([]); });
+        };
+        load();
+        return () => { alive = false; };
     }, []);
 
     return (

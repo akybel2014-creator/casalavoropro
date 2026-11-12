@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX, Siren, Navigation } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -104,6 +105,58 @@ export default function Aziende() {
     const fetchItems = useMemo(() => {
         return async () => {
             try {
+                // 1. Prova prima da Supabase (necessario per Cloudflare Pages e per aggiornamenti in tempo reale)
+                let supaQuery = supabase.from("aziende").select("*");
+                if (categoria) {
+                    supaQuery = supaQuery.contains("categorie", [categoria]);
+                }
+                if (verificate) {
+                    supaQuery = supaQuery.eq("verificata", true);
+                }
+                if (emergenze) {
+                    supaQuery = supaQuery.eq("emergenze", true);
+                }
+                const { data: supaData, error: supaErr } = await supaQuery;
+
+                if (!supaErr && Array.isArray(supaData)) {
+                    let list = supaData.map((d) => ({
+                        id: d.id,
+                        nome: d.nome || "",
+                        categorie: Array.isArray(d.categorie) ? d.categorie : [],
+                        zone: Array.isArray(d.zone) ? d.zone : [],
+                        descrizione: d.descrizione || "",
+                        telefono: d.telefono || "",
+                        logo: d.logo_url || d.logo || null,
+                        foto: Array.isArray(d.foto) ? d.foto : [],
+                        verified: d.verificata !== undefined ? Boolean(d.verificata) : Boolean(d.verified),
+                        plan: d.piano || d.plan || "free",
+                        emergenze: Boolean(d.emergenze),
+                        rating: Number(d.rating) || 0,
+                        recensioni: Number(d.recensioni_count ?? d.recensioni ?? 0),
+                    }));
+
+                    if (q) {
+                        const ql = q.toLowerCase();
+                        list = list.filter((a) =>
+                            (a.nome || "").toLowerCase().includes(ql) ||
+                            (a.descrizione || "").toLowerCase().includes(ql)
+                        );
+                    }
+                    if (zona) {
+                        const zl = zona.toLowerCase();
+                        list = list.filter((a) =>
+                            (a.zone || []).some((z) => (z || "").toLowerCase().includes(zl))
+                        );
+                    }
+                    setItems(list);
+                    setError("");
+                    return;
+                }
+            } catch {
+                /* fallback su API */
+            }
+
+            try {
                 const query = new URLSearchParams();
                 if (q) query.set("q", q);
                 if (zona) query.set("zona", zona);
@@ -116,8 +169,10 @@ export default function Aziende() {
                     query.set("radius_km", String(radius));
                 }
                 const { data } = await api.get(`/aziende?${query.toString()}`);
-                setItems(data);
+                setItems(Array.isArray(data) ? data : []);
+                setError("");
             } catch (e) {
+                setItems([]);
                 setError(formatApiError(e));
             }
         };
@@ -125,6 +180,26 @@ export default function Aziende() {
 
     useEffect(() => {
         fetchItems();
+
+        let channel = null;
+        try {
+            channel = supabase
+                .channel("realtime-aziende-page")
+                .on("postgres_changes", { event: "*", schema: "public", table: "aziende" }, () => {
+                    fetchItems();
+                })
+                .subscribe();
+        } catch { /* ignora */ }
+
+        const onUpdate = () => fetchItems();
+        window.addEventListener("azienda-registered", onUpdate);
+        window.addEventListener("aziende-updated", onUpdate);
+
+        return () => {
+            if (channel) supabase.removeChannel(channel);
+            window.removeEventListener("azienda-registered", onUpdate);
+            window.removeEventListener("aziende-updated", onUpdate);
+        };
     }, [fetchItems]);
 
     const applyFilters = (e) => {
@@ -218,8 +293,8 @@ export default function Aziende() {
             <section className="py-10 sm:py-14">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {error && <p className="text-red-400" data-testid="directory-error">{error}</p>}
-                    {!items && !error && <p className="text-slate-400" data-testid="directory-loading">Caricamento aziende…</p>}
-                    {items && items.length === 0 && (
+                    {items === null && !error && <p className="text-slate-400" data-testid="directory-loading">Caricamento aziende…</p>}
+                    {Array.isArray(items) && items.length === 0 && (
                         <div className="rounded-2xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="directory-empty">
                             <SearchX className="h-10 w-10 text-slate-500 mx-auto" />
                             <h3 className="mt-4 font-display font-bold text-white text-lg">Nessuna azienda trovata</h3>
@@ -228,7 +303,7 @@ export default function Aziende() {
                             </p>
                         </div>
                     )}
-                    {items && items.length > 0 && (
+                    {Array.isArray(items) && items.length > 0 && (
                         <>
                         <div className="flex items-center justify-between gap-3 mb-6">
                             <p className="text-sm text-slate-400" data-testid="directory-count">
@@ -258,7 +333,7 @@ export default function Aziende() {
                         </>
                     )}
                     <div className={vista === "mappa" ? "hidden" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"}>
-                        {items && items.map((a) => (
+                        {Array.isArray(items) && items.map((a) => (
                             <div key={a.id} data-testid={`company-card-${a.nome.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                                 className="group flex flex-col h-full rounded-2xl border border-white/10 bg-navy-700/60 p-6 hover:-translate-y-1.5 hover:border-brand/40 hover:shadow-xl transition-all duration-300">
                                 <div className="flex items-start gap-4">

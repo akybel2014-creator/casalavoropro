@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon, Camera, MessageSquareHeart, Megaphone } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
 import { Stars } from "@/components/StarRating";
@@ -31,15 +32,66 @@ export default function AziendaDettaglio() {
     const { isPreferita, toggle: togglePreferita, canSave } = usePreferiti();
 
     useEffect(() => {
-        api.get(`/aziende/${id}`)
-            .then(({ data }) => setA(data))
-            .catch((e) => setError(formatApiError(e)));
+        let active = true;
+
+        const load = async () => {
+            // 1. Prova prima da Supabase
+            try {
+                const { data: supaAzienda, error: supaErr } = await supabase
+                    .from("aziende")
+                    .select("*")
+                    .eq("id", id)
+                    .maybeSingle();
+
+                if (!supaErr && supaAzienda && active) {
+                    setA({
+                        id: supaAzienda.id,
+                        nome: supaAzienda.nome,
+                        categorie: Array.isArray(supaAzienda.categorie) ? supaAzienda.categorie : [],
+                        zone: Array.isArray(supaAzienda.zone) ? supaAzienda.zone : [],
+                        descrizione: supaAzienda.descrizione || "",
+                        telefono: supaAzienda.telefono || "",
+                        email: supaAzienda.email || "",
+                        indirizzo: supaAzienda.indirizzo || "",
+                        logo: supaAzienda.logo_url || supaAzienda.logo || null,
+                        foto: Array.isArray(supaAzienda.foto) ? supaAzienda.foto : [],
+                        verified: supaAzienda.verificata !== undefined ? Boolean(supaAzienda.verificata) : Boolean(supaAzienda.verified),
+                        plan: supaAzienda.piano || supaAzienda.plan || "free",
+                        emergenze: Boolean(supaAzienda.emergenze),
+                        rating: Number(supaAzienda.rating) || 0,
+                        recensioni: Number(supaAzienda.recensioni_count ?? supaAzienda.recensioni ?? 0),
+                        created_at: supaAzienda.created_at,
+                    });
+                    setError("");
+                    return;
+                }
+            } catch {
+                /* fallback */
+            }
+
+            // 2. Fallback su API locale
+            api.get(`/aziende/${id}`)
+                .then(({ data }) => {
+                    if (active && data) {
+                        setA(data);
+                        setError("");
+                    }
+                })
+                .catch((e) => {
+                    if (active) setError(formatApiError(e));
+                });
+        };
+
+        load();
+
         api.get(`/aziende/${id}/recensioni`)
-            .then(({ data }) => setRecensioni(data))
+            .then(({ data }) => { if (active) setRecensioni(Array.isArray(data) ? data : []); })
             .catch(() => {});
         api.get(`/aziende/${id}/offerte-lavoro`)
-            .then(({ data }) => setOfferte(data))
+            .then(({ data }) => { if (active) setOfferte(Array.isArray(data) ? data : []); })
             .catch(() => {});
+
+        return () => { active = false; };
     }, [id]);
 
     const askQuote = () => {

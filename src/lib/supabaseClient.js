@@ -81,7 +81,8 @@ function getStoredOrEnvCredentials() {
             readEnv("VITE_SUPABASE_URL") ||
             readEnv("SUPABASE_URL") ||
             readEnv("VITE_PUBLIC_SUPABASE_URL") ||
-            readEnv("NEXT_PUBLIC_SUPABASE_URL")
+            readEnv("NEXT_PUBLIC_SUPABASE_URL") ||
+            "https://jlcxnvxrartesjhmkvax.supabase.co"
         );
     }
     if (!key) {
@@ -90,7 +91,8 @@ function getStoredOrEnvCredentials() {
             readEnv("SUPABASE_ANON_KEY") ||
             readEnv("VITE_SUPABASE_KEY") ||
             readEnv("SUPABASE_KEY") ||
-            readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+            readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ||
+            "sb_publishable_OA9YxF0dh9DrbD4P1VOzeQ_BpuPrMD7"
         );
     }
 

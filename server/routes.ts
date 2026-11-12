@@ -39,8 +39,8 @@ import { analyzeBollettaFiles, analyzeMacchinarioImage } from "./gemini.ts";
 export const apiRouter = express.Router();
 
 apiRouter.get("/config/supabase", (_req, res) => {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://jlcxnvxrartesjhmkvax.supabase.co";
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "sb_publishable_OA9YxF0dh9DrbD4P1VOzeQ_BpuPrMD7";
   res.json({
     configured: Boolean(url && anonKey),
     url,

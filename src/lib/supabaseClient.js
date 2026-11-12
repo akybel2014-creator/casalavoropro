@@ -67,7 +67,10 @@ function getStoredOrEnvCredentials() {
         try {
             const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
             const savedKey = localStorage.getItem(STORAGE_KEY_ANON);
-            if (savedUrl && savedKey) {
+            if (savedUrl && (savedUrl.includes("jlcxnvxrartesjhmkvax") || savedUrl.includes("placeholder"))) {
+                localStorage.removeItem(STORAGE_KEY_URL);
+                localStorage.removeItem(STORAGE_KEY_ANON);
+            } else if (savedUrl && savedKey) {
                 url = cleanSupabaseUrl(savedUrl);
                 key = cleanSupabaseKey(savedKey);
             }
@@ -82,7 +85,7 @@ function getStoredOrEnvCredentials() {
             readEnv("SUPABASE_URL") ||
             readEnv("VITE_PUBLIC_SUPABASE_URL") ||
             readEnv("NEXT_PUBLIC_SUPABASE_URL") ||
-            "https://jlcxnvxrartesjhmkvax.supabase.co"
+            "https://jlrtbcqdqlajcyjjlnhk.supabase.co"
         );
     }
     if (!key) {
@@ -92,7 +95,7 @@ function getStoredOrEnvCredentials() {
             readEnv("VITE_SUPABASE_KEY") ||
             readEnv("SUPABASE_KEY") ||
             readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ||
-            "sb_publishable_OA9YxF0dh9DrbD4P1VOzeQ_BpuPrMD7"
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscnRiY3FkcWxhamN5ampsbmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0NTAzNDYsImV4cCI6MjExMDAyNjM0Nn0.bPrG8NrlW9jbwed6HOWTUBkturWgXgzMiF4v_iub2Gg"
         );
     }
 

@@ -39,8 +39,8 @@ import { analyzeBollettaFiles, analyzeMacchinarioImage } from "./gemini.ts";
 export const apiRouter = express.Router();
 
 apiRouter.get("/config/supabase", (_req, res) => {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://jlcxnvxrartesjhmkvax.supabase.co";
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "sb_publishable_OA9YxF0dh9DrbD4P1VOzeQ_BpuPrMD7";
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://jlrtbcqdqlajcyjjlnhk.supabase.co";
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscnRiY3FkcWxhamN5ampsbmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0NTAzNDYsImV4cCI6MjExMDAyNjM0Nn0.bPrG8NrlW9jbwed6HOWTUBkturWgXgzMiF4v_iub2Gg";
   res.json({
     configured: Boolean(url && anonKey),
     url,
@@ -137,14 +137,13 @@ apiRouter.post("/auth/register", (req, res) => {
       categorie: Array.isArray(azIn?.categorie) ? azIn.categorie : [],
       zone: Array.isArray(azIn?.zone) ? azIn.zone : [],
       piva: String(azIn?.piva || ""),
-      durc_number: "",
       descrizione: String(azIn?.descrizione || ""),
       telefono: "",
       sito: "",
       foto: [],
       docs: [],
-      verified: false,
-      verification_status: "none" as const,
+      verified: true,
+      verification_status: "verificata" as const,
       plan: founder ? ("pro" as const) : ("free" as const),
       subscription_status: founder ? "active" : "none",
       founder50: founder,
@@ -298,7 +297,6 @@ apiRouter.put("/aziende/mine", requireRoles("azienda"), (req: AuthedRequest, res
     "descrizione",
     "telefono",
     "sito",
-    "durc_number",
     "emergenze",
     "emergenze_weekend",
     "emergenze_notturno",
@@ -330,19 +328,14 @@ apiRouter.post("/aziende/mine/verifica", requireRoles("azienda"), (req: AuthedRe
     res.status(400).json({ detail: "Inserisci la Partita IVA prima di richiedere la verifica" });
     return;
   }
-  if (!az.durc_number) {
-    res.status(400).json({ detail: "Inserisci il numero DURC prima di richiedere la verifica" });
-    return;
-  }
   az.verification_status = "in_attesa";
   az.docs = [
     { tipo: "P.IVA", valore: az.piva },
-    { tipo: "DURC", valore: az.durc_number },
   ];
   az.docs_uploaded_at = nowIso();
   notifyAdmins(
     "Nuova richiesta di verifica",
-    `L'azienda ${az.nome} ha inviato i documenti per la verifica PRO.`
+    `L'azienda ${az.nome} ha inviato la Partita IVA per la verifica PRO.`
   );
   res.json({ ok: true, verification_status: "in_attesa" });
 });

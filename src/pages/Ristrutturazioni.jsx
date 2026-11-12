@@ -54,7 +54,7 @@ const TIPI_INTERVENTO = [
     {
         title: "Pavimenti e rivestimenti",
         desc: "Posa in opera di gres porcellanato, parquet laminato o prefinito, resine e pietre naturali. Ripristino o rifacimento massetti di sottofondo e posa battiscopa.",
-        categoria: "Pavimenti",
+        categoria: "Ristrutturazioni",
         icon: Layers,
         tag: "Pavimenti"
     },
@@ -193,7 +193,7 @@ export default function Ristrutturazioni() {
 
                     <div className="mt-8 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-slate-400">
                         <span className="inline-flex items-center gap-1.5 text-slate-300">
-                            <ShieldCheck className="h-4 w-4 text-emerald-400" /> Imprese controllate (DURC e visura)
+                            <ShieldCheck className="h-4 w-4 text-emerald-400" /> Imprese controllate (P.IVA e visura)
                         </span>
                         <span className="inline-flex items-center gap-1.5 text-slate-300">
                             <CheckCircle2 className="h-4 w-4 text-brand" /> Richiesta 100% gratuita per privati

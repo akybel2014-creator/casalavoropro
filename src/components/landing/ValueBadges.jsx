@@ -6,7 +6,7 @@ const BADGES = [
         id: "badge-aziende-verificate",
         icon: ShieldCheck,
         title: "Aziende Verificate",
-        desc: "Documenti societari, DURC e P.IVA controllati dallo staff CasaLavoroPRO.",
+        desc: "Documenti societari, visura e P.IVA controllati dallo staff CasaLavoroPRO.",
     },
     {
         id: "badge-preventivi-gratuiti",

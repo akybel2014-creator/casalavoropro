@@ -25,7 +25,7 @@ const STEPS = [
     {
         n: "04",
         title: "Sicurezza e Garanzia",
-        desc: "Tutte le aziende del network superano un audit con verifica di Partita IVA, DURC e recensioni reali inviate solo da utenti con lavori completati.",
+        desc: "Tutte le aziende del network superano un audit con verifica di Partita IVA, visura camerale e recensioni reali inviate solo da utenti con lavori completati.",
         badge: "Certificato PRO",
         id: "come-funziona-step-4",
     },

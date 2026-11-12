@@ -95,7 +95,6 @@ export interface AziendaDoc {
   categorie: string[];
   zone: string[];
   piva: string;
-  durc_number: string;
   descrizione: string;
   telefono: string;
   sito: string;
@@ -508,140 +507,24 @@ const EMERGENZE_BACKFILL: Record<string, [boolean, boolean, boolean, string]> = 
   "EdilNuova Costruzioni": [true, true, true, "+39 335 444 5566"],
   "ColorArt Imbiancatura": [false, false, false, ""],
   "VerdeMano Giardini": [false, true, false, ""],
-  "Pavimenti Toscana": [false, false, false, ""],
+  "Broker Energia Toscana": [false, false, false, ""],
   "MultiService Italia": [true, true, false, "+39 335 777 8899"],
 };
 
-const DEMO_AZIENDE = [
-  {
-    email: "info@lampioniidraulica.it",
-    nome: "Lampioni Idraulica",
-    categorie: ["Idraulica", "Termoidraulica"],
-    zone: ["Torino", "Provincia di Torino"],
-    piva: "IT01234567890",
-    durc_number: "DURC-TOR-2211",
-    descrizione:
-      "Interventi idraulici urgenti e programmati, riqualificazione impianti e allacci. Squadra tecnica con oltre 20 anni di esperienza sui cantieri residenziali.",
-    telefono: "+39 011 2345678",
-    verified: true,
-    plan: "pro" as const,
-    rating: 4.9,
-    recensioni: 87,
-    logo: "/brand/lampioni.webp",
-  },
-  {
-    email: "info@caloreeclima.it",
-    nome: "Calore & Clima Srl",
-    categorie: ["Termoidraulica", "Idraulica"],
-    zone: ["Milano", "Provincia di Milano"],
-    piva: "IT09876543210",
-    durc_number: "DURC-MIL-4477",
-    descrizione:
-      "Installazione caldaie, climatizzazione e manutenzione impianti termici. Centro assistenza autorizzato con intervento entro 24 ore.",
-    telefono: "+39 02 8765432",
-    verified: true,
-    plan: "pro" as const,
-    rating: 4.8,
-    recensioni: 64,
-    logo: "/brand/calore-clima.webp",
-  },
-  {
-    email: "info@voltinfrastructure.it",
-    nome: "Volt Infrastructure",
-    categorie: ["Elettricita"],
-    zone: ["Milano", "Monza"],
-    piva: "IT05566778899",
-    durc_number: "DURC-MIL-8123",
-    descrizione:
-      "Impianti elettrici civili e terziario, colonnine ricarica auto elettriche, consulenza energetica e messe a norma.",
-    telefono: "+39 02 3456781",
-    verified: true,
-    plan: "free" as const,
-    rating: 4.7,
-    recensioni: 41,
-    logo: "/brand/volt.webp",
-  },
-  {
-    email: "info@edilnuovacostruzioni.it",
-    nome: "EdilNuova Costruzioni",
-    categorie: ["Edilizia", "Pavimenti"],
-    zone: ["Roma", "Provincia di Roma"],
-    piva: "IT04455667788",
-    durc_number: "DURC-ROM-9054",
-    descrizione:
-      "Ristrutturazioni complete chiavi in mano, rinnovamento di appartamenti e completamenti. Direzione cantiere interna con rendering di progetto.",
-    telefono: "+39 06 4567890",
-    verified: true,
-    plan: "pro" as const,
-    rating: 4.9,
-    recensioni: 132,
-    logo: "/brand/edilnuova.webp",
-  },
-  {
-    email: "info@colorartimbiancatura.it",
-    nome: "ColorArt Imbiancatura",
-    categorie: ["Imbiancatura"],
-    zone: ["Firenze", "Prato"],
-    piva: "IT02233445566",
-    durc_number: "DURC-FIR-3391",
-    descrizione:
-      "Pittura decorativa, microcemento e tinteggiature. Partner di marchi internazionali di pittura per finiture premium.",
-    telefono: "+39 055 123456",
-    verified: false,
-    plan: "free" as const,
-    rating: 4.6,
-    recensioni: 18,
-    logo: "/brand/colorart.webp",
-  },
-  {
-    email: "info@verdemano.it",
-    nome: "VerdeMano Giardini",
-    categorie: ["Giardinaggio"],
-    zone: ["Bologna", "Provincia di Bologna"],
-    piva: "IT01122334455",
-    durc_number: "DURC-BLO-6620",
-    descrizione:
-      "Progettazione e manutenzione giardini, irrigazione automatica, potature in quota e allestimenti verde per condomini e villette.",
-    telefono: "+39 051 987654",
-    verified: true,
-    plan: "free" as const,
-    rating: 4.8,
-    recensioni: 55,
-    logo: "/brand/verdemano.webp",
-  },
-  {
-    email: "info@pavimentitoscana.it",
-    nome: "Pavimenti Toscana",
-    categorie: ["Pavimenti", "Edilizia"],
-    zone: ["Firenze", "Siena"],
-    piva: "IT07788990011",
-    durc_number: "DURC-FIR-7781",
-    descrizione:
-      "Posa di gres porcellanato, parquet e resine. Rimozione e rilievo umidita con garanzia decennale sulle opere.",
-    telefono: "+39 055 445566",
-    verified: false,
-    plan: "free" as const,
-    rating: 4.5,
-    recensioni: 12,
-    logo: "/brand/pavimenti.webp",
-  },
-  {
-    email: "info@multiserviceitalia.it",
-    nome: "MultiService Italia",
-    categorie: ["Altri Servizi", "Edilizia"],
-    zone: ["Napoli", "Provincia di Napoli"],
-    piva: "IT06677889900",
-    durc_number: "DURC-NAP-1102",
-    descrizione:
-      "Servizi multi-tecnici per la casa: traslochi, smaltimenti, interventi manutentivi minori e piccola edilizia con team dedicato.",
-    telefono: "+39 081 765432",
-    verified: true,
-    plan: "free" as const,
-    rating: 4.4,
-    recensioni: 29,
-    logo: "/brand/multiservice.webp",
-  },
-];
+const DEMO_AZIENDE: Array<{
+  email: string;
+  nome: string;
+  categorie: string[];
+  zone: string[];
+  piva: string;
+  descrizione: string;
+  telefono: string;
+  verified: boolean;
+  plan: "free" | "pro";
+  rating: number;
+  recensioni: number;
+  logo: string;
+}> = [];
 
 const DEMO_ANNUNCI: Array<[string, "noleggio" | "usato", string, string, string, number, string, string | null, string, string]> = [
   [
@@ -777,7 +660,6 @@ export function seedDemoData() {
       categorie: [...a.categorie],
       zone: [...a.zone],
       piva: a.piva,
-      durc_number: a.durc_number,
       descrizione: a.descrizione,
       telefono: a.telefono,
       sito: "",

@@ -154,7 +154,7 @@ export default function DashboardAzienda() {
         try {
             const body = {
                 nome: mine.nome, descrizione: mine.descrizione, telefono: mine.telefono || "",
-                sito: mine.sito || "", piva: mine.piva || "", durc_number: mine.durc_number || "",
+                sito: mine.sito || "", piva: mine.piva || "",
                 categorie: mine.categorie || [], zone: mine.zone || [],
             };
             const { data } = await api.put("/aziende/mine", body);
@@ -555,17 +555,11 @@ export default function DashboardAzienda() {
                                     <ShieldCheck className="h-5 w-5 text-brand" /> Verifica Azienda PRO
                                 </h3>
                                 <p className="mt-2 text-sm text-slate-400">
-                                    Inserisci Partita IVA e numero DURC: il nostro staff controlla i documenti e attiva il badge "Azienda Verificata".
+                                    Inserisci Partita IVA: il nostro staff controlla i documenti societari e attiva il badge "Azienda Verificata".
                                 </p>
-                                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-300">Partita IVA</Label>
-                                        <Input value={mine.piva || ""} onChange={(e) => setMine((m) => ({ ...m, piva: e.target.value }))} data-testid="verification-piva-input" placeholder="IT01234567890" className={inputCls} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-300">Numero DURC</Label>
-                                        <Input value={mine.durc_number || ""} onChange={(e) => setMine((m) => ({ ...m, durc_number: e.target.value }))} data-testid="verification-durc-input" placeholder="DURC-…" className={inputCls} />
-                                    </div>
+                                <div className="mt-5 max-w-md space-y-2">
+                                    <Label className="text-slate-300">Partita IVA</Label>
+                                    <Input value={mine.piva || ""} onChange={(e) => setMine((m) => ({ ...m, piva: e.target.value }))} data-testid="verification-piva-input" placeholder="IT01234567890" className={inputCls} />
                                 </div>
                                 <div className="mt-5 flex flex-wrap items-center gap-3">
                                     <Button type="button" onClick={richiediVerifica} data-testid="verification-submit-button"

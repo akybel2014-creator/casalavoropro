@@ -13,7 +13,7 @@ const FAQS = [
     },
     {
         q: "Come vengono verificate le aziende?",
-        a: "Ogni azienda invia Partita IVA e DURC: il nostro staff controlla i documenti societari e approva manualmente il badge 'Azienda Verificata' solo dopo l'audit. Puoi riconoscere le aziende verificate dallo scudo verde nella directory.",
+        a: "Ogni azienda invia la Partita IVA: il nostro staff controlla i documenti societari e approva manualmente il badge 'Azienda Verificata' solo dopo l'audit. Puoi riconoscere le aziende verificate dallo scudo verde nella directory.",
     },
     {
         q: "In quanto tempo ricevo le risposte?",

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { createClient } from "@supabase/supabase-js";
 import {
     Search,
     MapPin,
@@ -12,37 +11,18 @@ import {
     ArrowRight,
     Loader2,
     RefreshCw,
-    AlertCircle,
-    Database,
-    Settings,
-    Key,
-    ExternalLink,
     CheckCircle2,
-    ShieldAlert,
 } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import {
     supabase,
     isSupabaseConfiguredNow,
     ensureSupabaseConfig,
-    configureSupabase,
-    resetSupabaseCredentials,
-    cleanSupabaseUrl,
-    cleanSupabaseKey,
-    STORAGE_KEY_URL,
-    STORAGE_KEY_ANON,
 } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
 import { AnnuncioCard } from "@/components/AnnuncioCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -119,11 +99,7 @@ export default function Annunci({ tipo = "noleggio" }) {
     const [savedIds, setSavedIds] = useState(new Set());
     const [isLiveSupabase, setIsLiveSupabase] = useState(false);
 
-    // Modal di configurazione rapida Supabase per test
-    const [configOpen, setConfigOpen] = useState(false);
-    const [inputUrl, setInputUrl] = useState(() => localStorage.getItem(STORAGE_KEY_URL) || "");
-    const [inputKey, setInputKey] = useState(() => localStorage.getItem(STORAGE_KEY_ANON) || "");
-    const [testing, setTesting] = useState(false);
+
 
     // Caricamento preferiti se utente azienda
     useEffect(() => {
@@ -380,60 +356,7 @@ export default function Annunci({ tipo = "noleggio" }) {
         setParams(new URLSearchParams());
     };
 
-    const handleSaveCustomCredentials = async (e) => {
-        e.preventDefault();
-        const cleanedUrl = cleanSupabaseUrl(inputUrl);
-        const cleanedKey = cleanSupabaseKey(inputKey);
 
-        if (!cleanedUrl || !cleanedKey) {
-            toast.error("Inserisci sia l'URL del progetto sia la chiave Anon");
-            return;
-        }
-
-        setTesting(true);
-        try {
-            // Test query diretta prima di salvare per verificare validità della chiave
-            const testClient = createClient(cleanedUrl, cleanedKey);
-            const { error: testErr } = await testClient.from("marketplace").select("id").limit(1);
-
-            if (testErr) {
-                const isInvalidKey =
-                    (testErr.message || "").toLowerCase().includes("invalid api key") ||
-                    (testErr.hint || "").toLowerCase().includes("api key") ||
-                    testErr.code === "PGRST301";
-
-                if (isInvalidKey) {
-                    toast.error(
-                        "Chiave API non valida: assicurati di copiare la chiave 'anon public' da Project Settings > API su Supabase."
-                    );
-                    setTesting(false);
-                    return;
-                }
-            }
-
-            configureSupabase(cleanedUrl, cleanedKey, true);
-            setAuthKeyError(null);
-            toast.success("Credenziali Supabase collegate e verificate con successo!");
-            setConfigOpen(false);
-        } catch (err) {
-            console.error("Test Supabase err:", err);
-            // In caso di errore di rete prova comunque a configurare
-            configureSupabase(cleanedUrl, cleanedKey, true);
-            toast.info("Credenziali salvate. Tentativo di connessione in corso...");
-            setConfigOpen(false);
-        } finally {
-            setTesting(false);
-        }
-    };
-
-    const handleClearCredentials = () => {
-        resetSupabaseCredentials();
-        setInputUrl("");
-        setInputKey("");
-        setAuthKeyError(null);
-        toast.info("Credenziali rimosse. Ripristinato catalogo di riserva.");
-        setConfigOpen(false);
-    };
 
     const hasFilters = [...params.keys()].length > 0 || (categoria && categoria !== "Tutti");
 
@@ -606,38 +529,7 @@ export default function Annunci({ tipo = "noleggio" }) {
             {/* Griglia annunci / Stati di Caricamento ed Errore */}
             <section className="py-10 sm:py-14">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Stato di Errore non bloccante */}
-                    {error && (
-                        <div
-                            className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-center max-w-xl mx-auto mb-8"
-                            data-testid="annunci-error"
-                        >
-                            <AlertCircle className="h-8 w-8 text-red-400 mx-auto" />
-                            <h3 className="mt-2 font-display font-bold text-white text-base">
-                                Avviso di connessione
-                            </h3>
-                            <p className="mt-1 text-xs text-red-300 leading-relaxed">
-                                {error}
-                            </p>
-                            <div className="mt-4 flex justify-center gap-2">
-                                <Button
-                                    size="sm"
-                                    onClick={fetchSupabaseItems}
-                                    className="rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold gap-1.5 text-xs"
-                                >
-                                    <RefreshCw className="h-3.5 w-3.5" /> Riprova
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setConfigOpen(true)}
-                                    className="rounded-full border-white/20 text-white hover:bg-white/10 text-xs"
-                                >
-                                    Verifica credenziali
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Stato di Caricamento (Skeleton) */}
                     {loading && (
@@ -725,81 +617,6 @@ export default function Annunci({ tipo = "noleggio" }) {
                     })()}
                 </div>
             </section>
-
-            {/* Dialog configurazione rapida Supabase per test */}
-            <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-                <DialogContent className="bg-navy-800 border-white/10 text-white max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-xl font-display font-bold">
-                            <Database className="h-5 w-5 text-brand" /> Configura Server Supabase
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-400 text-sm">
-                            Inserisci l'URL del progetto e la <strong>Anon public key</strong> (NON la service_role).
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <form onSubmit={handleSaveCustomCredentials} className="space-y-4 mt-3">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-300">
-                                Project URL (es. https://xyz.supabase.co)
-                            </label>
-                            <Input
-                                value={inputUrl}
-                                onChange={(e) => setInputUrl(e.target.value)}
-                                placeholder="https://xxxxxxxxxxxxxxxxxxxx.supabase.co"
-                                className="bg-navy-900 border-white/10 text-white text-xs font-mono"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-300">
-                                Anon Public Key (anon / public)
-                            </label>
-                            <Input
-                                value={inputKey}
-                                onChange={(e) => setInputKey(e.target.value)}
-                                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                                className="bg-navy-900 border-white/10 text-white text-xs font-mono"
-                            />
-                            <p className="text-[11px] text-slate-400 leading-relaxed">
-                                💡 Su Supabase vai su <strong>Project Settings &gt; API</strong> e copia la chiave con etichetta <strong>anon public</strong> (inizia tipicamente per <code className="text-emerald-400">eyJ...</code>). Non inserire virgolette o spazi.
-                            </p>
-                        </div>
-
-                        <div className="pt-2 flex flex-wrap gap-2 justify-end">
-                            {localStorage.getItem(STORAGE_KEY_URL) && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleClearCredentials}
-                                    className="text-red-400 hover:text-red-300 hover:bg-white/5 mr-auto text-xs"
-                                >
-                                    Rimuovi credenziali salvate
-                                </Button>
-                            )}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setConfigOpen(false)}
-                                className="border-white/10 text-slate-300 hover:bg-white/5 text-xs"
-                            >
-                                Annulla
-                            </Button>
-                            <Button
-                                type="submit"
-                                size="sm"
-                                disabled={testing}
-                                className="bg-brand hover:bg-brand-dark text-white font-semibold shadow-md shadow-brand/20 text-xs gap-1.5"
-                            >
-                                {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Key className="h-3.5 w-3.5" />}
-                                {testing ? "Verifica in corso..." : "Verifica e Collega"}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

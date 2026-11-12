@@ -102,13 +102,13 @@ export default function TerminiServizio() {
                     </section>
 
                     {/* 3. Verifica Aziende e Badge */}
-                    <section className="scroll-mt-28" id="aziende-durc">
+                    <section className="scroll-mt-28" id="aziende-verifica">
                         <h2 className="font-display font-bold text-xl text-white mb-3 flex items-center gap-2">
                             <span className="text-brand font-mono text-base">03.</span>
-                            Aziende Iscritte, Documentazione di Conformità (DURC) e Badge Verificato
+                            Aziende Iscritte, Documentazione Societaria e Badge Verificato
                         </h2>
                         <p>
-                            Le aziende e gli artigiani possono richiedere il badge <strong>"Azienda Verificata"</strong> caricando sulla piattaforma il proprio numero DURC (Documento Unico di Regolarità Contributiva), la visura camerale o certificazioni di abilitazione professionale.
+                            Le aziende e gli artigiani possono richiedere il badge <strong>"Azienda Verificata"</strong> inserendo sulla piattaforma la propria Partita IVA, la visura camerale o le certificazioni di abilitazione professionale.
                         </p>
                         <div className="mt-3 p-4 rounded-xl border border-white/10 bg-white/5 text-xs text-slate-300 space-y-2">
                             <p>

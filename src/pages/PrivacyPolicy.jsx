@@ -189,7 +189,7 @@ export default function PrivacyPolicy() {
                                     <li><strong>Dati anagrafici e societari:</strong> denominazione o ragione sociale, nome del titolare/referente, Partita IVA, numero di telefono aziendale, indirizzo internet del sito web, descrizione dei servizi e categorie d'opera presidiate.</li>
                                     <li><strong>Zone di operatività e geolocalizzazione:</strong> comuni o province di competenza, raggio chilometrico di intervento e coordinate geografiche per la visualizzazione sulla mappa della directory.</li>
                                     <li><strong>Dati di reperibilità ed emergenza:</strong> eventuale disponibilità dichiarata per pronto intervento (emergenze 24/7, reperibilità notturna, fine settimana) e relativo recapito telefonico dedicato.</li>
-                                    <li><strong>Documenti di verifica professionale:</strong> numero e copia informatica del DURC (Documento Unico di Regolarità Contributiva), visura camerale o certificazioni professionali caricati per l'ottenimento del badge "Azienda Verificata". Tali documenti sono accessibili esclusivamente ai controllori amministrativi del portale.</li>
+                                    <li><strong>Documenti di verifica professionale:</strong> numero e copia informatica del visura camerale o certificazioni professionali caricati per l'ottenimento del badge "Azienda Verificata". Tali documenti sono accessibili esclusivamente ai controllori amministrativi del portale.</li>
                                     <li><strong>Immagini di portfolio:</strong> fotografie dei lavori eseguiti e logo aziendale destinati alla consultazione pubblica nella scheda directory.</li>
                                     <li><strong>Annunci di lavoro e ricerca personale:</strong> offerte pubblicate dalle imprese contenenti mansione, tipologia di contratto (es. full-time, tirocinio, stagionale), retribuzione indicativa e recapiti per le candidature.</li>
                                     <li><strong>Registro cantieri e interventi:</strong> agenda gestionale interna all'area riservata aziendale, contenente nominativi dei clienti, recapiti, indirizzi di cantiere, date e note operative inseriti autonomamente dal professionista.</li>
@@ -273,7 +273,7 @@ export default function PrivacyPolicy() {
                                         <td className="py-2.5">Obbligatorio per ricevere preventivi mirati; descrizione e foto sono facoltative</td>
                                     </tr>
                                     <tr>
-                                        <td className="py-2.5 pr-4">Verifica dei requisiti professionali (DURC, dati societari) e rilascio del badge "Azienda Verificata"</td>
+                                        <td className="py-2.5 pr-4">Verifica dei requisiti professionali (Partita IVA, dati societari) e rilascio del badge "Azienda Verificata"</td>
                                         <td className="py-2.5 pr-4">Art. 6(1)(b) — Esecuzione condizioni di adesione e Art. 6(1)(f) — Legittimo interesse a garantire l'affidabilità e la sicurezza della piattaforma</td>
                                         <td className="py-2.5">Facoltativo; necessario per ottenere il badge di verifica</td>
                                     </tr>
@@ -431,7 +431,7 @@ export default function PrivacyPolicy() {
                                 <LegalNotice type="DA CONFERMARE">Periodo di conservazione dei messaggi scambiati tra utenti (es. 12-24 mesi dall'ultimo messaggio)</LegalNotice>.
                             </li>
                             <li>
-                                <strong>Documenti aziendali (DURC, visure camerali):</strong> conservati per l'intero periodo di validità legale
+                                <strong>Documenti aziendali (visure camerali):</strong> conservati per l'intero periodo di validità legale
                                 del documento e per la durata della permanenza dello status di "Azienda Verificata".
                             </li>
                             <li>

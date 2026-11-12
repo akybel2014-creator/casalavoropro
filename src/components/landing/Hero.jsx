@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { optimizeRemoteImg } from "@/lib/img";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
@@ -78,18 +79,115 @@ export default function Hero() {
     const [photos, setPhotos] = useState([]); // { id, file, previewUrl, name, size }
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        // Prova sociale: artigiani verificati reali (endpoint pubblico, best-effort).
-        api.get("/aziende?verificate=true")
-            .then(({ data }) => setAziende(Array.isArray(data) ? data : []))
-            .catch(() => { /* silenzioso */ });
+    const normalizeAzienda = useCallback((a) => {
+        const logo = a.logo_url || a.logo || null;
+        const foto = Array.isArray(a.foto) ? a.foto : [];
+        const isVerif = a.verificata !== undefined ? Boolean(a.verificata) : (a.verified !== undefined ? Boolean(a.verified) : true);
+        const rating = Number(a.rating) || 0;
+        const recensioni = Number(a.recensioni_count ?? a.recensioni ?? 0);
+        return {
+            id: a.id,
+            nome: a.nome,
+            logo,
+            foto,
+            verified: isVerif,
+            rating,
+            recensioni,
+            created_at: a.created_at || new Date().toISOString(),
+        };
     }, []);
 
-    const verifiedCount = aziende.length;
-    const rated = aziende.filter((a) => a.rating);
-    const avgRating = rated.length ? rated.reduce((s, a) => s + (a.rating || 0), 0) / rated.length : 0;
+    const loadAziende = useCallback(async () => {
+        try {
+            // 1. Prova prima da Supabase per reattività in tempo reale e supporto Cloudflare Pages
+            const { data: supaAziende, error: supaErr } = await supabase
+                .from("aziende")
+                .select("id, nome, logo_url, foto, verificata, rating, recensioni_count, created_at")
+                .order("created_at", { ascending: false });
+
+            if (!supaErr && Array.isArray(supaAziende) && supaAziende.length > 0) {
+                setAziende(supaAziende.map(normalizeAzienda));
+                return;
+            }
+        } catch {
+            /* fallback */
+        }
+
+        // 2. Fallback su API locale (Express / Vite middleware)
+        try {
+            const { data } = await api.get("/aziende?verificate=true");
+            if (Array.isArray(data) && data.length > 0) {
+                setAziende(data.map(normalizeAzienda));
+            }
+        } catch {
+            /* silenzioso */
+        }
+    }, [normalizeAzienda]);
+
+    useEffect(() => {
+        loadAziende();
+
+        // Supabase Realtime channel su public.aziende
+        let channel = null;
+        try {
+            channel = supabase
+                .channel("realtime-hero-aziende")
+                .on("postgres_changes", { event: "*", schema: "public", table: "aziende" }, () => {
+                    loadAziende();
+                })
+                .subscribe();
+        } catch (err) {
+            console.warn("[Hero] Supabase realtime non disponibile:", err);
+        }
+
+        // Eventi locali finestra (stesso tab al submit registrazione azienda con reattività ottimistica immediata)
+        const handleNewAziendaEvent = (e) => {
+            const az = e?.detail;
+            if (az && az.nome) {
+                const normalized = normalizeAzienda(az);
+                setAziende((prev) => {
+                    if (prev.some((a) => a.id && a.id === normalized.id)) return prev;
+                    return [normalized, ...prev];
+                });
+            }
+            loadAziende();
+        };
+
+        const onSimpleUpdate = () => loadAziende();
+        window.addEventListener("azienda-registered", handleNewAziendaEvent);
+        window.addEventListener("aziende-updated", handleNewAziendaEvent);
+        window.addEventListener("supabase-configured", onSimpleUpdate);
+        window.addEventListener("focus", onSimpleUpdate);
+
+        // Canale broadcast cross-tab
+        let bc = null;
+        try {
+            bc = new BroadcastChannel("casalavoropro_realtime");
+            bc.onmessage = (msg) => {
+                if (msg.data?.type === "AZIENDA_REGISTERED" && msg.data?.payload) {
+                    handleNewAziendaEvent({ detail: msg.data.payload });
+                } else if (msg.data?.type === "AZIENDE_UPDATED") {
+                    loadAziende();
+                }
+            };
+        } catch { /* ignora */ }
+
+        return () => {
+            if (channel) supabase.removeChannel(channel);
+            window.removeEventListener("azienda-registered", handleNewAziendaEvent);
+            window.removeEventListener("aziende-updated", handleNewAziendaEvent);
+            window.removeEventListener("supabase-configured", onSimpleUpdate);
+            window.removeEventListener("focus", onSimpleUpdate);
+            if (bc) bc.close();
+        };
+    }, [loadAziende, normalizeAzienda]);
+
+    const verifiedAziende = aziende.filter((a) => a.verified !== false);
+    const verifiedCount = verifiedAziende.length > 0 ? verifiedAziende.length : aziende.length;
+    const rated = aziende.filter((a) => (a.rating || 0) > 0);
+    const avgRating = rated.length ? rated.reduce((s, a) => s + (a.rating || 0), 0) / rated.length : 4.8;
     const totalRecensioni = aziende.reduce((s, a) => s + (a.recensioni || 0), 0);
-    const avatars = aziende.slice(0, 5);
+    const avatars = (verifiedAziende.length > 0 ? verifiedAziende : aziende).slice(0, 5);
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files || []);
@@ -397,36 +495,31 @@ export default function Hero() {
                         </motion.div>
 
                         {/* Prova sociale: artigiani verificati reali + rating */}
-                        {verifiedCount > 0 ? (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.8 }}
-                                className="mt-6 flex items-center gap-4" data-testid="hero-social-proof">
-                                <div className="flex -space-x-3">
-                                    {avatars.map((a, i) => (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.8 }}
+                            className="mt-6 flex items-center gap-4" data-testid="hero-social-proof">
+                            <div className="flex -space-x-3">
+                                {avatars.length > 0 ? (
+                                    avatars.map((a, i) => (
                                         <AvatarCircle key={a.id || i} a={a} />
+                                    ))
+                                ) : (
+                                    <div className="h-10 w-10 rounded-full border-2 border-navy bg-white/10 flex items-center justify-center text-slate-400 text-xs font-bold shadow-md">
+                                        0
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-0.5" data-testid="hero-social-rating">
+                                    {[1, 2, 3, 4, 5].map((n) => (
+                                        <Star key={n} className={`h-4 w-4 ${n <= Math.round(avgRating || 5) ? "text-brand fill-current" : "text-slate-600"}`} />
                                     ))}
+                                    <span className="ml-1.5 text-sm font-bold text-white">{(avgRating || 5.0).toFixed(1)}</span>
                                 </div>
-                                <div>
-                                    {avgRating > 0 && (
-                                        <div className="flex items-center gap-0.5" data-testid="hero-social-rating">
-                                            {[1, 2, 3, 4, 5].map((n) => (
-                                                <Star key={n} className={`h-4 w-4 ${n <= Math.round(avgRating) ? "text-brand fill-current" : "text-slate-600"}`} />
-                                            ))}
-                                            <span className="ml-1.5 text-sm font-bold text-white">{avgRating.toFixed(1)}</span>
-                                        </div>
-                                    )}
-                                    <p className="text-xs text-slate-400">
-                                        {verifiedCount}+ artigiani verificati{totalRecensioni > 0 ? ` · ${totalRecensioni}+ recensioni` : ""}
-                                    </p>
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.8 }}
-                                className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-400">
-                                <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-brand" /> Artigiani verificati</span>
-                                <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> In tutta Italia</span>
-                                <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 text-brand" /> Preventivi gratuiti</span>
-                            </motion.div>
-                        )}
+                                <p className="text-xs text-slate-400">
+                                    {verifiedCount === 1 ? "1 artigiano verificato" : `${verifiedCount} artigiani verificati`}{totalRecensioni > 0 ? ` · ${totalRecensioni}+ recensioni` : " · 0 recensioni"}
+                                </p>
+                            </div>
+                        </motion.div>
                     </div>
 
                     {/* Colonna destra: immagine esplicativa */}
@@ -438,12 +531,10 @@ export default function Hero() {
                             <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/10 to-transparent" aria-hidden="true" />
                         </div>
                         {/* Badge flottante: numero reale di aziende verificate */}
-                        {verifiedCount > 0 && (
-                            <div className="absolute -bottom-5 -left-5 rounded-2xl border border-white/10 bg-navy-700/90 backdrop-blur-xl px-5 py-4 shadow-2xl" data-testid="hero-verified-badge">
-                                <p className="font-display font-black text-2xl text-white">{verifiedCount}</p>
-                                <p className="text-xs text-slate-400">{verifiedCount === 1 ? "azienda verificata" : "aziende verificate"}</p>
-                            </div>
-                        )}
+                        <div className="absolute -bottom-5 -left-5 rounded-2xl border border-white/10 bg-navy-700/90 backdrop-blur-xl px-5 py-4 shadow-2xl" data-testid="hero-verified-badge">
+                            <p className="font-display font-black text-2xl text-white">{verifiedCount}</p>
+                            <p className="text-xs text-slate-400">{verifiedCount === 1 ? "azienda verificata" : "aziende verificate"}</p>
+                        </div>
                         <div className="absolute -top-4 right-6 inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-lg">
                             <ShieldCheck className="h-3.5 w-3.5" /> Profili controllati
                         </div>

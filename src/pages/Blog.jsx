@@ -215,7 +215,7 @@ export default function Blog() {
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-xl mx-auto mb-6">
                         {publishedArticles.length > 0
-                            ? "La nostra redazione tecnica sta preparando nuove guide su manutenzione impianti, conformità DURC e risparmio energetico."
+                            ? "La nostra redazione tecnica sta preparando nuove guide su manutenzione impianti, conformità aziendale e risparmio energetico."
                             : "Nessuna guida corrisponde ai filtri selezionati. Prova a selezionare 'Tutte le categorie' o a reimpostare la ricerca."}
                     </p>
 
@@ -225,7 +225,7 @@ export default function Blog() {
                             Come preparare un capitolato chiaro ed evitare imprevisti sui costi.
                         </div>
                         <div className="p-3.5 rounded-xl border border-white/10 bg-white/5">
-                            <span className="font-semibold text-brand block mb-1">Checklist DURC</span>
+                            <span className="font-semibold text-brand block mb-1">Checklist Impresa</span>
                             Come verificare l'idoneità tecnico-professionale dell'impresa prima di iniziare.
                         </div>
                         <div className="p-3.5 rounded-xl border border-white/10 bg-white/5">
@@ -425,7 +425,7 @@ function SingleArticleTemplate({ slug, onBack }) {
                     <ol className="space-y-1.5 text-xs text-slate-300 list-decimal list-inside">
                         <li>Definire l'obiettivo dell'intervento e i vincoli strutturali</li>
                         <li>Come richiedere preventivi dettagliati e confrontabili</li>
-                        <li>Controlli preliminari: DURC, abilitazioni e assicurazioni</li>
+                        <li>Controlli preliminari: visura camerale, abilitazioni e assicurazioni</li>
                         <li>La gestione dello stato avanzamento lavori (SAL) e il registro fotografico</li>
                         <li>Checklist finale e collaudo</li>
                     </ol>
@@ -460,16 +460,16 @@ function SingleArticleTemplate({ slug, onBack }) {
 
                     <section>
                         <h2 className="font-display font-bold text-2xl text-white mb-3">
-                            2. Controlli preliminari: DURC e abilitazioni professionali
+                            2. Controlli preliminari: visura camerale e abilitazioni professionali
                         </h2>
                         <p className="mb-3">
-                            La regolarità contributiva e assicurativa dell'impresa non è solo una garanzia di affidabilità, ma un preciso dovere
+                            La regolarità societaria e assicurativa dell'impresa non è solo una garanzia di affidabilità, ma un preciso dovere
                             di verifica posto a carico del committente ai sensi del D.Lgs. 81/2008 (Testo Unico sulla Sicurezza).
                         </p>
                         <ul className="space-y-2 list-none text-xs">
                             <li className="flex items-start gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong>DURC valido:</strong> certifica che l'impresa è in regola con i versamenti previdenziali e assistenziali INPS/INAIL e Cassa Edile.</span>
+                                <span><strong>Visura camerale attiva:</strong> certifica l'iscrizione al Registro Imprese della Camera di Commercio con codice ATECO idoneo.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />

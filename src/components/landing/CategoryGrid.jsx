@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Wrench, Flame, Zap, Hammer, Paintbrush, Trees, Layers, LayoutGrid, ArrowUpRight } from "lucide-react";
+import { Wrench, Flame, Zap, Hammer, Paintbrush, Trees, LayoutGrid, ArrowUpRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 
 export const CATEGORIES = [
     { name: "Idraulica", icon: Wrench, id: "category-card-idraulica" },
@@ -11,7 +12,7 @@ export const CATEGORIES = [
     { name: "Edilizia", icon: Hammer, id: "category-card-edilizia" },
     { name: "Imbiancatura", icon: Paintbrush, id: "category-card-imbiancatura" },
     { name: "Giardinaggio", icon: Trees, id: "category-card-giardinaggio" },
-    { name: "Pavimenti", icon: Layers, id: "category-card-pavimenti" },
+    { name: "Consulenti Luce e Gas", icon: Zap, id: "category-card-luce-gas" },
     { name: "Altri Servizi", icon: LayoutGrid, id: "category-card-altri-servizi" },
 ];
 
@@ -19,7 +20,9 @@ export const CATEGORIES = [
 // La griglia in home resta curata (CATEGORIES); qui c'è l'elenco completo deduplicato.
 export const SERVICE_CATEGORIES = [
     "Assicurazione",
+    "Broker",
     "Catering",
+    "Consulenti Luce e Gas",
     "Edilizia",
     "Elettricità",
     "Geometra",
@@ -33,17 +36,11 @@ export const SERVICE_CATEGORIES = [
     "Investigatore Privato",
     "NCC",
     "Noleggio con Conducente",
-    "Notaio",
-    "Nutrizionista",
-    "Pavimenti",
-    "Personal Trainer",
-    "Psicologo",
     "Pulizia",
     "Pulizie a Fondo",
     "Riparazione Elettrodomestici",
     "Ristrutturazione Casa",
     "Ristrutturazioni",
-    "Sale per Compleanni",
     "Svuota Cantine",
     "Termoidraulica",
     "Trasporti",
@@ -54,20 +51,155 @@ export const SERVICE_CATEGORIES = [
 // Normalizza i nomi categoria (minuscolo, senza accenti) per allineare card e dati reali.
 const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
+// Mappatura sinonimi e sottocategorie verso le 8 card principali della griglia
+const CATEGORY_MAP = {
+    "idraulica": "idraulica",
+    "idraulico": "idraulica",
+    "riparazione elettrodomestici": "idraulica",
+    "termoidraulica": "termoidraulica",
+    "installazione condizionatori": "termoidraulica",
+    "elettricita": "elettricita",
+    "elettricista": "elettricita",
+    "edilizia": "edilizia",
+    "ristrutturazioni": "edilizia",
+    "ristrutturazione casa": "edilizia",
+    "geometra": "edilizia",
+    "imbiancatura": "imbiancatura",
+    "imbianchino": "imbiancatura",
+    "giardinaggio": "giardinaggio",
+    "giardiniere": "giardinaggio",
+    "consulenti luce e gas": "consulenti luce e gas",
+    "broker": "consulenti luce e gas",
+    "altri servizi": "altri servizi",
+    "pulizia": "altri servizi",
+    "pulizie a fondo": "altri servizi",
+    "trasporti": "altri servizi",
+    "svuota cantine": "altri servizi",
+    "zanzariere": "altri servizi",
+    "ncc": "altri servizi",
+    "noleggio con conducente": "altri servizi",
+    "catering": "altri servizi",
+    "assicurazione": "altri servizi",
+    "investigatore privato": "altri servizi",
+};
+
 export default function CategoryGrid() {
     const [counts, setCounts] = useState({});
 
-    useEffect(() => {
-        api.get("/aziende/categorie-count")
-            .then(({ data }) => {
+    const loadCounts = useCallback(async () => {
+        try {
+            // 1. Prova prima da Supabase per reattività in tempo reale e supporto Cloudflare Pages
+            const { data: supaAziende, error: supaErr } = await supabase
+                .from("aziende")
+                .select("id, categorie");
+
+            if (!supaErr && Array.isArray(supaAziende) && supaAziende.length > 0) {
                 const lookup = {};
-                Object.entries(data?.counts || {}).forEach(([k, v]) => {
-                    lookup[norm(k)] = (lookup[norm(k)] || 0) + v;
-                });
+                for (const cat of CATEGORIES) {
+                    lookup[norm(cat.name)] = 0;
+                }
+                for (const a of supaAziende) {
+                    const azCategories = Array.isArray(a.categorie) ? a.categorie : [];
+                    const matched = new Set();
+                    for (const rawCat of azCategories) {
+                        const n = norm(rawCat);
+                        const target = CATEGORY_MAP[n] || n;
+                        matched.add(target);
+                    }
+                    for (const target of matched) {
+                        lookup[target] = (lookup[target] || 0) + 1;
+                    }
+                }
                 setCounts(lookup);
-            })
-            .catch(() => { /* silenzioso */ });
+                return;
+            }
+        } catch {
+            /* fallback su api backend */
+        }
+
+        // 2. Fallback su API backend locale
+        try {
+            const { data } = await api.get("/aziende/categorie-count");
+            const lookup = {};
+            for (const cat of CATEGORIES) {
+                lookup[norm(cat.name)] = 0;
+            }
+            Object.entries(data?.counts || {}).forEach(([k, v]) => {
+                const n = norm(k);
+                const target = CATEGORY_MAP[n] || n;
+                lookup[target] = (lookup[target] || 0) + v;
+            });
+            setCounts(lookup);
+        } catch {
+            /* silenzioso */
+        }
     }, []);
+
+    useEffect(() => {
+        loadCounts();
+
+        // Supabase Realtime channel su public.aziende
+        let channel = null;
+        try {
+            channel = supabase
+                .channel("realtime-categorygrid")
+                .on("postgres_changes", { event: "*", schema: "public", table: "aziende" }, () => {
+                    loadCounts();
+                })
+                .subscribe();
+        } catch (err) {
+            console.warn("[CategoryGrid] Realtime non disponibile:", err);
+        }
+
+        // Eventi locali finestra (stesso tab al submit registrazione azienda con reattività ottimistica immediata)
+        const handleNewAziendaEvent = (e) => {
+            const az = e?.detail;
+            if (az && Array.isArray(az.categorie) && az.categorie.length > 0) {
+                setCounts((prev) => {
+                    const next = { ...prev };
+                    const matched = new Set();
+                    for (const rawCat of az.categorie) {
+                        const n = norm(rawCat);
+                        const target = CATEGORY_MAP[n] || n;
+                        matched.add(target);
+                    }
+                    for (const target of matched) {
+                        next[target] = (next[target] || 0) + 1;
+                    }
+                    return next;
+                });
+            }
+            loadCounts();
+        };
+
+        const onSimpleUpdate = () => loadCounts();
+        window.addEventListener("azienda-registered", handleNewAziendaEvent);
+        window.addEventListener("aziende-updated", handleNewAziendaEvent);
+        window.addEventListener("supabase-configured", onSimpleUpdate);
+        window.addEventListener("focus", onSimpleUpdate);
+
+        // Canale broadcast cross-tab
+        let bc = null;
+        try {
+            bc = new BroadcastChannel("casalavoropro_realtime");
+            bc.onmessage = (msg) => {
+                if (msg.data?.type === "AZIENDA_REGISTERED" && msg.data?.payload) {
+                    handleNewAziendaEvent({ detail: msg.data.payload });
+                } else if (msg.data?.type === "AZIENDE_UPDATED") {
+                    loadCounts();
+                }
+            };
+        } catch { /* ignora */ }
+
+        return () => {
+            if (channel) supabase.removeChannel(channel);
+            window.removeEventListener("azienda-registered", handleNewAziendaEvent);
+            window.removeEventListener("aziende-updated", handleNewAziendaEvent);
+            window.removeEventListener("supabase-configured", onSimpleUpdate);
+            window.removeEventListener("focus", onSimpleUpdate);
+            if (bc) bc.close();
+        };
+    }, [loadCounts]);
 
     return (
         <section id="categorie" className="relative bg-navy py-16 sm:py-24 lg:py-32">

@@ -185,7 +185,7 @@ export default function ArticleRistrutturazioniCasa() {
                         <li className="flex items-start gap-2.5">
                             <CheckCircle2 className="h-4 w-4 text-brand shrink-0 mt-0.5" />
                             <span>
-                                <strong>Verifica formale delle imprese:</strong> Su CasaLavoroPRO le aziende possono sottoporre DURC e visura camerale a controllo formale per ottenere il badge di impresa verificata.
+                                <strong>Verifica formale delle imprese:</strong> Su CasaLavoroPRO le aziende possono sottoporre Partita IVA e visura camerale a controllo formale per ottenere il badge di impresa verificata.
                             </span>
                         </li>
                         <li className="flex items-start gap-2.5">

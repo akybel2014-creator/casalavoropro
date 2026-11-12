@@ -10,6 +10,7 @@ import { Logo } from "@/components/Logo";
 import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 
 export default function Registrati() {
@@ -44,6 +45,44 @@ export default function Registrati() {
                 };
             }
             const { user, azienda } = await register(payload);
+
+            // Sincronizza immediatamente con Supabase e notifica la landing page in tempo reale
+            if (ruolo === "azienda") {
+                try {
+                    const azToInsert = {
+                        nome: (form.nome || form.name || "Nuova Azienda").trim(),
+                        categorie: categorie.length > 0 ? categorie : ["Altri Servizi"],
+                        zone: form.zone ? form.zone.split(",").map((z) => z.trim()).filter(Boolean) : [],
+                        piva: form.piva || null,
+                        descrizione: form.descrizione || null,
+                        email: form.email,
+                        verificata: true,
+                        rating: 5.0,
+                        recensioni_count: 0,
+                        piano: "free",
+                    };
+                    const { data: supaAz } = await supabase
+                        .from("aziende")
+                        .insert(azToInsert)
+                        .select()
+                        .maybeSingle();
+
+                    const eventDetail = supaAz || { ...azToInsert, id: azienda?.id || `az-${Date.now()}` };
+                    window.dispatchEvent(new CustomEvent("azienda-registered", { detail: eventDetail }));
+                    window.dispatchEvent(new CustomEvent("aziende-updated", { detail: eventDetail }));
+
+                    try {
+                        const bc = new BroadcastChannel("casalavoropro_realtime");
+                        bc.postMessage({ type: "AZIENDA_REGISTERED", payload: eventDetail });
+                        bc.close();
+                    } catch { /* ignora */ }
+                } catch (err) {
+                    console.warn("[Registrati] Sync Supabase realtime:", err);
+                    window.dispatchEvent(new CustomEvent("azienda-registered", { detail: azienda }));
+                    window.dispatchEvent(new CustomEvent("aziende-updated", { detail: azienda }));
+                }
+            }
+
             toast.success(`Benvenuto su CasaLavoroPRO, ${user.name}!`);
             // Offerta Fondatori: le prime 50 aziende hanno gia il PRO gratis -> nessun pagamento.
             if (ruolo === "azienda" && azienda?.founder50) {

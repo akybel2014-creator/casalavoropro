@@ -75,7 +75,8 @@ function CaparraBadge({ p }) {
 
 export function PrenotazioniList({ items, ruolo, onStato, onAnnulla, onAnnullaAzienda, onPagaCaparra, payingId, onRecensita }) {
     if (items === null) return <p className="text-sm text-slate-500">Caricamento prenotazioni…</p>;
-    if (items.length === 0) {
+    const safeItems = Array.isArray(items) ? items : [];
+    if (safeItems.length === 0) {
         return (
             <div className="rounded-3xl border border-dashed border-white/15 p-10 text-center" data-testid="prenotazioni-empty">
                 <CalendarDays className="h-10 w-10 text-slate-500 mx-auto" />
@@ -92,7 +93,7 @@ export function PrenotazioniList({ items, ruolo, onStato, onAnnulla, onAnnullaAz
     }
     return (
         <div className="space-y-3" data-testid="prenotazioni-list">
-            {items.map((p) => (
+            {safeItems.map((p) => (
                 <div key={p.id} className="rounded-2xl border border-white/10 bg-navy-700/60 p-5 flex flex-col sm:flex-row sm:items-center gap-4" data-testid={`prenotazione-card-${p.id}`}>
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">

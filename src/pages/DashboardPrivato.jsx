@@ -110,7 +110,7 @@ export default function DashboardPrivato() {
     const annullaPrenotazione = async (id) => {
         try {
             const { data } = await api.post(`/prenotazioni/${id}/annulla`);
-            setPrenotazioni((prev) => (prev || []).map((x) => (x.id === id ? data : x)));
+            setPrenotazioni((prev) => (Array.isArray(prev) ? prev : []).map((x) => (x.id === id ? data : x)));
             toast.success("Prenotazione annullata");
         } catch (e) {
             toast.error(formatApiError(e));
@@ -120,7 +120,7 @@ export default function DashboardPrivato() {
     const rimuoviPreferita = async (id, nome) => {
         try {
             await api.delete(`/preferiti/${id}`);
-            setPreferite((prev) => (prev || []).filter((a) => a.id !== id));
+            setPreferite((prev) => (Array.isArray(prev) ? prev : []).filter((a) => a.id !== id));
             toast.success(`${nome} rimossa dalle preferite`);
         } catch (e) {
             toast.error(formatApiError(e));
@@ -169,23 +169,23 @@ export default function DashboardPrivato() {
                         </TabsTrigger>
                         <TabsTrigger value="preferite" data-testid="dashboard-privato-tab-preferite" className="shrink-0 data-[state=active]:text-white">
                             <Heart className="h-4 w-4 mr-1.5" /> Preferite
-                            {preferite?.length > 0 && <span className="ml-1.5 rounded-full bg-brand/20 text-brand text-[11px] font-bold px-1.5">{preferite.length}</span>}
+                            {Array.isArray(preferite) && preferite.length > 0 && <span className="ml-1.5 rounded-full bg-brand/20 text-brand text-[11px] font-bold px-1.5">{preferite.length}</span>}
                         </TabsTrigger>
                         <TabsTrigger value="noleggi" data-testid="dashboard-privato-tab-noleggi" className="shrink-0 data-[state=active]:text-white">
                             <CalendarDays className="h-4 w-4 mr-1.5" /> Noleggi
-                            {prenotazioni?.some((p) => p.stato === "richiesta") && <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
+                            {Array.isArray(prenotazioni) && prenotazioni.some((p) => p.stato === "richiesta") && <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
                         </TabsTrigger>
                         <TabsTrigger value="vendo" data-testid="dashboard-privato-tab-vendo" className="shrink-0 data-[state=active]:text-white">
                             <Tag className="h-4 w-4 mr-1.5" /> Vendo
                         </TabsTrigger>
                         <TabsTrigger value="notifiche" data-testid="dashboard-privato-tab-notifications" className="shrink-0 data-[state=active]:text-white">
                             <Bell className="h-4 w-4 mr-1.5" /> Notifiche
-                            {notifiche.some((n) => !n.letto) && <span className="ml-1.5 h-2 w-2 rounded-full bg-brand inline-block" />}
+                            {Array.isArray(notifiche) && notifiche.some((n) => !n.letto) && <span className="ml-1.5 h-2 w-2 rounded-full bg-brand inline-block" />}
                         </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="richieste" className="mt-6 space-y-6">
-                        {richieste && richieste.length === 0 && (
+                        {Array.isArray(richieste) && richieste.length === 0 && (
                             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="dashboard-privato-empty">
                                 <Handshake className="h-10 w-10 text-slate-500 mx-auto" />
                                 <h3 className="mt-4 font-display font-bold text-white text-lg">Nessuna richiesta ancora</h3>
@@ -195,8 +195,9 @@ export default function DashboardPrivato() {
                                 </Button>
                             </div>
                         )}
-                        {richieste && richieste.map((r) => {
-                            const accettata = r.risposte?.find((x) => x.stato === "accettata");
+                        {(Array.isArray(richieste) ? richieste : []).map((r) => {
+                            const risposte = Array.isArray(r?.risposte) ? r.risposte : [];
+                            const accettata = risposte.find((x) => x.stato === "accettata");
                             return (
                                 <div key={r.id} className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-7" data-testid={`richiesta-card-${r.id}`}>
                                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -219,7 +220,7 @@ export default function DashboardPrivato() {
                                     <RichiestaFotoGallery foto={r.foto} titolo={r.titolo} />
 
                                     <div className="mt-5 space-y-3" data-testid={`risposte-list-${r.id}`}>
-                                        {r.risposte?.map((ris) => (
+                                        {risposte.map((ris) => (
                                             <div key={ris.id} className="rounded-2xl border border-white/10 bg-navy/60 p-5" data-testid={`risposta-card-${ris.id}`}>
                                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                                     <div className="flex items-center gap-3">
@@ -258,7 +259,7 @@ export default function DashboardPrivato() {
                                                 {ris.stato === "rifiutata" && <span className="mt-3 inline-block rounded-full bg-white/5 text-slate-500 text-xs font-semibold px-3 py-1">Non accettato</span>}
                                             </div>
                                         ))}
-                                        {r.risposte?.length === 0 && (
+                                        {risposte.length === 0 && (
                                             <p className="text-sm text-slate-500 border border-dashed border-white/10 rounded-2xl p-5 text-center">
                                                 Le aziende della zona stanno valutando la tua richiesta… i preventivi appariranno qui.
                                             </p>
@@ -290,7 +291,7 @@ export default function DashboardPrivato() {
 
                     <TabsContent value="noleggi" className="mt-6" data-testid="dashboard-noleggi">
                         <PrenotazioniList items={prenotazioni} ruolo="privato" onAnnulla={annullaPrenotazione} onPagaCaparra={pagaCaparra} payingId={payingId}
-                            onRecensita={(id, rec) => setPrenotazioni((prev) => (prev || []).map((x) => (x.id === id ? { ...x, recensione: rec } : x)))} />
+                            onRecensita={(id, rec) => setPrenotazioni((prev) => (Array.isArray(prev) ? prev : []).map((x) => (x.id === id ? { ...x, recensione: rec } : x)))} />
                     </TabsContent>
 
                     <TabsContent value="vendo" className="mt-6" data-testid="dashboard-vendo">
@@ -298,8 +299,8 @@ export default function DashboardPrivato() {
                     </TabsContent>
 
                     <TabsContent value="notifiche" className="mt-6 space-y-3" data-testid="dashboard-notifiche-list">
-                        {notifiche.length === 0 && <p className="text-sm text-slate-500">Nessuna notifica per ora.</p>}
-                        {notifiche.map((n) => (
+                        {(!Array.isArray(notifiche) || notifiche.length === 0) && <p className="text-sm text-slate-500">Nessuna notifica per ora.</p>}
+                        {(Array.isArray(notifiche) ? notifiche : []).map((n) => (
                             <div key={n.id} className={`rounded-2xl border p-5 flex items-start justify-between gap-4 ${n.letto ? "border-white/5 bg-navy-700/40" : "border-brand/30 bg-brand/5"}`} data-testid={`notifica-card-${n.id}`}>
                                 <div>
                                     <p className="font-semibold text-white text-sm">{n.titolo}</p>

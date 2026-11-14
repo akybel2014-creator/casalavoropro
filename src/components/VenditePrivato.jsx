@@ -34,7 +34,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
                     sottocategoria: record.sottocategoria || "", zona: record.zona || "", prezzo: record.prezzo ?? "",
                     stato: record.stato || "Buono", telefono: record.azienda_telefono || "",
                 });
-                setFoto(record.foto || []);
+                setFoto(Array.isArray(record.foto) ? record.foto : []);
                 setCurrentId(record.id);
             } else {
                 setF(EMPTY); setFoto([]); setCurrentId(null);
@@ -44,8 +44,10 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
     }, [open, record]);
 
     const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-    const sottocats = meta?.sottocategorie?.[f.categoria] || [];
-    const total = foto.length + staged.length;
+    const sottocats = Array.isArray(meta?.sottocategorie?.[f.categoria]) ? meta.sottocategorie[f.categoria] : [];
+    const safeFoto = Array.isArray(foto) ? foto : [];
+    const safeStaged = Array.isArray(staged) ? staged : [];
+    const total = safeFoto.length + safeStaged.length;
 
     // ---------- Foto: upload immediato (quando l'annuncio esiste già) ----------
     const uploadFilesNow = async (id, files) => {
@@ -54,7 +56,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
             const fd = new FormData();
             files.forEach((file) => fd.append("files", file));
             const { data } = await api.post(`/annunci/${id}/foto`, fd);
-            setFoto(data.foto || []); onSaved?.();
+            setFoto(Array.isArray(data?.foto) ? data.foto : []); onSaved?.();
             toast.success("Foto caricate.");
         } catch (err) { toast.error(formatApiError(err)); }
         finally { setUploading(false); }
@@ -63,7 +65,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
         setUploading(true);
         try {
             const { data } = await api.post(`/annunci/${id}/foto-url`, { urls });
-            setFoto(data.foto || []); onSaved?.();
+            setFoto(Array.isArray(data?.foto) ? data.foto : []); onSaved?.();
             const n = data.aggiunte || 0, errs = (data.errori || []).length;
             n ? toast.success(`${n} foto aggiunte${errs ? ` · ${errs} ignorate` : ""}.`) : toast.error(`Nessuna foto aggiunta${errs ? ` · ${errs} errori` : ""}.`);
         } catch (err) { toast.error(formatApiError(err)); }
@@ -115,7 +117,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
     const delFoto = async (fid) => {
         try {
             const { data } = await api.delete(`/annunci/${currentId}/foto/${fid}`);
-            setFoto(data.foto || []); onSaved?.();
+            setFoto(Array.isArray(data?.foto) ? data.foto : []); onSaved?.();
         } catch (err) { toast.error(formatApiError(err)); }
     };
 
@@ -186,7 +188,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
                             <Select value={f.categoria} onValueChange={(v) => { set("categoria", v); set("sottocategoria", ""); }}>
                                 <SelectTrigger data-testid="vendi-categoria" className={inputCls}><SelectValue placeholder="Scegli" /></SelectTrigger>
                                 <SelectContent className="bg-navy-700 border-white/10 text-white">
-                                    {(meta?.categorie || []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    {(Array.isArray(meta?.categorie) ? meta.categorie : []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -216,7 +218,7 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
                             <Select value={f.stato} onValueChange={(v) => set("stato", v)}>
                                 <SelectTrigger data-testid="vendi-stato" className={inputCls}><SelectValue /></SelectTrigger>
                                 <SelectContent className="bg-navy-700 border-white/10 text-white">
-                                    {(meta?.stati_usato || []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    {(Array.isArray(meta?.stati_usato) ? meta.stati_usato : []).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -230,14 +232,14 @@ function VendiDialog({ meta, record, onSaved, trigger }) {
                     <div className="space-y-3 rounded-xl border border-white/10 p-3" data-testid="vendi-foto-section">
                         <Label className="text-slate-300 text-xs">Foto (max {MAX}) — {total}/{MAX}</Label>
                         <div className="flex flex-wrap gap-2">
-                            {foto.map((p) => (
+                            {safeFoto.map((p) => (
                                 <div key={p.id} className="relative">
                                     <img src={`${FILES_BASE}${p.path}`} alt="" className="h-16 w-16 rounded-lg object-cover border border-white/10" />
                                     <button type="button" onClick={() => delFoto(p.id)} data-testid={`vendi-foto-del-${p.id}`}
                                         className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center"><X className="h-3 w-3" /></button>
                                 </div>
                             ))}
-                            {staged.map((s) => (
+                            {safeStaged.map((s) => (
                                 <div key={s.id} className="relative">
                                     <img src={s.preview} alt="" className="h-16 w-16 rounded-lg object-cover border border-brand/40" />
                                     <span className="absolute bottom-0 inset-x-0 bg-brand/80 text-white text-[8px] text-center font-semibold rounded-b-lg">IN CODA</span>
@@ -288,11 +290,13 @@ export function VenditePrivato() {
     const [meta, setMeta] = useState(null);
 
     const load = useCallback(async () => {
-        try {
-            const [m, r] = await Promise.all([api.get("/annunci/meta"), api.get("/annunci/mine")]);
-            setMeta(m.data);
-            setItems(r.data || []);
-        } catch (e) { toast.error(formatApiError(e)); }
+        const [mRes, rRes] = await Promise.allSettled([api.get("/annunci/meta"), api.get("/annunci/mine")]);
+        if (mRes.status === "fulfilled" && mRes.value?.data && typeof mRes.value.data === "object" && Array.isArray(mRes.value.data.categorie)) {
+            setMeta(mRes.value.data);
+        } else {
+            setMeta(null);
+        }
+        setItems(rRes.status === "fulfilled" && Array.isArray(rRes.value?.data) ? rRes.value.data : []);
     }, []);
 
     useEffect(() => { load(); }, [load]);
@@ -300,7 +304,7 @@ export function VenditePrivato() {
     const elimina = async (id) => {
         try {
             await api.delete(`/annunci/${id}`);
-            setItems((prev) => (prev || []).filter((x) => x.id !== id));
+            setItems((prev) => (Array.isArray(prev) ? prev : []).filter((x) => x.id !== id));
             toast.success("Annuncio eliminato.");
         } catch (e) { toast.error(formatApiError(e)); }
     };
@@ -308,10 +312,12 @@ export function VenditePrivato() {
     const toggleVenduto = async (a) => {
         try {
             const { data } = await api.put(`/annunci/${a.id}`, { venduto: !a.venduto });
-            setItems((prev) => (prev || []).map((x) => (x.id === a.id ? data : x)));
+            setItems((prev) => (Array.isArray(prev) ? prev : []).map((x) => (x.id === a.id ? data : x)));
             toast.success(data.venduto ? "Segnato come venduto: non appare più nel Mercatino." : "Rimesso in vendita.");
         } catch (e) { toast.error(formatApiError(e)); }
     };
+
+    const safeItems = Array.isArray(items) ? items : [];
 
     return (
         <div className="space-y-5" data-testid="dashboard-vendite">
@@ -324,7 +330,7 @@ export function VenditePrivato() {
                 } />
             </div>
 
-            {items && items.length === 0 && (
+            {Array.isArray(items) && safeItems.length === 0 && (
                 <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="dashboard-vendite-empty">
                     <Tag className="h-10 w-10 text-slate-500 mx-auto" />
                     <h3 className="mt-4 font-display font-bold text-white text-lg">Nessun prodotto in vendita</h3>
@@ -333,7 +339,7 @@ export function VenditePrivato() {
             )}
 
             <div className="grid sm:grid-cols-2 gap-4">
-                {(items || []).map((a) => (
+                {safeItems.map((a) => (
                     <div key={a.id} className="rounded-2xl border border-white/10 bg-navy-700/60 overflow-hidden flex flex-col" data-testid={`vendita-card-${a.id}`}>
                         <div className="relative">
                             <img src={annuncioImg(a)} alt={a.titolo} className={`h-36 w-full object-cover ${a.venduto ? "opacity-50" : ""}`} />

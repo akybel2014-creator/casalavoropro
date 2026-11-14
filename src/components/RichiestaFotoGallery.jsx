@@ -13,18 +13,19 @@ export function getProtectedFileUrl(path) {
 
 export default function RichiestaFotoGallery({ foto = [], titolo = "Foto allegate" }) {
     const [selectedPhoto, setSelectedPhoto] = useState(null);
+    const safeFoto = Array.isArray(foto) ? foto : [];
 
-    if (!foto || foto.length === 0) return null;
+    if (safeFoto.length === 0) return null;
 
     return (
         <div className="mt-4 pt-3 border-t border-white/5" data-testid="richiesta-foto-gallery">
             <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-2">
                 <Camera className="h-3.5 w-3.5 text-brand" />
-                Foto del lavoro allegate ({foto.length})
+                Foto del lavoro allegate ({safeFoto.length})
             </p>
 
             <div className="flex flex-wrap gap-2.5">
-                {foto.map((f, i) => {
+                {safeFoto.map((f, i) => {
                     const src = getProtectedFileUrl(f.path);
                     return (
                         <button

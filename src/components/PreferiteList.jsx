@@ -13,7 +13,8 @@ function quoteLink(a) {
 export function PreferiteList({ items, onRemove }) {
     if (items === null) return <p className="text-sm text-slate-500">Caricamento preferite…</p>;
 
-    if (items.length === 0) {
+    const safeItems = Array.isArray(items) ? items : [];
+    if (safeItems.length === 0) {
         return (
             <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-10 text-center" data-testid="preferite-empty">
                 <Heart className="h-10 w-10 text-slate-500 mx-auto" />
@@ -28,7 +29,7 @@ export function PreferiteList({ items, onRemove }) {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5" data-testid="preferite-list">
-            {items.map((a) => (
+            {safeItems.map((a) => (
                 <div key={a.id} data-testid={`preferita-card-${a.id}`}
                     className="flex flex-col rounded-3xl border border-white/10 bg-navy-700/60 p-6 hover:border-brand/40 transition-colors">
                     <div className="flex items-start gap-4">
@@ -49,7 +50,7 @@ export function PreferiteList({ items, onRemove }) {
                                 {a.recensioni > 0 && <span className="text-slate-500">({a.recensioni})</span>}
                             </div>
                             <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
-                                <MapPin className="h-3.5 w-3.5 text-brand" /> {a.zone?.join(" · ")}
+                                <MapPin className="h-3.5 w-3.5 text-brand" /> {Array.isArray(a.zone) ? a.zone.join(" · ") : ""}
                             </div>
                         </div>
                         <button type="button" onClick={() => onRemove(a.id, a.nome)} data-testid={`preferita-remove-${a.id}`}
@@ -59,7 +60,7 @@ export function PreferiteList({ items, onRemove }) {
                         </button>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-1.5">
-                        {a.categorie?.slice(0, 3).map((c) => (
+                        {(Array.isArray(a.categorie) ? a.categorie : []).slice(0, 3).map((c) => (
                             <span key={c} className="rounded-full bg-white/5 border border-white/10 px-2.5 py-0.5 text-xs text-slate-300">{c}</span>
                         ))}
                     </div>

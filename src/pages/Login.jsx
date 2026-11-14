@@ -9,11 +9,6 @@ import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
 
-const DEMO = [
-    { label: "Privato demo", email: "mario.rossi@example.com", testid: "demo-login-privato" },
-    { label: "Azienda demo", email: "info@caloreeclima.it", testid: "demo-login-azienda" },
-];
-
 export default function Login() {
     const navigate = useNavigate();
     const { login } = useAuth();
@@ -37,12 +32,6 @@ export default function Login() {
         } finally {
             setBusy(false);
         }
-    };
-
-    const fillDemo = (demoEmail) => {
-        setEmail(demoEmail);
-        setPassword("Demo2026!");
-        setError("");
     };
 
     const sendForgot = async (e) => {
@@ -107,19 +96,6 @@ export default function Login() {
                             {busy ? "Accesso…" : "Accedi"}
                         </Button>
                     </form>
-
-                    <div className="mt-7 pt-5 border-t border-white/10">
-                        <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Accessi demo rapidi</p>
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                            {DEMO.map((d) => (
-                                <Button key={d.label} variant="outline" data-testid={d.testid}
-                                    onClick={() => fillDemo(d.email)}
-                                    className="rounded-xl border-white/10 text-xs text-slate-300 hover:bg-white/10 hover:text-white">
-                                    {d.label}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
 
                 <p className="mt-6 text-center text-sm text-slate-400">

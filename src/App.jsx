@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth, dashboardPathFor } from "@/context/AuthContext";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
+import CookieBanner from "@/components/CookieBanner";
 import Home from "@/pages/Home";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 import "@/App.css";
@@ -197,6 +198,7 @@ function App() {
                         <Route path="/payment/cancel" element={<PaymentCancel />} />
                     </Routes>
                     </Suspense>
+                    <CookieBanner />
                 </AuthProvider>
             </BrowserRouter>
         </ErrorBoundary>

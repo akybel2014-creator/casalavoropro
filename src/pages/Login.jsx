@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
-import { api, formatApiError } from "@/lib/api";
+import { formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Login() {
     const navigate = useNavigate();
@@ -28,19 +29,27 @@ export default function Login() {
             toast.success(`Bentornato, ${user.name}!`);
             navigate(dashboardPathFor(user.role));
         } catch (err) {
-            setError(formatApiError(err));
+            setError(err?.message || formatApiError(err));
         } finally {
             setBusy(false);
         }
     };
 
     const sendForgot = async (e) => {
-        e.preventDefault();
+        if (e?.preventDefault) e.preventDefault();
+        const cleanEmail = String(email || "").trim().toLowerCase();
+        if (!cleanEmail || !cleanEmail.includes("@")) {
+            toast.error("Inserisci un indirizzo email valido.");
+            return;
+        }
         try {
-            await api.post("/auth/forgot-password", { email });
+            const { error: resetErr } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (resetErr) throw resetErr;
             setForgotSent(true);
         } catch (err) {
-            toast.error(formatApiError(err));
+            toast.error(err?.message || formatApiError(err));
         }
     };
 
@@ -78,13 +87,13 @@ export default function Login() {
                                 {forgotSent ? (
                                     <p className="text-sm text-slate-200">Se l'email esiste, ti abbiamo inviato il link per il reset. Controlla la posta (anche lo spam).</p>
                                 ) : (
-                                    <form onSubmit={sendForgot} className="flex gap-2" data-testid="forgot-form">
+                                    <div className="flex gap-2" data-testid="forgot-form">
                                         <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                                             placeholder="La tua email" className="bg-navy/70 border-white/10 text-white" />
-                                        <Button type="submit" variant="outline" className="rounded-xl border-brand text-brand hover:bg-brand hover:text-navy shrink-0">
+                                        <Button type="button" onClick={sendForgot} variant="outline" className="rounded-xl border-brand text-brand hover:bg-brand hover:text-navy shrink-0">
                                             Invia link
                                         </Button>
-                                    </form>
+                                    </div>
                                 )}
                             </div>
                         )}

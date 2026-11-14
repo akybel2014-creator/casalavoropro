@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { api, formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
@@ -116,26 +117,70 @@ export default function DashboardAzienda() {
     const { section } = useParams();
     const navigate = useNavigate();
 
+    useEffect(() => {
+        if (azienda) setMine((prev) => prev || azienda);
+    }, [azienda]);
+
     const load = useCallback(async () => {
-        try {
-            const [m, f, u] = await Promise.all([
-                api.get("/aziende/mine"), api.get("/richieste/feed"), api.get("/chat/unread-count"),
-            ]);
-            setMine(m.data);
-            setFeed(f.data);
-            setUnreadChat(u.data.per_risposta || {});
-        } catch (e) {
-            toast.error(formatApiError(e));
+        const [mRes, fRes, uRes] = await Promise.allSettled([
+            api.get("/aziende/mine"),
+            api.get("/richieste/feed"),
+            api.get("/chat/unread-count"),
+        ]);
+
+        if (mRes.status === "fulfilled" && mRes.value?.data) {
+            setMine(mRes.value.data);
+        } else if (user?.id) {
+            try {
+                const { data: azRow } = await supabase
+                    .from("aziende")
+                    .select("*")
+                    .eq("owner_id", user.id)
+                    .order("created_at", { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                if (azRow) {
+                    setMine({
+                        ...azRow,
+                        logo: azRow.logo_url || null,
+                        foto: Array.isArray(azRow.foto) ? azRow.foto : [],
+                        categorie: Array.isArray(azRow.categorie) ? azRow.categorie : [],
+                        zone: Array.isArray(azRow.zone) ? azRow.zone : [],
+                        verified: Boolean(azRow.verificata),
+                        plan: azRow.piano || "free",
+                    });
+                } else if (azienda) {
+                    setMine(azienda);
+                }
+            } catch {
+                if (azienda) setMine(azienda);
+            }
+        } else if (azienda) {
+            setMine(azienda);
         }
-    }, []);
+
+        if (fRes.status === "fulfilled" && Array.isArray(fRes.value?.data)) {
+            setFeed(fRes.value.data);
+        } else {
+            setFeed([]);
+        }
+
+        if (uRes.status === "fulfilled" && uRes.value?.data) {
+            setUnreadChat(uRes.value.data.per_risposta || {});
+        } else {
+            setUnreadChat({});
+        }
+    }, [user?.id, azienda]);
 
     useEffect(() => { load(); }, [load]);
 
     const loadPreferiti = useCallback(async () => {
         try {
             const { data } = await api.get("/preferiti-annunci");
-            setPreferiti(data);
-        } catch (e) { toast.error(formatApiError(e)); }
+            setPreferiti(Array.isArray(data) ? data : []);
+        } catch {
+            setPreferiti([]);
+        }
     }, []);
 
     useEffect(() => { if (section === "preferiti") loadPreferiti(); }, [section, loadPreferiti]);
@@ -157,12 +202,42 @@ export default function DashboardAzienda() {
                 sito: mine.sito || "", piva: mine.piva || "",
                 categorie: mine.categorie || [], zone: mine.zone || [],
             };
-            const { data } = await api.put("/aziende/mine", body);
-            setMine(data);
+            try {
+                const { data } = await api.put("/aziende/mine", body);
+                setMine(data);
+            } catch {
+                if (mine?.id && !String(mine.id).startsWith("pending-")) {
+                    const { data: updated, error: sbErr } = await supabase
+                        .from("aziende")
+                        .update({
+                            nome: mine.nome,
+                            descrizione: mine.descrizione || null,
+                            telefono: mine.telefono || null,
+                            piva: mine.piva || null,
+                            categorie: mine.categorie || [],
+                            zone: mine.zone || [],
+                        })
+                        .eq("id", mine.id)
+                        .select()
+                        .maybeSingle();
+                    if (sbErr) throw sbErr;
+                    if (updated) {
+                        setMine((prev) => ({
+                            ...prev,
+                            ...updated,
+                            logo: updated.logo_url || prev?.logo || null,
+                            verified: Boolean(updated.verificata),
+                            plan: updated.piano || "free",
+                        }));
+                    }
+                } else {
+                    throw new Error("Impossibile aggiornare il profilo in questo momento.");
+                }
+            }
             toast.success("Profilo aggiornato!");
             refreshMe();
         } catch (err) {
-            toast.error(formatApiError(err));
+            toast.error(err?.message || formatApiError(err));
         } finally {
             setBusy(false);
         }

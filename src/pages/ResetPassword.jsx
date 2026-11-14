@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import LaunchBanner from "@/components/site/LaunchBanner";
-import { api, formatApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ResetPassword() {
     const [params] = useSearchParams();
     const navigate = useNavigate();
-    const token = params.get("token") || "";
+    const _token = params.get("token") || "";
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
@@ -19,11 +19,12 @@ export default function ResetPassword() {
         e.preventDefault();
         setError("");
         try {
-            await api.post("/auth/reset-password", { token, password });
+            const { error: updateErr } = await supabase.auth.updateUser({ password });
+            if (updateErr) throw updateErr;
             toast.success("Password aggiornata! Ora accedi con la nuova password.");
             navigate("/login");
         } catch (err) {
-            setError(formatApiError(err));
+            setError(err?.message || "Impossibile aggiornare la password. Apri il link ricevuto via email e riprova.");
         }
     };
 

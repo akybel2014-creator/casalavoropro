@@ -79,18 +79,18 @@ export default function DashboardPrivato() {
     const [prenotazioni, setPrenotazioni] = useState(null);
 
     const load = useCallback(async () => {
-        try {
-            const [r, n, u, p, b] = await Promise.all([
-                api.get("/richieste/mine"), api.get("/notifiche"), api.get("/chat/unread-count"), api.get("/preferiti"), api.get("/prenotazioni/mine"),
-            ]);
-            setRichieste(r.data);
-            setNotifiche(n.data);
-            setUnreadChat(u.data.per_risposta || {});
-            setPreferite(p.data);
-            setPrenotazioni(b.data);
-        } catch (e) {
-            toast.error(formatApiError(e));
-        }
+        const [rRes, nRes, uRes, pRes, bRes] = await Promise.allSettled([
+            api.get("/richieste/mine"),
+            api.get("/notifiche"),
+            api.get("/chat/unread-count"),
+            api.get("/preferiti"),
+            api.get("/prenotazioni/mine"),
+        ]);
+        setRichieste(rRes.status === "fulfilled" && Array.isArray(rRes.value?.data) ? rRes.value.data : []);
+        setNotifiche(nRes.status === "fulfilled" && Array.isArray(nRes.value?.data) ? nRes.value.data : []);
+        setUnreadChat(uRes.status === "fulfilled" && uRes.value?.data?.per_risposta ? uRes.value.data.per_risposta : {});
+        setPreferite(pRes.status === "fulfilled" && Array.isArray(pRes.value?.data) ? pRes.value.data : []);
+        setPrenotazioni(bRes.status === "fulfilled" && Array.isArray(bRes.value?.data) ? bRes.value.data : []);
     }, []);
 
     useEffect(() => { load(); }, [load]);

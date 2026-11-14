@@ -10,7 +10,6 @@ import { Logo } from "@/components/Logo";
 import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { api, formatApiError } from "@/lib/api";
-import { supabase } from "@/lib/supabaseClient";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 
 export default function Registrati() {
@@ -44,43 +43,24 @@ export default function Registrati() {
                     descrizione: form.descrizione || undefined,
                 };
             }
-            const { user, azienda } = await register(payload);
+            const { user, azienda, needsEmailConfirmation } = await register(payload);
 
-            // Sincronizza immediatamente con Supabase e notifica la landing page in tempo reale
-            if (ruolo === "azienda") {
+            // Notifica subito la homepage e la directory in tempo reale
+            if (ruolo === "azienda" && azienda) {
+                window.dispatchEvent(new CustomEvent("azienda-registered", { detail: azienda }));
+                window.dispatchEvent(new CustomEvent("aziende-updated", { detail: azienda }));
+
                 try {
-                    const azToInsert = {
-                        nome: (form.nome || form.name || "Nuova Azienda").trim(),
-                        categorie: categorie.length > 0 ? categorie : ["Altri Servizi"],
-                        zone: form.zone ? form.zone.split(",").map((z) => z.trim()).filter(Boolean) : [],
-                        piva: form.piva || null,
-                        descrizione: form.descrizione || null,
-                        email: form.email,
-                        verificata: true,
-                        rating: 5.0,
-                        recensioni_count: 0,
-                        piano: "free",
-                    };
-                    const { data: supaAz } = await supabase
-                        .from("aziende")
-                        .insert(azToInsert)
-                        .select()
-                        .maybeSingle();
+                    const bc = new BroadcastChannel("casalavoropro_realtime");
+                    bc.postMessage({ type: "AZIENDA_REGISTERED", payload: azienda });
+                    bc.close();
+                } catch { /* ignora */ }
+            }
 
-                    const eventDetail = supaAz || { ...azToInsert, id: azienda?.id || `az-${Date.now()}` };
-                    window.dispatchEvent(new CustomEvent("azienda-registered", { detail: eventDetail }));
-                    window.dispatchEvent(new CustomEvent("aziende-updated", { detail: eventDetail }));
-
-                    try {
-                        const bc = new BroadcastChannel("casalavoropro_realtime");
-                        bc.postMessage({ type: "AZIENDA_REGISTERED", payload: eventDetail });
-                        bc.close();
-                    } catch { /* ignora */ }
-                } catch (err) {
-                    console.warn("[Registrati] Sync Supabase realtime:", err);
-                    window.dispatchEvent(new CustomEvent("azienda-registered", { detail: azienda }));
-                    window.dispatchEvent(new CustomEvent("aziende-updated", { detail: azienda }));
-                }
+            if (needsEmailConfirmation) {
+                toast.success("Account creato! Controlla la tua email per confermare la registrazione e poi accedi.");
+                navigate("/login");
+                return;
             }
 
             toast.success(`Benvenuto su CasaLavoroPRO, ${user.name}!`);
@@ -101,7 +81,7 @@ export default function Registrati() {
             }
             navigate(dashboardPathFor(user.role));
         } catch (err) {
-            setError(formatApiError(err));
+            setError(err?.message || formatApiError(err));
         } finally {
             setBusy(false);
         }

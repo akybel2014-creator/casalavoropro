@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     Search, ShieldCheck, Star, MapPin, Camera,
-    ImagePlus, X, Loader2, Send, FileText
+    ImagePlus, X, Loader2, Send, FileText, Smartphone, Download
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const HERO_IMG = "https://images.pexels.com/photos/6473978/pexels-photo-6473978.
 const CATS = ["Idraulico", "Elettricista", "Imbianchino", "Climatizzazione", "Fabbro", "Muratore"];
 const FILES_BASE = "/api/files/";
 const ALLOWED_MIMES = ["image/jpeg", "image/png", "image/webp"];
+const APP_DOWNLOAD_URL = import.meta.env.VITE_APP_DOWNLOAD_URL || "/app-gestionale.apk";
 
 // URL del vero logo/foto dell'artigiano (se disponibile), altrimenti null -> iniziali.
 function avatarUrl(a) {
@@ -316,7 +317,38 @@ export default function Hero() {
             <div className="absolute -top-40 -right-40 h-[560px] w-[560px] rounded-full bg-brand/25 blur-[160px] glow-orange" aria-hidden="true" />
             <div className="absolute bottom-0 left-0 h-72 w-72 rounded-full bg-brand-amber/10 blur-[120px]" aria-hidden="true" />
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 lg:pt-36 pb-16 sm:pb-24">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 sm:pb-24">
+                {/* Pulsante download App Gestionale Mobile centrato subito sotto il menu di navigazione */}
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="mb-8 sm:mb-10 flex justify-center"
+                    data-testid="hero-app-download-wrapper"
+                >
+                    <a
+                        href={APP_DOWNLOAD_URL}
+                        download={APP_DOWNLOAD_URL.endsWith(".apk") ? true : undefined}
+                        target={APP_DOWNLOAD_URL.startsWith("http") ? "_blank" : undefined}
+                        rel={APP_DOWNLOAD_URL.startsWith("http") ? "noopener noreferrer" : undefined}
+                        data-testid="hero-app-download-button"
+                        className="group inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 px-6 py-2.5 text-white shadow-lg shadow-orange-500/25 transition-all duration-300 hover:-translate-y-0.5"
+                    >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy/25 border border-white/20">
+                            <Smartphone className="h-4 w-4 text-white" />
+                        </span>
+                        <span className="flex flex-col text-left leading-tight">
+                            <span className="text-[11px] font-medium uppercase tracking-wider text-white/90">
+                                Scarica Subito
+                            </span>
+                            <span className="font-display text-sm sm:text-base font-bold text-white">
+                                App Gestionale Mobile
+                            </span>
+                        </span>
+                        <Download className="h-4 w-4 ml-1 text-white transition-transform duration-300 group-hover:translate-y-0.5" />
+                    </a>
+                </motion.div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
                     {/* Colonna sinistra: testo + ricerca */}
                     <div>

@@ -8,7 +8,6 @@ import LaunchBanner from "@/components/site/LaunchBanner";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 
 export const NAV_ITEMS = [
-    { label: "Home", to: "/", id: "header-nav-home" },
     { label: "Come funziona", to: "/#come-funziona", id: "header-nav-come-funziona" },
     { label: "Categorie", to: "/#categorie", id: "header-nav-categorie" },
     { label: "Noleggio Attrezzi", to: "/noleggio", id: "header-nav-noleggio" },
@@ -39,7 +38,7 @@ export default function Header() {
 
     // L'analisi energetica compare nel menu solo per privati/aziende loggati (dopo l'iscrizione).
     const navItems = user
-        ? [...NAV_ITEMS.slice(0, 5), ANALISI_ITEM, ...NAV_ITEMS.slice(5)]
+        ? [...NAV_ITEMS.slice(0, 4), ANALISI_ITEM, ...NAV_ITEMS.slice(4)]
         : NAV_ITEMS;
 
     useEffect(() => {

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX, Siren, Navigation } from "lucide-react";
+import { Search, MapPin, ShieldCheck, Star, ArrowRight, SearchX, Siren, Navigation, Phone, Globe } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, normalizeAziendaFlags } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,48 @@ import MapView from "@/components/MapView";
 import { LayoutGrid, Map as MapIcon } from "lucide-react";
 import { usePreferiti } from "@/hooks/usePreferiti";
 import { PreferitaButton } from "@/components/PreferitaButton";
+
+const CATEGORY_SYNONYMS = {
+    "Idraulica": ["Idraulica", "Idraulico"],
+    "Idraulico": ["Idraulico", "Idraulica"],
+    "Termoidraulica": ["Termoidraulica", "Installazione Condizionatori"],
+    "Elettricità": ["Elettricità", "Elettricista"],
+    "Edilizia": ["Edilizia", "Ristrutturazioni", "Ristrutturazione Casa", "Geometra"],
+    "Imbiancatura": ["Imbiancatura", "Imbianchino"],
+    "Imbianchino": ["Imbianchino", "Imbiancatura"],
+    "Giardinaggio": ["Giardinaggio", "Giardiniere"],
+    "Giardiniere": ["Giardiniere", "Giardinaggio"],
+    "Consulenti Luce e Gas": ["Consulenti Luce e Gas", "Broker"],
+};
+
+export function parseAziendaDescrizione(raw) {
+    const text = String(raw || "").replace(/\s+(?=(?:Tipo contatto|Sito web|WhatsApp):\s*)/gi, "\n");
+    const lines = text.split(/\r?\n/);
+    const cleanLines = [];
+    let tipo_telefono = "";
+    let sito = "";
+    let whatsapp = "";
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (/^Tipo contatto:\s*/i.test(trimmed)) {
+            tipo_telefono = trimmed.replace(/^Tipo contatto:\s*/i, "").trim();
+        } else if (/^Sito web:\s*/i.test(trimmed)) {
+            sito = trimmed.replace(/^Sito web:\s*/i, "").trim();
+        } else if (/^WhatsApp:\s*/i.test(trimmed)) {
+            whatsapp = trimmed.replace(/^WhatsApp:\s*/i, "").trim();
+        } else {
+            cleanLines.push(line);
+        }
+    }
+
+    return {
+        descrizione: cleanLines.join("\n").trim(),
+        tipo_telefono,
+        sito,
+        whatsapp,
+    };
+}
 
 const AVATAR_GRADIENTS = [
     "from-orange-500 to-amber-400",
@@ -108,10 +150,11 @@ export default function Aziende() {
                 // 1. Prova prima da Supabase (necessario per Cloudflare Pages e per aggiornamenti in tempo reale)
                 let supaQuery = supabase.from("aziende").select("*");
                 if (categoria) {
-                    supaQuery = supaQuery.contains("categorie", [categoria]);
+                    const cats = CATEGORY_SYNONYMS[categoria] || [categoria];
+                    supaQuery = supaQuery.overlaps("categorie", cats);
                 }
                 if (verificate) {
-                    supaQuery = supaQuery.eq("verificata", true);
+                    supaQuery = supaQuery.or("verificata.eq.true,is_verified.eq.true");
                 }
                 if (emergenze) {
                     supaQuery = supaQuery.eq("emergenze", true);
@@ -119,33 +162,44 @@ export default function Aziende() {
                 const { data: supaData, error: supaErr } = await supaQuery;
 
                 if (!supaErr && Array.isArray(supaData)) {
-                    let list = supaData.map((d) => ({
-                        id: d.id,
-                        nome: d.nome || "",
-                        categorie: Array.isArray(d.categorie) ? d.categorie : [],
-                        zone: Array.isArray(d.zone) ? d.zone : [],
-                        descrizione: d.descrizione || "",
-                        telefono: d.telefono || "",
-                        logo: d.logo_url || d.logo || null,
-                        foto: Array.isArray(d.foto) ? d.foto : [],
-                        verified: d.verificata !== undefined ? Boolean(d.verificata) : Boolean(d.verified),
-                        plan: d.piano || d.plan || "free",
-                        emergenze: Boolean(d.emergenze),
-                        rating: Number(d.rating) || 0,
-                        recensioni: Number(d.recensioni_count ?? d.recensioni ?? 0),
-                    }));
+                    let list = supaData.map((d) => {
+                        const parsed = parseAziendaDescrizione(d.descrizione);
+                        const flags = normalizeAziendaFlags(d);
+                        return {
+                            id: d.id,
+                            owner_id: d.owner_id || null,
+                            ...flags,
+                            nome: d.nome || "",
+                            categorie: Array.isArray(d.categorie) ? d.categorie : [],
+                            zone: Array.isArray(d.zone) ? d.zone : [],
+                            descrizione: parsed.descrizione,
+                            telefono: d.telefono || "",
+                            tipo_telefono: d.tipo_telefono || parsed.tipo_telefono || "",
+                            email: d.email || "",
+                            indirizzo: d.indirizzo || "",
+                            sito: d.sito || parsed.sito || "",
+                            whatsapp: d.whatsapp || parsed.whatsapp || "",
+                            logo: d.logo_url || d.logo || null,
+                            foto: Array.isArray(d.foto) ? d.foto : [],
+                            emergenze: Boolean(d.emergenze),
+                            rating: Number(d.rating) || 0,
+                            recensioni: Number(d.recensioni_count ?? d.recensioni ?? 0),
+                        };
+                    });
 
                     if (q) {
                         const ql = q.toLowerCase();
                         list = list.filter((a) =>
                             (a.nome || "").toLowerCase().includes(ql) ||
-                            (a.descrizione || "").toLowerCase().includes(ql)
+                            (a.descrizione || "").toLowerCase().includes(ql) ||
+                            (a.indirizzo || "").toLowerCase().includes(ql)
                         );
                     }
                     if (zona) {
                         const zl = zona.toLowerCase();
                         list = list.filter((a) =>
-                            (a.zone || []).some((z) => (z || "").toLowerCase().includes(zl))
+                            (a.zone || []).some((z) => (z || "").toLowerCase().includes(zl)) ||
+                            (a.indirizzo || "").toLowerCase().includes(zl)
                         );
                     }
                     setItems(list);
@@ -342,6 +396,11 @@ export default function Aziende() {
                                         <div className="flex flex-wrap items-center gap-2">
                                             <h3 className="font-display font-bold text-white truncate">{a.nome}</h3>
                                             <VerifiedBadge verified={a.verified} />
+                                            {a.unclaimed && (
+                                                <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300" data-testid="company-card-unclaimed-badge">
+                                                    Scheda non reclamata
+                                                </span>
+                                            )}
                                             {a.plan === "pro" && (
                                                 <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-bold text-brand uppercase tracking-wide">PRO</span>
                                             )}
@@ -351,11 +410,13 @@ export default function Aziende() {
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1 text-sm text-brand-amber">
-                                            <Star className="h-3.5 w-3.5 fill-current" />
-                                            <span className="font-semibold text-white">{a.rating > 0 ? a.rating.toFixed(1) : "Nuova"}</span>
-                                            {a.recensioni > 0 && <span className="text-slate-500">({a.recensioni})</span>}
-                                        </div>
+                                        {!a.unclaimed && (
+                                            <div className="mt-1 flex items-center gap-1 text-sm text-brand-amber">
+                                                <Star className="h-3.5 w-3.5 fill-current" />
+                                                <span className="font-semibold text-white">{a.rating > 0 ? a.rating.toFixed(1) : "Nuova"}</span>
+                                                {a.recensioni > 0 && <span className="text-slate-500">({a.recensioni})</span>}
+                                            </div>
+                                        )}
                                     </div>
                                     {a.distance_km != null && (
                                         <span className="ml-auto shrink-0 rounded-full bg-white/5 border border-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200" data-testid={`company-distance-${a.id}`}>
@@ -367,14 +428,36 @@ export default function Aziende() {
                                             className={a.distance_km != null ? "shrink-0" : "ml-auto shrink-0"} />
                                     )}
                                 </div>
-                                <p className="mt-4 text-sm text-slate-400 leading-relaxed line-clamp-3">{a.descrizione}</p>
+                                {a.descrizione && (
+                                    <p className="mt-4 text-sm text-slate-400 leading-relaxed line-clamp-3 whitespace-pre-line">{a.descrizione}</p>
+                                )}
                                 <div className="mt-4 flex flex-wrap gap-1.5">
                                     {a.categorie?.slice(0, 3).map((c) => (
                                         <span key={c} className="rounded-full bg-white/5 border border-white/10 px-2.5 py-0.5 text-xs text-slate-300">{c}</span>
                                     ))}
                                 </div>
-                                <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
-                                    <MapPin className="h-3.5 w-3.5 text-brand" /> {a.zone?.join(" · ")}
+                                <div className="mt-3 space-y-1.5 text-xs text-slate-400">
+                                    <div className="flex items-start gap-1.5">
+                                        <MapPin className="h-3.5 w-3.5 text-brand shrink-0 mt-0.5" />
+                                        <span className="truncate">{a.indirizzo || a.zone?.join(" · ")}</span>
+                                    </div>
+                                    {a.telefono && (
+                                        <div className="flex items-center gap-1.5">
+                                            <Phone className="h-3.5 w-3.5 text-brand shrink-0" />
+                                            <span>{a.telefono}</span>
+                                        </div>
+                                    )}
+                                    {a.tipo_telefono && (
+                                        <div className="text-slate-500 pl-5">
+                                            Tipo contatto: {a.tipo_telefono}
+                                        </div>
+                                    )}
+                                    {a.sito && (
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <Globe className="h-3.5 w-3.5 text-brand shrink-0" />
+                                            <span className="truncate">{a.sito}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="mt-auto pt-5">
                                     <Button asChild className="w-full rounded-xl bg-white/5 border border-white/10 text-white hover:bg-brand hover:text-navy hover:border-brand font-semibold">

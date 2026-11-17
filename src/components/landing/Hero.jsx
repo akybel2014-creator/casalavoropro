@@ -82,7 +82,7 @@ export default function Hero() {
     const normalizeAzienda = useCallback((a) => {
         const logo = a.logo_url || a.logo || null;
         const foto = Array.isArray(a.foto) ? a.foto : [];
-        const isVerif = a.verificata !== undefined ? Boolean(a.verificata) : (a.verified !== undefined ? Boolean(a.verified) : true);
+        const isVerif = Boolean(a.is_verified || a.verificata || a.verified);
         const rating = Number(a.rating) || 0;
         const recensioni = Number(a.recensioni_count ?? a.recensioni ?? 0);
         return {
@@ -91,6 +91,9 @@ export default function Hero() {
             logo,
             foto,
             verified: isVerif,
+            is_claimed: Boolean(a.is_claimed ?? a.owner_id),
+            is_verified: isVerif,
+            is_premium: Boolean(a.is_premium || a.piano === "pro"),
             rating,
             recensioni,
             created_at: a.created_at || new Date().toISOString(),
@@ -102,7 +105,7 @@ export default function Hero() {
             // 1. Prova prima da Supabase per reattività in tempo reale e supporto Cloudflare Pages
             const { data: supaAziende, error: supaErr } = await supabase
                 .from("aziende")
-                .select("id, nome, logo_url, foto, verificata, rating, recensioni_count, created_at")
+                .select("id, owner_id, nome, logo_url, foto, verificata, is_claimed, is_verified, is_premium, piano, rating, recensioni_count, created_at")
                 .order("created_at", { ascending: false });
 
             if (!supaErr && Array.isArray(supaAziende) && supaAziende.length > 0) {

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon, Camera, MessageSquareHeart, Megaphone } from "lucide-react";
+import { ArrowLeft, MapPin, Star, ShieldCheck, Phone, Globe, FileText, Building2, Siren, PhoneCall, CalendarCheck, Moon, Camera, MessageSquareHeart, Megaphone, Mail, MessageCircle, ExternalLink } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, normalizeAziendaFlags } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
-import { AziendaAvatar, VerifiedBadge } from "@/pages/Aziende";
+import { AziendaAvatar, VerifiedBadge, parseAziendaDescrizione } from "@/pages/Aziende";
 import { Stars } from "@/components/StarRating";
 import { useAuth, dashboardPathFor } from "@/context/AuthContext";
 import { usePreferiti } from "@/hooks/usePreferiti";
@@ -44,20 +44,29 @@ export default function AziendaDettaglio() {
                     .maybeSingle();
 
                 if (!supaErr && supaAzienda && active) {
+                    const parsed = parseAziendaDescrizione(supaAzienda.descrizione);
+                    const flags = normalizeAziendaFlags(supaAzienda);
                     setA({
                         id: supaAzienda.id,
+                        owner_id: supaAzienda.owner_id || null,
+                        ...flags,
                         nome: supaAzienda.nome,
                         categorie: Array.isArray(supaAzienda.categorie) ? supaAzienda.categorie : [],
                         zone: Array.isArray(supaAzienda.zone) ? supaAzienda.zone : [],
-                        descrizione: supaAzienda.descrizione || "",
+                        descrizione: parsed.descrizione,
+                        piva: supaAzienda.piva || "",
                         telefono: supaAzienda.telefono || "",
+                        tipo_telefono: supaAzienda.tipo_telefono || parsed.tipo_telefono || "",
                         email: supaAzienda.email || "",
                         indirizzo: supaAzienda.indirizzo || "",
+                        sito: supaAzienda.sito || parsed.sito || "",
+                        whatsapp: supaAzienda.whatsapp || parsed.whatsapp || "",
                         logo: supaAzienda.logo_url || supaAzienda.logo || null,
                         foto: Array.isArray(supaAzienda.foto) ? supaAzienda.foto : [],
-                        verified: supaAzienda.verificata !== undefined ? Boolean(supaAzienda.verificata) : Boolean(supaAzienda.verified),
-                        plan: supaAzienda.piano || supaAzienda.plan || "free",
                         emergenze: Boolean(supaAzienda.emergenze),
+                        emergenze_weekend: Boolean(supaAzienda.emergenze_weekend),
+                        emergenze_notturno: Boolean(supaAzienda.emergenze_notturno),
+                        emergenze_telefono: supaAzienda.emergenze_telefono || "",
                         rating: Number(supaAzienda.rating) || 0,
                         recensioni: Number(supaAzienda.recensioni_count ?? supaAzienda.recensioni ?? 0),
                         created_at: supaAzienda.created_at,
@@ -123,6 +132,11 @@ export default function AziendaDettaglio() {
                                         <div className="flex flex-wrap items-center gap-2.5">
                                             <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">{a.nome}</h1>
                                             <VerifiedBadge verified={a.verified} />
+                                            {a.unclaimed && (
+                                                <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-semibold text-amber-300" data-testid="company-detail-unclaimed-badge">
+                                                    Scheda non reclamata
+                                                </span>
+                                            )}
                                             {a.plan === "pro" && <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-xs font-bold text-brand uppercase tracking-wide">PRO</span>}
                                             {a.emergenze && (
                                                 <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-0.5 text-xs font-bold text-white" data-testid="company-detail-emergenze-badge">
@@ -131,11 +145,13 @@ export default function AziendaDettaglio() {
                                             )}
                                         </div>
                                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
-                                            <span className="flex items-center gap-1 text-brand-amber">
-                                                <Star className="h-4 w-4 fill-current" />
-                                                <span className="font-semibold text-white">{a.rating > 0 ? a.rating.toFixed(1) : "Nuova"}</span>
-                                                {a.recensioni > 0 && <span>({a.recensioni} recensioni)</span>}
-                                            </span>
+                                            {!a.unclaimed && (
+                                                <span className="flex items-center gap-1 text-brand-amber">
+                                                    <Star className="h-4 w-4 fill-current" />
+                                                    <span className="font-semibold text-white">{a.rating > 0 ? a.rating.toFixed(1) : "Nuova"}</span>
+                                                    {a.recensioni > 0 && <span>({a.recensioni} recensioni)</span>}
+                                                </span>
+                                            )}
                                             <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-brand" /> {a.zone?.join(" · ")}</span>
                                         </div>
                                         <div className="mt-4 flex flex-wrap gap-1.5">
@@ -145,7 +161,62 @@ export default function AziendaDettaglio() {
                                         </div>
                                     </div>
                                 </div>
-                                <p className="mt-6 text-slate-300 leading-relaxed">{a.descrizione}</p>
+                                {a.descrizione && (
+                                    <p className="mt-6 text-slate-300 leading-relaxed">{a.descrizione}</p>
+                                )}
+
+                                {(a.indirizzo || a.telefono || a.email || a.sito || a.whatsapp) && (
+                                    <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="company-contact-grid">
+                                        {a.indirizzo && (
+                                            <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                                                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1.5">
+                                                    <MapPin className="h-3.5 w-3.5 text-brand" /> Indirizzo
+                                                </p>
+                                                <p className="mt-1 text-sm font-medium text-white">{a.indirizzo}</p>
+                                            </div>
+                                        )}
+                                        {a.telefono && (
+                                            <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                                                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1.5">
+                                                    <Phone className="h-3.5 w-3.5 text-brand" /> Telefono {a.tipo_telefono ? `(${a.tipo_telefono})` : ""}
+                                                </p>
+                                                <a href={`tel:${a.telefono.replace(/\s+/g, "")}`} className="mt-1 inline-block text-sm font-medium text-white hover:text-brand transition-colors">
+                                                    {a.telefono}
+                                                </a>
+                                            </div>
+                                        )}
+                                        {a.email && (
+                                            <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                                                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1.5">
+                                                    <Mail className="h-3.5 w-3.5 text-brand" /> Email
+                                                </p>
+                                                <a href={`mailto:${a.email}`} className="mt-1 inline-block text-sm font-medium text-white hover:text-brand transition-colors break-all">
+                                                    {a.email}
+                                                </a>
+                                            </div>
+                                        )}
+                                        {a.sito && (
+                                            <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                                                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1.5">
+                                                    <Globe className="h-3.5 w-3.5 text-brand" /> Sito web
+                                                </p>
+                                                <a href={a.sito.startsWith("http") ? a.sito : `https://${a.sito}`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline break-all">
+                                                    {a.sito} <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                                </a>
+                                            </div>
+                                        )}
+                                        {a.whatsapp && (
+                                            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                                                <p className="text-xs uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
+                                                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                                                </p>
+                                                <a href={a.whatsapp} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-white hover:text-emerald-300 transition-colors">
+                                                    Scrivi su WhatsApp <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {a.emergenze && (
@@ -248,23 +319,40 @@ export default function AziendaDettaglio() {
                                 </div>
                             )}
 
-                            <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
-                                <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
-                                    <ShieldCheck className="h-5 w-5 text-brand" /> Verifica e qualifiche
-                                </h2>
-                                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
-                                        <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Partita IVA</p>
-                                        <p className="mt-1 font-medium text-white" data-testid="company-detail-piva">{a.verified ? a.piva || "Verificata" : "— Visibile dopo verifica —"}</p>
-                                    </div>
-                                    <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
-                                        <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Stato verifica</p>
-                                        <p className={`mt-1 font-medium ${a.verified ? "text-emerald-400" : "text-brand-amber"}`}>
-                                            {a.verified ? "Verificata dallo staff" : "Verifica in corso / richiesta inviata"}
-                                        </p>
+                            {a.unclaimed ? (
+                                <div className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-6 sm:p-8" data-testid="company-unclaimed-box">
+                                    <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <Building2 className="h-5 w-5 text-amber-400" /> Scheda non reclamata
+                                    </h2>
+                                    <p className="mt-2 text-sm text-slate-300">
+                                        Questa scheda riporta dati informativi pubblici e non è ancora stata reclamata né verificata dal titolare.
+                                    </p>
+                                    <Link
+                                        to="/registrati?ruolo=azienda"
+                                        className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
+                                    >
+                                        Sei il titolare? Reclama questa scheda →
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8">
+                                    <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <ShieldCheck className="h-5 w-5 text-brand" /> Verifica e qualifiche
+                                    </h2>
+                                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                                            <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Partita IVA</p>
+                                            <p className="mt-1 font-medium text-white" data-testid="company-detail-piva">{a.verified ? a.piva || "Verificata" : "— Visibile dopo verifica —"}</p>
+                                        </div>
+                                        <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                                            <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Stato verifica</p>
+                                            <p className={`mt-1 font-medium ${a.verified ? "text-emerald-400" : "text-brand-amber"}`}>
+                                                {a.verified ? "Verificata dallo staff" : "Verifica in corso / richiesta inviata"}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         <aside className="lg:col-span-4">
@@ -274,7 +362,11 @@ export default function AziendaDettaglio() {
                                     Racconta il lavoro da fare: riceverai un'offerta Gratuita e senza impegno da questa azienda.
                                 </p>
                                 <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
-                                    <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-brand" /> Azienda controllata dallo staff</li>
+                                    {a.unclaimed ? (
+                                        <li className="flex items-center gap-2"><Building2 className="h-4 w-4 text-amber-400" /> Scheda non reclamata</li>
+                                    ) : (
+                                        <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-brand" /> Azienda controllata dallo staff</li>
+                                    )}
                                     <li className="flex items-center gap-2"><FileText className="h-4 w-4 text-brand" /> Preventivo trasparente e gratuito</li>
                                     <li className="flex items-center gap-2"><Building2 className="h-4 w-4 text-brand" /> Un solo intermediario</li>
                                 </ul>
@@ -290,12 +382,36 @@ export default function AziendaDettaglio() {
                                         <PreferitaButton size="wide" aziendaId={a.id} nome={a.nome} saved={isPreferita(a.id)} onToggle={togglePreferita} />
                                     </div>
                                 )}
-                                <div className="mt-5 space-y-2 text-sm">
+                                <div className="mt-5 space-y-2.5 text-sm">
+                                    {a.indirizzo && (
+                                        <p className="flex items-start gap-2 text-slate-300">
+                                            <MapPin className="h-4 w-4 text-brand shrink-0 mt-0.5" />
+                                            <span>{a.indirizzo}</span>
+                                        </p>
+                                    )}
                                     {a.telefono && (
-                                        <p className="flex items-center gap-2 text-slate-400"><Phone className="h-4 w-4 text-brand" /> {a.telefono}</p>
+                                        <a href={`tel:${a.telefono.replace(/\s+/g, "")}`} className="flex items-center gap-2 text-slate-300 hover:text-brand transition-colors">
+                                            <Phone className="h-4 w-4 text-brand shrink-0" />
+                                            <span>{a.telefono}{a.tipo_telefono ? ` · ${a.tipo_telefono}` : ""}</span>
+                                        </a>
+                                    )}
+                                    {a.whatsapp && (
+                                        <a href={a.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                                            <MessageCircle className="h-4 w-4 shrink-0" />
+                                            <span>Contatta su WhatsApp</span>
+                                        </a>
+                                    )}
+                                    {a.email && (
+                                        <a href={`mailto:${a.email}`} className="flex items-center gap-2 text-slate-300 hover:text-brand transition-colors break-all">
+                                            <Mail className="h-4 w-4 text-brand shrink-0" />
+                                            <span>{a.email}</span>
+                                        </a>
                                     )}
                                     {a.sito && (
-                                        <p className="flex items-center gap-2 text-slate-400"><Globe className="h-4 w-4 text-brand" /> {a.sito}</p>
+                                        <a href={a.sito.startsWith("http") ? a.sito : `https://${a.sito}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-300 hover:text-brand transition-colors break-all">
+                                            <Globe className="h-4 w-4 text-brand shrink-0" />
+                                            <span>{a.sito}</span>
+                                        </a>
                                     )}
                                 </div>
                             </div>

@@ -227,4 +227,95 @@ export async function ensureSupabaseConfig() {
     return isSupabaseConfiguredNow();
 }
 
+export function normalizeAziendaFlags(row = {}) {
+    const hasOwner = Boolean(row.owner_id);
+    const isClaimed = row.is_claimed !== undefined && row.is_claimed !== null ? Boolean(row.is_claimed) : hasOwner;
+    const isVerified =
+        row.is_verified !== undefined && row.is_verified !== null
+            ? Boolean(row.is_verified)
+            : Boolean(row.verificata ?? row.verified);
+    const isPremium =
+        row.is_premium !== undefined && row.is_premium !== null
+            ? Boolean(row.is_premium)
+            : (row.piano || row.plan) === "pro";
+
+    return {
+        is_claimed: isClaimed,
+        is_verified: isVerified,
+        is_premium: isPremium,
+        unclaimed: hasOwner ? false : !isClaimed,
+        verified: hasOwner ? Boolean(row.is_verified || row.verificata || row.verified) : isVerified,
+        plan: isPremium ? "pro" : row.piano || row.plan || "free",
+    };
+}
+
+export function createArtisanDraft(input = {}) {
+    const categorie = Array.isArray(input.categorie)
+        ? input.categorie.filter(Boolean)
+        : input.categoria
+        ? [String(input.categoria).trim()]
+        : ["Idraulico"];
+    const zone = Array.isArray(input.zone)
+        ? input.zone.filter(Boolean)
+        : input.zona
+        ? [String(input.zona).trim()]
+        : [];
+
+    const isClaimed = Boolean(input.is_claimed ?? false);
+    const isVerified = Boolean(input.is_verified ?? false);
+    const isPremium = Boolean(input.is_premium ?? false);
+
+    return {
+        nome: String(input.nome || "").trim(),
+        categorie,
+        zone,
+        piva: input.piva ? String(input.piva).trim() : null,
+        descrizione: input.descrizione ? String(input.descrizione).trim() : null,
+        telefono: input.telefono ? String(input.telefono).trim() : null,
+        email: input.email ? String(input.email).trim().toLowerCase() : null,
+        indirizzo: input.indirizzo ? String(input.indirizzo).trim() : null,
+        logo_url: input.logo_url || null,
+        foto: Array.isArray(input.foto) ? input.foto : [],
+        verificata: isVerified,
+        piano: isPremium ? "pro" : "free",
+        emergenze: Boolean(input.emergenze ?? false),
+        rating: Number(input.rating ?? 0),
+        recensioni_count: Number(input.recensioni_count ?? 0),
+        is_claimed: isClaimed,
+        is_verified: isVerified,
+        is_premium: isPremium,
+        ...(input.owner_id ? { owner_id: input.owner_id } : {}),
+        ...(input.created_at ? { created_at: input.created_at } : {}),
+    };
+}
+
+export async function syncArtisanToSupabase(input, existingId = null) {
+    const payload = createArtisanDraft(input);
+    const sanitized = {
+        ...payload,
+        is_claimed: Boolean(payload.is_claimed),
+        is_verified: Boolean(payload.is_verified),
+        is_premium: Boolean(payload.is_premium),
+    };
+
+    if (existingId) {
+        const { data, error } = await supabase
+            .from("aziende")
+            .update(sanitized)
+            .eq("id", existingId)
+            .select()
+            .maybeSingle();
+        if (error) throw error;
+        return data;
+    }
+
+    const { data, error } = await supabase
+        .from("aziende")
+        .insert(sanitized)
+        .select()
+        .maybeSingle();
+    if (error) throw error;
+    return data;
+}
+
 export default supabase;

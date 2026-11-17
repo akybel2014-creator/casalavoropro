@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { api, formatApiError } from "@/lib/api";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, normalizeAziendaFlags } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
 import LocationPicker from "@/components/LocationPicker";
@@ -142,12 +142,11 @@ export default function DashboardAzienda() {
                 if (azRow) {
                     setMine({
                         ...azRow,
+                        ...normalizeAziendaFlags(azRow),
                         logo: azRow.logo_url || null,
                         foto: Array.isArray(azRow.foto) ? azRow.foto : [],
                         categorie: Array.isArray(azRow.categorie) ? azRow.categorie : [],
                         zone: Array.isArray(azRow.zone) ? azRow.zone : [],
-                        verified: Boolean(azRow.verificata),
-                        plan: azRow.piano || "free",
                     });
                 } else if (azienda) {
                     setMine(azienda);
@@ -225,9 +224,8 @@ export default function DashboardAzienda() {
                         setMine((prev) => ({
                             ...prev,
                             ...updated,
+                            ...normalizeAziendaFlags(updated),
                             logo: updated.logo_url || prev?.logo || null,
-                            verified: Boolean(updated.verificata),
-                            plan: updated.piano || "free",
                         }));
                     }
                 } else {

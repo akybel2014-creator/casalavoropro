@@ -8,14 +8,27 @@ export const useAuth = () => useContext(AuthCtx);
 
 function normalizeAziendaRow(row) {
     if (!row) return null;
+    const isClaimed = row.is_claimed !== undefined && row.is_claimed !== null ? Boolean(row.is_claimed) : Boolean(row.owner_id);
+    const isVerified =
+        row.is_verified !== undefined && row.is_verified !== null
+            ? Boolean(row.is_verified)
+            : Boolean(row.verificata ?? row.verified);
+    const isPremium =
+        row.is_premium !== undefined && row.is_premium !== null
+            ? Boolean(row.is_premium)
+            : (row.piano || row.plan) === "pro";
+
     return {
         ...row,
         logo: row.logo_url || row.logo || null,
         foto: Array.isArray(row.foto) ? row.foto : [],
         categorie: Array.isArray(row.categorie) ? row.categorie : [],
         zone: Array.isArray(row.zone) ? row.zone : [],
-        verified: row.verificata !== undefined ? Boolean(row.verificata) : Boolean(row.verified),
-        plan: row.piano || row.plan || "free",
+        is_claimed: isClaimed,
+        is_verified: isVerified,
+        is_premium: isPremium,
+        verified: row.owner_id ? Boolean(row.is_verified || row.verificata || row.verified) : isVerified,
+        plan: isPremium ? "pro" : row.piano || row.plan || "free",
         recensioni: Number(row.recensioni_count ?? row.recensioni ?? 0),
         rating: Number(row.rating) || 0,
     };
@@ -202,7 +215,10 @@ export function AuthProvider({ children }) {
                             piva: azIn?.piva || null,
                             descrizione: azIn?.descrizione || null,
                             email: cleanEmail,
-                            verificata: true,
+                            verificata: false,
+                            is_claimed: true,
+                            is_verified: false,
+                            is_premium: false,
                             rating: 5.0,
                             recensioni_count: 0,
                             piano: "free",

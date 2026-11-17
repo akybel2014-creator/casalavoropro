@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { optimizeRemoteImg } from "@/lib/img";
 import { SERVICE_CATEGORIES } from "@/components/landing/CategoryGrid";
+import VisitCounter from "@/components/landing/VisitCounter";
 
 const LINE_EASE = [0.22, 1, 0.36, 1];
 const HERO_IMG = "https://images.pexels.com/photos/6473978/pexels-photo-6473978.jpeg?auto=compress&cs=tinysrgb&w=1200";
@@ -523,6 +524,8 @@ export default function Hero() {
                                 </p>
                             </div>
                         </motion.div>
+
+                        <VisitCounter />
                     </div>
 
                     {/* Colonna destra: immagine esplicativa */}

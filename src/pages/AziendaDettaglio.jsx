@@ -93,9 +93,26 @@ export default function AziendaDettaglio() {
 
         load();
 
-        api.get(`/aziende/${id}/recensioni`)
-            .then(({ data }) => { if (active) setRecensioni(Array.isArray(data) ? data : []); })
-            .catch(() => {});
+        const loadRecensioni = async () => {
+            try {
+                const { data: supaRevs, error: revErr } = await supabase
+                    .from("recensioni")
+                    .select("*")
+                    .eq("azienda_id", id)
+                    .order("created_at", { ascending: false });
+                if (!revErr && Array.isArray(supaRevs) && supaRevs.length > 0) {
+                    if (active) setRecensioni(supaRevs);
+                    return;
+                }
+            } catch {
+                /* fallback su API */
+            }
+            api.get(`/aziende/${id}/recensioni`)
+                .then(({ data }) => { if (active) setRecensioni(Array.isArray(data) ? data : []); })
+                .catch(() => {});
+        };
+        loadRecensioni();
+
         api.get(`/aziende/${id}/offerte-lavoro`)
             .then(({ data }) => { if (active) setOfferte(Array.isArray(data) ? data : []); })
             .catch(() => {});
@@ -270,29 +287,31 @@ export default function AziendaDettaglio() {
                                 </div>
                             )}
 
-                            <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="company-reviews">
-                                <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
-                                    <MessageSquareHeart className="h-5 w-5 text-brand" /> Recensioni dei clienti
-                                </h2>
-                                {recensioni.length === 0 ? (
-                                    <p className="mt-4 text-sm text-slate-500">Ancora nessuna recensione scritta dai clienti.</p>
-                                ) : (
-                                    <div className="mt-5 space-y-4">
-                                        {recensioni.map((r) => (
-                                            <div key={r.id} className="rounded-2xl border border-white/5 bg-navy/60 p-5" data-testid={`company-review-${r.id}`}>
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <Stars value={r.voto} />
-                                                        <span className="text-sm font-semibold text-white">{r.client_name}</span>
+                            {!a.unclaimed && (
+                                <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="company-reviews">
+                                    <h2 className="font-display font-bold text-white text-xl flex items-center gap-2">
+                                        <MessageSquareHeart className="h-5 w-5 text-brand" /> Recensioni dei clienti
+                                    </h2>
+                                    {recensioni.length === 0 ? (
+                                        <p className="mt-4 text-sm text-slate-500">Ancora nessuna recensione scritta dai clienti.</p>
+                                    ) : (
+                                        <div className="mt-5 space-y-4">
+                                            {recensioni.map((r) => (
+                                                <div key={r.id} className="rounded-2xl border border-white/5 bg-navy/60 p-5" data-testid={`company-review-${r.id}`}>
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <Stars value={r.voto} />
+                                                            <span className="text-sm font-semibold text-white">{r.client_name}</span>
+                                                        </div>
+                                                        <span className="text-xs text-slate-500">{dataIt(r.created_at)}</span>
                                                     </div>
-                                                    <span className="text-xs text-slate-500">{dataIt(r.created_at)}</span>
+                                                    <p className="mt-2 text-sm text-slate-300">{r.commento}</p>
                                                 </div>
-                                                <p className="mt-2 text-sm text-slate-300">{r.commento}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {offerte.length > 0 && (
                                 <div className="rounded-3xl border border-white/10 bg-navy-700/60 p-6 sm:p-8" data-testid="company-jobs">
